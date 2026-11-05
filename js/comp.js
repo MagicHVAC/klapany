@@ -5,7 +5,7 @@ function compBlock() {
   }).join('') + '</nav><div id="comp-res">' + compTable(0) + '</div>';
 }
 function compTable(i) {
-  var c = COMP[i], v0 = c.cols.findIndex(function (h) { return /этаж|Площадь/i.test(h); });
+  var c = COMP[i], v0 = c.v0 !== undefined ? c.v0 : c.cols.findIndex(function (h) { return /этаж|Площадь/i.test(h); });
   return '<div class="tscroll pop"><table class="vei comp"><thead><tr>' + c.cols.map(function (h) { return '<th>' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
     c.rows.map(function (r, k) {
       var grp = k && r[0] !== c.rows[k - 1][0] ? ' class="grp"' : '';

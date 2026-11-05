@@ -111,6 +111,7 @@ var PAGES = {
       '<h2>Подбор по преграде</h2>' + barBlock() +
       '<h2>Как читать предел</h2>' + mini(LIMIT_READ) +
       '<h2 id="comp">Площадь этажа в пожарном отсеке</h2><p class="sub">Выбери тип здания. Значения — наибольшая площадь этажа, м².</p>' + compBlock() +
+      '<h2 id="types">Требования по типам зданий</h2>' + mini(TYPE_RULES) +
       '<h2 id="dist">Противопожарные расстояния</h2>' + distBlock() + mini(DIST_RULES) +
       '<h2 id="deg">Степени огнестойкости</h2>' + degBlock() +
       '<h2>Заполнение проёмов по типам</h2><div class="tscroll"><table class="vei"><thead><tr><th>Элемент</th><th>1-й тип</th><th>2-й тип</th><th>3-й тип</th></tr></thead><tbody>' +
