@@ -1,11 +1,11 @@
 /* Разделы, маршруты, поиск, режимы анимации */
 var ROUTES = [
   ['home', 'Главная'], ['how', 'Как работает'], ['no', 'НО'], ['nz', 'НЗ и ДД'], ['prod', 'Производство'],
-  ['fire', 'Огнезащита'], ['smoke', 'Противодым'], ['build', 'Здание'], ['cat', 'Категории'], ['evac', 'Эвакуация'], ['auto', 'Автоматика'], ['norms', 'Нормы']
+  ['fire', 'Огнезащита'], ['smoke', 'Противодым'], ['build', 'Здание'], ['cat', 'Категории'], ['evac', 'Эвакуация'], ['alarm', 'Сигнализация'], ['auto', 'Автоматика'], ['norms', 'Нормы']
 ];
 var ICON = {
   home: 'M4 11 12 4l8 7v9h-5v-6H9v6H4z', how: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 3v18M7 7l10 10', no: 'M3 12h18M12 5v14', nz: 'M3 12h7m4 0h7M10 7v10m4-10v10', prod: 'M3 20V10l6 4V10l6 4V5h6v15z',
-  evac: 'M13 4a2 2 0 1 0 0 .1M9 21l2-7 3 3v5m-3-8 1-4 4 3h3M10 10l-3 3', cat: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM16.5 13v7M13 16.5h7', build: 'M4 21V8l8-5 8 5v13M9 21v-6h6v6M4 12h16', smoke: 'M5 20h14M8 20V9m8 11V9M6 9h12M9 6c0-2 2-2 2-4m3 4c0-2 2-2 2-4', fire: 'M12 3c4 5 6 8 6 12a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3 1-3 1-5 0-8z', auto: 'M13 3 5 14h6l-1 7 8-11h-6z', norms: 'M6 3h9l4 4v14H6zM9 11h7M9 15h7'
+  alarm: 'M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4', evac: 'M13 4a2 2 0 1 0 0 .1M9 21l2-7 3 3v5m-3-8 1-4 4 3h3M10 10l-3 3', cat: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM16.5 13v7M13 16.5h7', build: 'M4 21V8l8-5 8 5v13M9 21v-6h6v6M4 12h16', smoke: 'M5 20h14M8 20V9m8 11V9M6 9h12M9 6c0-2 2-2 2-4m3 4c0-2 2-2 2-4', fire: 'M12 3c4 5 6 8 6 12a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3 1-3 1-5 0-8z', auto: 'M13 3 5 14h6l-1 7 8-11h-6z', norms: 'M6 3h9l4 4v14H6zM9 11h7M9 15h7'
 };
 var ALL = [], ROOT;
 var $ = function (s) { return document.querySelector(s); };
@@ -141,6 +141,13 @@ var PAGES = {
       '<h2>Лестницы и инженерные сети</h2>' + mini(EVAC_STAIR_RULES) +
       '<h2 id="evprod">Длина пути в производственных помещениях</h2>' + tableOf(EVAC_PROD);
   },
+  alarm: function () {
+    return '<h1>Сигнализация и оповещение</h1><p class="lead">Что пожарная автоматика делает с вентиляцией и клапанами, и какой способ оповещения нужен зданию. СП 3.13130 действует в новой редакции 2026 года.</p>' +
+      '<h2>Автоматика и вентиляция</h2>' + mini(ALARM_VENT) +
+      '<h2 id="soue">Способ оповещения</h2><div class="trpick"><label for="so">Здание</label><select id="so">' + SOUE.map(function (r, i) { return '<option value="' + i + '">' + r[0] + '</option>'; }).join('') + '</select><div class="barres" id="so-res"></div></div>' +
+      '<p class="tnote">¹ Звуковой можно заменить речевым по заданию на проектирование. Площадь — суммарная по зданию, порог для звукового можно превысить до 5 %.</p>' + refs([['sp3', 'прил. Б, табл. Б.1']]) +
+      '<h2>Требования к оповещению</h2>' + mini(SOUE_RULES);
+  },
   auto: function () {
     return '<h1>Управление клапанами</h1><p class="lead">Кто даёт команду, что отключается и что контролируется.</p>' + strip(['hero', 'intake', 'gas']) + mini(AUTO);
   },
@@ -215,6 +222,13 @@ function degBlock() {
 function degCards(i) {
   return DEG_COLS.map(function (c, j) { return '<div class="deg"><b>' + DEG_ROWS[i][1][j] + '</b><span>' + c + '</span></div>'; }).join('');
 }
+function soShow() {
+  var s = $('#so'), o = $('#so-res');
+  if (!s || !o) return;
+  var r = SOUE[s.value], st = function (k, v) { return '<div class="bstep' + (v === '—' ? '' : ' final') + '"><span>' + k + '</span><b>' + (v === '—' ? 'не применяют' : v) + '</b></div>'; };
+  o.innerHTML = st('Звуковой способ', r[1]) + st('Речевой способ', r[2]);
+  o.classList.remove('pop'); void o.offsetWidth; o.classList.add('pop');
+}
 function trShow() {
   var a = $('#tr-r'), b = $('#tr-c'), o = $('#tr-res');
   if (!a || !o) return;
@@ -255,6 +269,7 @@ function show(name, arg) {
   distShow();
   roomCalc();
   bldCalc();
+  soShow();
 }
 function route() {
   var h = location.hash.slice(1) || 'home', s = sectionOf(h);
@@ -316,7 +331,7 @@ function init() {
     var td = b.closest('.tr td');
     if (td) { $('#tr-r').value = td.dataset.r; $('#tr-c').value = td.dataset.c; trShow(); }
   });
-  document.addEventListener('change', function (e) { if (e.target.id === 'tr-r' || e.target.id === 'tr-c') trShow(); if (e.target.id === 'bar') barShow(); });
+  document.addEventListener('change', function (e) { if (e.target.id === 'tr-r' || e.target.id === 'tr-c') trShow(); if (e.target.id === 'bar') barShow(); if (e.target.id === 'so') soShow(); });
   document.addEventListener('toggle', function (e) { if (e.target.tagName === 'DETAILS' && e.target.open) fillSlot(e.target); }, true);
   $('#q').addEventListener('input', function () {
     var v = this.value.trim();
