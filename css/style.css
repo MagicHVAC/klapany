@@ -288,7 +288,8 @@ html[data-mode="n"] .tline .tl-n, html[data-mode="f"] .tline .tl-f, html[data-mo
 /* v1.6.0: категории и калькуляторы */
 .cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
 .catc { background: var(--surface); border: 1px solid var(--line); border-radius: 13px; padding: 12px 14px; display: grid; gap: 4px; align-content: start; }
-.catc b { font: 700 26px var(--display); color: var(--fp); }
+.catc > b { font: 700 26px var(--display); color: var(--fp); }
+.catc { min-width: 0; } .catc .ref { white-space: normal; }
 .catc p { margin: 0; font-size: 14px; color: var(--muted); }
 .calc { margin-top: 12px; }
 .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
