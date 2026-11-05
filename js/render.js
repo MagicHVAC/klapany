@@ -66,6 +66,11 @@ function drawScheme(id) {
   if (s.fire) {
     o.push('<g class="flame on-f ' + (s.three ? '' : 'on-a') + '" transform="translate(' + s.fire[0] + ' ' + s.fire[1] + ')"><circle class="glow" r="34"/><g class="puffs"><circle cx="-6" r="7"/><circle cx="5" r="9"/><circle cx="0" r="6"/></g><g class="fl1"><path d="M0-22C9-11 12-5 12 3 12 11 6 15 0 15-6 15-12 11-12 3-12-3-8-7-5-12-4-7-3-5 0-4 2-9 2-15 0-22Z"/></g><g class="fl2"><path d="M0-5C4 0 6 3 6 7 6 11 3 13 0 13-3 13-6 11-6 7-6 3-3 0 0-5Z"/></g></g>');
   }
+  (s.dim || []).forEach(function (d) {
+    var mx = (d.a[0] + d.b[0]) / 2, my = (d.a[1] + d.b[1]) / 2;
+    o.push('<g class="dim"><line x1="' + d.a[0] + '" y1="' + d.a[1] + '" x2="' + d.b[0] + '" y2="' + d.b[1] + '"/><circle cx="' + d.a[0] + '" cy="' + d.a[1] + '" r="2.5"/><circle cx="' + d.b[0] + '" cy="' + d.b[1] + '" r="2.5"/>' +
+      '<text x="' + (d.v ? mx + 8 : mx) + '" y="' + (d.v ? my + 4 : my - 7) + '" text-anchor="' + (d.v ? 'start' : 'middle') + '">' + d.t + '</text></g>');
+  });
   (s.tx || []).forEach(function (t) {
     o.push('<text class="tx ' + (t.c === 'fp' ? 'tx-fp' : '') + '" x="' + t.x + '" y="' + t.y + '" text-anchor="' + (t.a || 'start') + '">' + t.t + '</text>');
   });

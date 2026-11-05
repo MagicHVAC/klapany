@@ -1,6 +1,6 @@
 /* Офлайн-работа. При новой версии поменять V и ?v= в index.html */
-var V = 'klapany-1.1.1';
-var FILES = ['./', 'index.html', 'css/style.css?v=1.1.1', 'js/data_norms.js?v=1.1.1', 'js/data_no.js?v=1.1.1', 'js/data_nz.js?v=1.1.1', 'js/data_more.js?v=1.1.1', 'js/schemes.js?v=1.1.1', 'js/steps.js?v=1.1.1', 'js/anatomy.js?v=1.1.1', 'js/render.js?v=1.1.1', 'js/stats.js?v=1.1.1', 'js/app.js?v=1.1.1', 'manifest.webmanifest', 'icon-512.png'];
+var V = 'klapany-1.2.0';
+var FILES = ['./', 'index.html', 'css/style.css?v=1.2.0', 'js/data_norms.js?v=1.2.0', 'js/data_no.js?v=1.2.0', 'js/data_nz.js?v=1.2.0', 'js/data_more.js?v=1.2.0', 'js/data_fire2.js?v=1.2.0', 'js/schemes.js?v=1.2.0', 'js/steps.js?v=1.2.0', 'js/anatomy.js?v=1.2.0', 'js/render.js?v=1.2.0', 'js/stats.js?v=1.2.0', 'js/app.js?v=1.2.0', 'manifest.webmanifest', 'icon-512.png'];
 self.addEventListener('install', function (e) { e.waitUntil(caches.open(V).then(function (c) { return c.addAll(FILES); }).then(function () { return self.skipWaiting(); })); });
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (k) {

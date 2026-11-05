@@ -1,11 +1,11 @@
 /* Разделы, маршруты, поиск, режимы анимации */
 var ROUTES = [
   ['home', 'Главная'], ['how', 'Как работает'], ['no', 'НО'], ['nz', 'НЗ и ДД'], ['prod', 'Производство'],
-  ['fire', 'Огнезащита'], ['auto', 'Автоматика'], ['norms', 'Нормы']
+  ['fire', 'Огнезащита'], ['smoke', 'Противодым'], ['auto', 'Автоматика'], ['norms', 'Нормы']
 ];
 var ICON = {
   home: 'M4 11 12 4l8 7v9h-5v-6H9v6H4z', how: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 3v18M7 7l10 10', no: 'M3 12h18M12 5v14', nz: 'M3 12h7m4 0h7M10 7v10m4-10v10', prod: 'M3 20V10l6 4V10l6 4V5h6v15z',
-  fire: 'M12 3c4 5 6 8 6 12a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3 1-3 1-5 0-8z', auto: 'M13 3 5 14h6l-1 7 8-11h-6z', norms: 'M6 3h9l4 4v14H6zM9 11h7M9 15h7'
+  smoke: 'M5 20h14M8 20V9m8 11V9M6 9h12M9 6c0-2 2-2 2-4m3 4c0-2 2-2 2-4', fire: 'M12 3c4 5 6 8 6 12a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3 1-3 1-5 0-8z', auto: 'M13 3 5 14h6l-1 7 8-11h-6z', norms: 'M6 3h9l4 4v14H6zM9 11h7M9 15h7'
 };
 var ALL = [], ROOT;
 var $ = function (s) { return document.querySelector(s); };
@@ -93,7 +93,18 @@ var PAGES = {
     return '<h1>Огнезащита воздуховодов</h1><p class="lead">Нормы задают предел огнестойкости EI. Огнезащитное покрытие один из способов его получить, наряду с шахтой и заводской конструкцией.</p>' +
       strip(['option', 'gap', 'comp', 'room']) + '<h2>Когда предел нормируется</h2><div class="cards">' + CASES_FIRE.map(function (c) { c.t = 'FP'; return card(c); }).join('') + '</div>' +
       '<h2 id="tr">Транзит: что обслуживаем и через что идём</h2>' + trBlock() +
-      '<h2>Когда можно без предела</h2>' + mini(FIRE_FREE) + '<h2>Требования к исполнению</h2>' + mini(FIRE_RULES);
+      '<h2>Когда можно без предела</h2>' + mini(FIRE_FREE) + '<h2>Требования к исполнению</h2>' + mini(FIRE_RULES) +
+      '<h2 id="apply">Как применять огнезащиту</h2><p class="sub">Предел даёт испытанная система, а не отдельный материал.</p>' + mini(FIRE_APPLY) +
+      '<h2 id="classes">Классы материалов и герметичности</h2>' + mini(FIRE_CLASS) +
+      '<h2>Прокладка и венткамеры</h2>' + mini(LAY_RULES);
+  },
+  smoke: function () {
+    return '<h1>Противодымная вентиляция</h1><p class="lead">Пределы клапанов и воздуховодов, классы вентиляторов, где их ставить и куда выбрасывать дым.</p>' +
+      strip(['smoke', 'supply', 'roof', 'facade', 'comp-nz']) +
+      '<h2>Пределы НЗ клапанов</h2><div class="tscroll"><table class="vei"><thead><tr><th>Система</th><th>Где</th><th>Не менее</th><th>СП 7.13130</th></tr></thead><tbody>' +
+      VALVE_EI.map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + esc(r[1]) + '</td><td><span class="ei">' + r[2] + '</span></td><td>п. ' + esc(r[3]) + '</td></tr>'; }).join('') +
+      '</tbody></table></div>' + mini(VALVE_EI_NOTE) +
+      '<h2>Оборудование</h2>' + mini(SMOKE_EQUIP) + '<h2>Выброс дыма и забор воздуха</h2>' + mini(SMOKE_OUT);
   },
   auto: function () {
     return '<h1>Управление клапанами</h1><p class="lead">Кто даёт команду, что отключается и что контролируется.</p>' + strip(['hero', 'intake', 'gas']) + mini(AUTO);
