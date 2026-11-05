@@ -1,11 +1,11 @@
 /* Разделы, маршруты, поиск, режимы анимации */
 var ROUTES = [
   ['home', 'Главная'], ['how', 'Как работает'], ['no', 'НО'], ['nz', 'НЗ и ДД'], ['prod', 'Производство'],
-  ['fire', 'Огнезащита'], ['smoke', 'Противодым'], ['build', 'Здание'], ['auto', 'Автоматика'], ['norms', 'Нормы']
+  ['fire', 'Огнезащита'], ['smoke', 'Противодым'], ['build', 'Здание'], ['cat', 'Категории'], ['auto', 'Автоматика'], ['norms', 'Нормы']
 ];
 var ICON = {
   home: 'M4 11 12 4l8 7v9h-5v-6H9v6H4z', how: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 3v18M7 7l10 10', no: 'M3 12h18M12 5v14', nz: 'M3 12h7m4 0h7M10 7v10m4-10v10', prod: 'M3 20V10l6 4V10l6 4V5h6v15z',
-  build: 'M4 21V8l8-5 8 5v13M9 21v-6h6v6M4 12h16', smoke: 'M5 20h14M8 20V9m8 11V9M6 9h12M9 6c0-2 2-2 2-4m3 4c0-2 2-2 2-4', fire: 'M12 3c4 5 6 8 6 12a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3 1-3 1-5 0-8z', auto: 'M13 3 5 14h6l-1 7 8-11h-6z', norms: 'M6 3h9l4 4v14H6zM9 11h7M9 15h7'
+  cat: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM16.5 13v7M13 16.5h7', build: 'M4 21V8l8-5 8 5v13M9 21v-6h6v6M4 12h16', smoke: 'M5 20h14M8 20V9m8 11V9M6 9h12M9 6c0-2 2-2 2-4m3 4c0-2 2-2 2-4', fire: 'M12 3c4 5 6 8 6 12a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3 1-3 1-5 0-8z', auto: 'M13 3 5 14h6l-1 7 8-11h-6z', norms: 'M6 3h9l4 4v14H6zM9 11h7M9 15h7'
 };
 var ALL = [], ROOT;
 var $ = function (s) { return document.querySelector(s); };
@@ -122,6 +122,15 @@ var PAGES = {
       '<h2>Конструкции, пустоты, потолки</h2>' + mini(STRUCT_RULES) +
       '<h2>Выделение помещений</h2>' + mini(ROOM_RULES);
   },
+  cat: function () {
+    return '<h1>Категории помещений и зданий</h1><p class="lead">От категории зависят преграды, площадь отсека, клапаны, тамбур-шлюзы и вентиляция. Помещение проверяют от А к Д, здание — по доле площадей.</p>' +
+      '<div class="cats">' + CAT_ROOM.map(function (c) { return '<article class="catc"><b>' + c.k + '</b><h3>' + c.h + '</h3><p>' + esc(c.d) + '</p></article>'; }).join('') + '</div>' + refs([['sp12', 'табл. 1']]) +
+      '<h2 id="vcalc">Категория В1–В4 по пожарной нагрузке</h2><div class="tscroll"><table class="vei"><thead><tr><th>Категория</th><th>g, МДж/м²</th><th>Способ размещения</th></tr></thead><tbody>' +
+      CAT_G.map(function (r) { return '<tr><td>' + r[0] + '</td><td><span class="ei">' + r[1] + '</span></td><td>' + esc(r[2]) + '</td></tr>'; }).join('') + '</tbody></table></div>' +
+      roomCalcBlock() + '<p class="tnote">Калькулятор не определяет А и Б: для них нужен расчёт давления взрыва по приложению А. Предельное расстояние берётся по ближайшему меньшему qкр таблицы Б.2 — в запас.</p>' +
+      '<h2 id="bcalc">Категория здания</h2>' + bldCalcBlock() +
+      '<h2>Правила</h2>' + mini(CAT_RULES);
+  },
   auto: function () {
     return '<h1>Управление клапанами</h1><p class="lead">Кто даёт команду, что отключается и что контролируется.</p>' + strip(['hero', 'intake', 'gas']) + mini(AUTO);
   },
@@ -234,6 +243,8 @@ function show(name, arg) {
   trShow();
   barShow();
   distShow();
+  roomCalc();
+  bldCalc();
 }
 function route() {
   var h = location.hash.slice(1) || 'home', s = sectionOf(h);

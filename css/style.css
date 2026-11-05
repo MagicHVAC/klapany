@@ -285,6 +285,21 @@ html[data-mode="n"] .tline .tl-n, html[data-mode="f"] .tline .tl-f, html[data-mo
 .dchk label { display: flex; gap: 6px; align-items: center; cursor: pointer; margin: 0; color: var(--text); }
 .dchk input { width: 17px; height: 17px; accent-color: var(--fp); }
 #dist + .trpick, .trpick + .refs + .minis { margin-top: 10px; }
+/* v1.6.0: категории и калькуляторы */
+.cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.catc { background: var(--surface); border: 1px solid var(--line); border-radius: 13px; padding: 12px 14px; display: grid; gap: 4px; align-content: start; }
+.catc b { font: 700 26px var(--display); color: var(--fp); }
+.catc p { margin: 0; font-size: 14px; color: var(--muted); }
+.calc { margin-top: 12px; }
+.cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.cgrid label { display: grid; gap: 4px; font-size: 13.5px; color: var(--muted); margin: 0; }
+.cgrid input, .cgrid select { height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; font-variant-numeric: tabular-nums; }
+.cgrid input:focus { border-color: var(--fp); outline: none; }
+.cgrid small { font-size: 12px; }
+.calc .barres { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+.bstep.warn b { color: var(--fire); }
+.bstep.final { background: color-mix(in srgb, var(--fp) 14%, var(--bg)); border-color: var(--fp); }
+.bstep.final b { font-size: 26px; }
 /* Появление при прокрутке */
 html.rv .card, html.rv .fig, html.rv .mini, html.rv .pick, html.rv .how, html.rv .norm, html.rv .issue { opacity: 0; transform: translateY(14px); transition: opacity .5s ease var(--d, 0ms), transform .5s ease var(--d, 0ms), border-color .15s; }
 html.rv .in { opacity: 1 !important; transform: none !important; }
