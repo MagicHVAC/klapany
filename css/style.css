@@ -272,6 +272,19 @@ html[data-mode="n"] .tline .tl-n, html[data-mode="f"] .tline .tl-f, html[data-mo
 .pop > *:nth-child(5) { animation-delay: .28s; } .pop > *:nth-child(6) { animation-delay: .34s; } .pop > *:nth-child(7) { animation-delay: .4s; }
 @keyframes popin { from { opacity: 0; transform: translateY(8px) scale(.97); } }
 @media (max-width: 860px) { .barres { grid-template-columns: minmax(0, 1fr); } .bstep + .bstep::before { display: none; } }
+/* v1.4.0: площади отсеков, расстояния */
+.chips button.on { background: var(--fp); border-color: var(--fp); color: #fff; }
+.chips button { transition: background .25s, color .25s, border-color .25s; }
+.comp tr.grp td { border-top: 2px solid var(--line); }
+.comp td:first-child { font-weight: 700; } .comp td:last-child { color: inherit; white-space: normal; }
+.ar { display: inline-block; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ar-free { color: var(--no); } .ar-no { color: var(--muted); }
+.comp tbody tr { transition: background .2s; } .comp tbody tr:hover { background: color-mix(in srgb, var(--fp) 7%, transparent); }
+.cnotes { margin: 8px 0; padding-left: 18px; color: var(--muted); font-size: 13.5px; display: grid; gap: 3px; }
+.dchk { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; }
+.dchk label { display: flex; gap: 6px; align-items: center; cursor: pointer; margin: 0; color: var(--text); }
+.dchk input { width: 17px; height: 17px; accent-color: var(--fp); }
+#dist + .trpick, .trpick + .refs + .minis { margin-top: 10px; }
 /* Появление при прокрутке */
 html.rv .card, html.rv .fig, html.rv .mini, html.rv .pick, html.rv .how, html.rv .norm, html.rv .issue { opacity: 0; transform: translateY(14px); transition: opacity .5s ease var(--d, 0ms), transform .5s ease var(--d, 0ms), border-color .15s; }
 html.rv .in { opacity: 1 !important; transform: none !important; }

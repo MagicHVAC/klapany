@@ -110,6 +110,8 @@ var PAGES = {
     return '<h1>Огнестойкость здания</h1><p class="lead">Степени огнестойкости, противопожарные преграды и их заполнения, огнезащита конструкций. Сначала выбери преграду — справочник покажет предел, двери и тамбур-шлюз.</p>' +
       '<h2>Подбор по преграде</h2>' + barBlock() +
       '<h2>Как читать предел</h2>' + mini(LIMIT_READ) +
+      '<h2 id="comp">Площадь этажа в пожарном отсеке</h2><p class="sub">Выбери тип здания. Значения — наибольшая площадь этажа, м².</p>' + compBlock() +
+      '<h2 id="dist">Противопожарные расстояния</h2>' + distBlock() + mini(DIST_RULES) +
       '<h2 id="deg">Степени огнестойкости</h2>' + degBlock() +
       '<h2>Заполнение проёмов по типам</h2><div class="tscroll"><table class="vei"><thead><tr><th>Элемент</th><th>1-й тип</th><th>2-й тип</th><th>3-й тип</th></tr></thead><tbody>' +
       FILL.map(function (r) { return '<tr><td>' + esc(r[0]) + '</td>' + r[1].map(function (v) { return '<td><span class="ei">' + v + '</span></td>'; }).join('') + '</tr>'; }).join('') +
@@ -230,6 +232,7 @@ function show(name, arg) {
   document.querySelectorAll('.nav a').forEach(function (a) { a.classList.toggle('on', a.dataset.r === name); });
   trShow();
   barShow();
+  distShow();
 }
 function route() {
   var h = location.hash.slice(1) || 'home', s = sectionOf(h);
