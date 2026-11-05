@@ -166,7 +166,11 @@ function openCard(id) {
 }
 function fillSlot(d) {
   var s = d.querySelector('.slot');
-  if (s && !s.innerHTML && d.dataset.sc) s.innerHTML = figure(d.dataset.sc);
+  if (s && !s.innerHTML && d.dataset.sc) {
+    s.innerHTML = figure(d.dataset.sc);
+    /* дорисованная схема не проходит через reveal() — показываем сразу */
+    s.querySelectorAll('.fig').forEach(function (f) { f.classList.add('in'); });
+  }
 }
 
 function sectionOf(id) {
@@ -186,6 +190,7 @@ function route() {
   if (PAGES[h] && h !== 'search') { show(h); window.scrollTo(0, 0); }
   else if (s) { show(s); openCard(h); }
   else { show('home'); }
+  statPage();
 }
 
 /* Плавное появление блоков при прокрутке */
