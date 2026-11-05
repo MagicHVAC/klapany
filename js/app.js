@@ -1,0 +1,233 @@
+/* Разделы, маршруты, поиск, режимы анимации */
+var ROUTES = [
+  ['home', 'Главная'], ['no', 'НО'], ['nz', 'НЗ и ДД'], ['prod', 'Производство'],
+  ['fire', 'Огнезащита'], ['auto', 'Автоматика'], ['norms', 'Нормы']
+];
+var ICON = {
+  home: 'M4 11 12 4l8 7v9h-5v-6H9v6H4z', no: 'M3 12h18M12 5v14', nz: 'M3 12h7m4 0h7M10 7v10m4-10v10', prod: 'M3 20V10l6 4V10l6 4V5h6v15z',
+  fire: 'M12 3c4 5 6 8 6 12a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3 1-3 1-5 0-8z', auto: 'M13 3 5 14h6l-1 7 8-11h-6z', norms: 'M6 3h9l4 4v14H6zM9 11h7M9 15h7'
+};
+var ALL = [], ROOT;
+var $ = function (s) { return document.querySelector(s); };
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+function refLink(r) {
+  var n = NORMS[r[0]];
+  return '<a class="ref" href="' + n.url + '" target="_blank" rel="noopener">' + n.s + (r[1] ? ' <b>' + esc(r[1].replace(/^(\d)/, 'п. $1')) + '</b>' : '') + '</a>';
+}
+function refs(a) { return '<div class="refs">' + a.map(refLink).join('') + '</div>'; }
+function tag(t) { return '<span class="tag t' + t + '">' + { NO: 'НО', NZ: 'НЗ', DD: 'ДД', FP: 'EI' }[t] + '</span>'; }
+
+function card(c) {
+  var t = c.t;
+  return '<article class="card c' + t + (c.unverified ? ' unv' : '') + '" id="' + c.id + '">' +
+    '<div class="chead">' + tag(t) + '<h3>' + esc(c.title) + '</h3></div>' +
+    '<p class="when">' + esc(c.when) + '</p>' +
+    (c.note ? '<p class="note">' + esc(c.note) + '</p>' : '') +
+    (c.unverified ? '<p class="warn">Не проверено по первоисточнику.</p>' : '') +
+    '<div class="cfoot"><span class="ei">' + esc(c.ei) + '</span>' + refs(c.refs) + '</div>' +
+    '<details data-sc="' + (c.sc || '') + '"><summary>' + (c.sc ? 'Схема и цитата' : 'Цитата') + '</summary><div class="dbody"><div class="slot"></div><blockquote>' + esc(c.q) + '</blockquote></div></details>' +
+    '</article>';
+}
+function groups(list, gs) {
+  var chips = '<nav class="chips" aria-label="Группы">' + gs.map(function (g) {
+    return '<button type="button" data-jump="g-' + g[0] + '">' + g[1] + ' <i>' + list.filter(function (c) { return c.g === g[0]; }).length + '</i></button>';
+  }).join('') + '</nav>';
+  return chips + gs.map(function (g) {
+    var l = list.filter(function (c) { return c.g === g[0]; });
+    return l.length ? '<h2 id="g-' + g[0] + '">' + g[1] + '</h2><div class="cards">' + l.map(card).join('') + '</div>' : '';
+  }).join('');
+}
+function strip(ids) { return '<div class="strip">' + ids.map(figure).join('') + '</div>'; }
+function mini(list) {
+  return '<div class="minis">' + list.map(function (e) {
+    return '<div class="mini"><h4>' + esc(e.t) + '</h4><p>' + esc(e.d) + '</p>' + refs(e.r) + '</div>';
+  }).join('') + '</div>';
+}
+
+var PAGES = {
+  home: function () {
+    return '<section class="hero"><div class="htext"><p class="eyebrow">Вентиляция и пожарная безопасность</p><h1>Какой клапан поставить и на каком основании</h1>' +
+      '<p class="lead">' + CASES_NO.length + ' случаев НО, ' + CASES_NZ.length + ' случаев НЗ, категории производства и огнезащита. Каждая запись ведёт на пункт нормы.</p>' +
+      '<div class="legend"><span>' + tag('NO') + ' открыт, при пожаре закрывается</span><span>' + tag('NZ') + ' закрыт, при пожаре открывается</span><span>' + tag('DD') + ' закрывается при пожаре, открывается после</span></div></div>' +
+      figure('hero') + '</section>' +
+      '<h2>Что проектируешь</h2><div class="picks">' + PICK.map(function (p) { return '<a class="pick" href="#' + p.to + '">' + esc(p.t) + '</a>'; }).join('') + '</div>' +
+      '<h2>Предел клапана по п. 6.22</h2>' + eiBlock() +
+      '<h2>Где нужна осторожность</h2><p class="sub">Расхождения норм и пробелы проверки.</p>' + issues();
+  },
+  no: function () {
+    return '<h1>Нормально открытые</h1><p class="lead">Стоят в общеобменных системах и закрываются при пожаре, чтобы дым не ушёл по воздуховодам.</p>' +
+      strip(['floor', 'wall', 'transit', 'shaft', 'intake', 'attic', 'five', 'group']) + groups(CASES_NO, NO_GROUPS) +
+      '<h2>Где НО не ставят</h2>' + mini(NO_EXCEPT) + '<h2>Предел клапана</h2>' + eiBlock();
+  },
+  nz: function () {
+    return '<h1>Нормально закрытые и двойного действия</h1><p class="lead">НЗ работают в противодымных системах и открываются при пожаре. Клапан двойного действия закрывается при пожаре и открывается после него.</p>' +
+      strip(['smoke', 'supply', 'gas', 'comp-nz', 'sput']) + groups(CASES_NZ, NZ_GROUPS) +
+      '<h2 id="g-dd">Двойного действия</h2><div class="cards">' + CASES_DD.map(card).join('') + '</div>' +
+      '<h2>Запреты и особые условия</h2>' + mini(NZ_BAN);
+  },
+  prod: function () {
+    var marks = { yes: ['Нужен', 'm-yes'], cond: ['С условием', 'm-cond'], no: ['Нет прямого требования', 'm-no'], ban: ['Не допускается', 'm-ban'] };
+    return '<h1>Производственные помещения</h1><p class="lead">Сводка по категориям для всех решений с НО. Строка раскрывает основание.</p>' +
+      '<div class="mlegend">' + Object.keys(marks).map(function (k) { return '<span class="mk ' + marks[k][1] + '">' + marks[k][0] + '</span>'; }).join('') + '</div>' +
+      '<div class="tscroll"><table class="matrix"><thead><tr><th>Решение</th>' + PROD_COLS.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      PROD_ROWS.map(function (r) {
+        return '<tr><th scope="row">' + esc(r.t) + '<small>' + esc(r.n) + '</small>' + refs(r.r) + '</th>' + r.v.map(function (v) {
+          return '<td><span class="mk ' + marks[v][1] + '" title="' + marks[v][0] + '">' + { yes: 'Да', cond: 'Усл.', no: '—', ban: 'Нет' }[v] + '</span></td>';
+        }).join('') + '</tr>';
+      }).join('') + '</tbody></table></div>' +
+      strip(['wall', 'merge', 'lock', 'group']) + '<h2>Особые условия</h2>' + mini(PROD_NOTES) +
+      '<h2>Все случаи для производства</h2><div class="cards">' +
+      ['no-wall', 'no-suck', 'no-5m', 'no-group', 'no-floor', 'no-mer-v', 'no-mer-v4', 'no-mer-add', 'no-mer-a', 'no-lock', 'no-heat', 'no-flow'].map(function (id) {
+        return card(CASES_NO.filter(function (c) { return c.id === id; })[0]).replace('id="' + id + '"', '');
+      }).join('') + '</div>';
+  },
+  fire: function () {
+    return '<h1>Огнезащита воздуховодов</h1><p class="lead">Нормы задают предел огнестойкости EI. Огнезащитное покрытие один из способов его получить, наряду с шахтой и заводской конструкцией.</p>' +
+      strip(['option', 'gap', 'comp', 'room']) + '<h2>Когда предел нормируется</h2><div class="cards">' + CASES_FIRE.map(function (c) { c.t = 'FP'; return card(c); }).join('') + '</div>' +
+      '<h2 id="tr">Транзит: что обслуживаем и через что идём</h2>' + trBlock() +
+      '<h2>Когда можно без предела</h2>' + mini(FIRE_FREE) + '<h2>Требования к исполнению</h2>' + mini(FIRE_RULES);
+  },
+  auto: function () {
+    return '<h1>Управление клапанами</h1><p class="lead">Кто даёт команду, что отключается и что контролируется.</p>' + strip(['hero', 'intake', 'gas']) + mini(AUTO);
+  },
+  norms: function () {
+    return '<h1>Нормы</h1><p class="lead">Все источники справочника. Текст сверен ' + APP.date + ' по консолидированным редакциям в открытых базах. Для выпуска проекта сверяй с официальной публикацией.</p>' +
+      '<div class="normlist">' + Object.keys(NORMS).map(function (k) {
+        var n = NORMS[k];
+        return '<article class="norm"><span class="st st-' + n.status + '">' + (n.status === 'ok' ? 'Сверено' : 'Проверить') + '</span><h3>' + esc(n.name) + '</h3><p>' + esc(n.ed) + '</p><p class="muted">' + esc(n.role) + '</p>' +
+          '<div class="refs"><a class="ref" href="' + n.url + '" target="_blank" rel="noopener">Открыть текст</a>' + n.alt.map(function (a) { return '<a class="ref" href="' + a[1] + '" target="_blank" rel="noopener">' + a[0] + '</a>'; }).join('') + '</div></article>';
+      }).join('') + '</div><h2>Спорные места и пробелы</h2>' + issues();
+  },
+  search: function (q) {
+    var w = q.toLowerCase(), r = ALL.filter(function (c) {
+      return (c.title + ' ' + c.when + ' ' + c.q + ' ' + (c.note || '') + ' ' + c.ei + ' ' + c.refs.map(function (x) { return NORMS[x[0]].s + ' ' + x[1]; }).join(' ')).toLowerCase().indexOf(w) >= 0;
+    });
+    return '<h1>Поиск: ' + esc(q) + '</h1><p class="lead">Найдено ' + r.length + '.</p><div class="cards">' + r.map(card).join('') + '</div>' +
+      (r.length ? '' : '<p>Попробуй номер пункта или слово: шахта, стоянка, 6.10.</p>');
+  }
+};
+
+function issues() { return '<div class="issues">' + ISSUES.map(function (i) { return '<details class="issue"><summary>' + esc(i.t) + '</summary><p>' + esc(i.d) + '</p></details>'; }).join('') + '</div>'; }
+
+function eiBlock() {
+  return '<div class="eibox"><div class="eibtns" role="group" aria-label="Предел преграды">' + EI_TABLE.map(function (e, i) {
+    return '<button type="button" class="eibtn' + (i ? '' : ' on') + '" data-ei="' + i + '">' + e.b + '</button>';
+  }).join('') + '</div><div class="eires"><b>' + EI_TABLE[0].v + '</b><span>' + EI_TABLE[0].n + '. ' + '</span></div>' + refs([['sp7', '6.22']]) + '</div>';
+}
+
+function trText(v) {
+  var note = [];
+  if (v.indexOf('**') >= 0) note.push('Для воздуховодов из А и Б прокладка не допускается.');
+  else if (v.indexOf('*') >= 0) note.push('В зданиях III, IV степени вместо EI 30 принимают EI 15.');
+  if (v.indexOf('!') >= 0) note.push('СП 60 табл. Н даёт здесь НН/30. Принято значение СП 7.');
+  var c = v.replace(/[*!]/g, '');
+  if (c === 'НД') return ['Прокладка не допускается', note];
+  if (c === 'НН') return ['Предел не нормируется', note];
+  var p = c.split('/');
+  if (p.length === 1) return ['EI ' + p[0], note];
+  return [(p[0] === 'НН' ? 'На этаже не нормируется' : 'На этаже EI ' + p[0]) + ', вне этажа EI ' + p[1], note];
+}
+function trBlock() {
+  return '<div class="trpick"><label for="tr-r">Что обслуживает система</label><select id="tr-r">' + TR_ROWS.map(function (r, i) { return '<option value="' + i + '"' + (i === 1 ? ' selected' : '') + '>' + r[0] + '</option>'; }).join('') + '</select>' +
+    '<label for="tr-c">Через какое помещение идёт</label><select id="tr-c">' + TR_COLS.map(function (c, i) { return '<option value="' + i + '"' + (i === 4 ? ' selected' : '') + '>' + c + '</option>'; }).join('') + '</select>' +
+    '<div class="trres" id="tr-res"></div></div>' +
+    '<div class="tscroll"><table class="tr"><thead><tr><th>Обслуживает ↓ / Через →</th>' + TR_COLS.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr></thead><tbody>' +
+    TR_ROWS.map(function (r, i) {
+      return '<tr><th scope="row">' + r[0] + '</th>' + r[1].map(function (v, j) {
+        var c = v.replace(/[*!]/g, ''), k = c === 'НД' ? 'x-ban' : c === 'НН' ? 'x-free' : c.indexOf('НН') === 0 ? 'x-part' : c.indexOf('15') === 0 ? 'x-15' : 'x-30';
+        return '<td class="' + k + '" data-r="' + i + '" data-c="' + j + '"><button type="button">' + v.replace('**', '²').replace('*', '¹').replace('!', '⚠') + '</button></td>';
+      }).join('') + '</tr>';
+    }).join('') + '</tbody></table></div>' +
+    '<p class="tnote">Числитель: на обслуживаемом этаже. Знаменатель: вне его. ¹ EI 15 в зданиях III, IV степени. ² Запрет для воздуховодов из А и Б. ⚠ Расхождение с СП 60.</p>' + refs([['sp7', 'прил. В, табл. В.1'], ['sp60', 'прил. Н']]);
+}
+function trShow() {
+  var a = $('#tr-r'), b = $('#tr-c'), o = $('#tr-res');
+  if (!a || !o) return;
+  var t = trText(TR_ROWS[a.value][1][b.value]);
+  o.innerHTML = '<b>' + t[0] + '</b>' + t[1].map(function (n) { return '<span>' + n + '</span>'; }).join('');
+  document.querySelectorAll('.tr td').forEach(function (td) { td.classList.toggle('sel', td.dataset.r === a.value && td.dataset.c === b.value); });
+}
+
+function openCard(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var d = el.querySelector('details');
+  if (d) { d.open = true; fillSlot(d); }
+  el.classList.add('flash');
+  el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+}
+function fillSlot(d) {
+  var s = d.querySelector('.slot');
+  if (s && !s.innerHTML && d.dataset.sc) s.innerHTML = figure(d.dataset.sc);
+}
+
+function sectionOf(id) {
+  if (id.indexOf('no-') === 0) return 'no';
+  if (id.indexOf('nz-') === 0 || id.indexOf('dd-') === 0) return 'nz';
+  if (id.indexOf('fi-') === 0) return 'fire';
+  return null;
+}
+function show(name, arg) {
+  ROOT.innerHTML = PAGES[name](arg);
+  document.querySelectorAll('.nav a').forEach(function (a) { a.classList.toggle('on', a.dataset.r === name); });
+  trShow();
+}
+function route() {
+  var h = location.hash.slice(1) || 'home', s = sectionOf(h);
+  if (PAGES[h] && h !== 'search') { show(h); window.scrollTo(0, 0); }
+  else if (s) { show(s); openCard(h); }
+  else { show('home'); }
+}
+
+/* Режимы: автопоказ или ручной выбор */
+var AUTOPLAY = true, TIMER = null, CYCLE = ['n', 'f', 'a'], STEP = 0;
+function setMode(m) {
+  document.documentElement.dataset.mode = m;
+  document.querySelectorAll('.mode button[data-m]').forEach(function (b) { b.classList.toggle('on', b.dataset.m === m); b.setAttribute('aria-pressed', b.dataset.m === m); });
+}
+function setAuto(on) {
+  AUTOPLAY = on;
+  $('#m-auto').classList.toggle('on', on);
+  clearInterval(TIMER);
+  if (on) TIMER = setInterval(function () { STEP = (STEP + 1) % 3; setMode(CYCLE[STEP]); }, 3600);
+}
+
+function init() {
+  ROOT = $('#view');
+  ALL = CASES_NO.map(function (c) { c.t = 'NO'; return c; }).concat(CASES_NZ.map(function (c) { c.t = 'NZ'; return c; }), CASES_DD.map(function (c) { c.t = 'DD'; return c; }), CASES_FIRE.map(function (c) { c.t = 'FP'; return c; }));
+  $('.nav').innerHTML = ROUTES.map(function (r) {
+    return '<a href="#' + r[0] + '" data-r="' + r[0] + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + ICON[r[0]] + '"/></svg><span>' + r[1] + '</span></a>';
+  }).join('');
+  $('#ver').textContent = 'v' + APP.ver + ' · ' + APP.date + ' · ' + APP.author;
+  $('#news').innerHTML = NEWS.map(function (n) { return '<p><b>' + n.v + '</b> ' + n.d + '<br>' + esc(n.t) + '</p>'; }).join('');
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('button,a');
+    if (!b) return;
+    if (b.dataset.m) { setAuto(false); STEP = CYCLE.indexOf(b.dataset.m); setMode(b.dataset.m); }
+    if (b.id === 'm-auto') setAuto(!AUTOPLAY);
+    if (b.dataset.jump) { var t = document.getElementById(b.dataset.jump); if (t) t.scrollIntoView({ behavior: 'smooth' }); }
+    if (b.dataset.ei !== undefined) {
+      var e0 = EI_TABLE[b.dataset.ei], box = b.closest('.eibox');
+      box.querySelectorAll('.eibtn').forEach(function (x) { x.classList.toggle('on', x === b); });
+      box.querySelector('.eires').innerHTML = '<b>' + e0.v + '</b><span>' + e0.n + '.</span>';
+    }
+    if (b.id === 'newsbtn') $('#newsdlg').showModal();
+    if (b.id === 'newsclose') $('#newsdlg').close();
+    var td = b.closest('.tr td');
+    if (td) { $('#tr-r').value = td.dataset.r; $('#tr-c').value = td.dataset.c; trShow(); }
+  });
+  document.addEventListener('change', function (e) { if (e.target.id === 'tr-r' || e.target.id === 'tr-c') trShow(); });
+  document.addEventListener('toggle', function (e) { if (e.target.tagName === 'DETAILS' && e.target.open) fillSlot(e.target); }, true);
+  $('#q').addEventListener('input', function () {
+    var v = this.value.trim();
+    if (v.length >= 2) show('search', v); else route();
+  });
+  window.addEventListener('hashchange', function () { $('#q').value = ''; route(); });
+  var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setMode('n');
+  setAuto(!calm);
+  route();
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
+}
+document.addEventListener('DOMContentLoaded', init);

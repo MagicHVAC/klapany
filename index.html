@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Справочник противопожарных клапанов</title>
+<meta name="description" content="Где ставить нормально открытые и нормально закрытые клапаны, огнезащита воздуховодов, ссылки на СП 7.13130 и СП 60.13330.">
+<meta name="theme-color" content="#0a1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Клапаны">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=1.0.0">
+</head>
+<body>
+<header class="top"><div class="tin">
+  <a class="brand" href="#home">Клапаны<small id="ver"></small></a>
+  <input id="q" type="search" placeholder="Поиск: шахта, 6.10, стоянка" aria-label="Поиск по справочнику">
+  <div class="mode" role="group" aria-label="Режим анимации">
+    <button type="button" data-m="n">Работа</button>
+    <button type="button" data-m="f">Пожар</button>
+    <button type="button" data-m="a">После</button>
+    <button type="button" id="m-auto">Авто</button>
+  </div>
+</div></header>
+<div class="wrap">
+  <nav class="nav" aria-label="Разделы"></nav>
+  <main id="view"></main>
+</div>
+<footer class="foot">Справочник для проектировщика, решение принимает ГИП по действующим текстам норм. <button type="button" id="newsbtn">Что нового</button></footer>
+<dialog id="newsdlg"><h3>Что нового</h3><div id="news"></div><button type="button" id="newsclose" class="eibtn">Закрыть</button></dialog>
+<script src="js/data_norms.js?v=1.0.0"></script>
+<script src="js/data_no.js?v=1.0.0"></script>
+<script src="js/data_nz.js?v=1.0.0"></script>
+<script src="js/data_more.js?v=1.0.0"></script>
+<script src="js/schemes.js?v=1.0.0"></script>
+<script src="js/render.js?v=1.0.0"></script>
+<script src="js/app.js?v=1.0.0"></script>
+</body>
+</html>
