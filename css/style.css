@@ -256,6 +256,22 @@ html[data-mode="n"] .tline .tl-n, html[data-mode="f"] .tline .tl-f, html[data-mo
 .vei td:first-child { font-weight: 600; white-space: nowrap; }
 .vei td:last-child { color: var(--muted); white-space: nowrap; }
 .vei + .minis { margin-top: 10px; }
+/* v1.3.0: подбор по преграде, степени огнестойкости */
+.barres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.bstep { position: relative; padding: 10px 12px; border-radius: 11px; background: var(--bg); border: 1px solid var(--line); }
+.bstep span { display: block; font-size: 12.5px; color: var(--muted); }
+.bstep b { display: block; font: 700 21px/1.25 var(--display); color: var(--fp); margin: 2px 0; }
+.bstep small { display: block; font-size: 13px; color: var(--muted); line-height: 1.4; }
+.bstep + .bstep::before { content: ""; position: absolute; left: -8px; top: 50%; width: 8px; height: 2px; background: var(--fp); }
+.degs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 10px 0 8px; }
+.deg { padding: 10px 12px; border-radius: 11px; background: var(--surface); border: 1px solid var(--line); }
+.deg b { display: block; font: 700 19px var(--display); color: var(--fp); }
+.deg span { font-size: 13px; color: var(--muted); line-height: 1.35; }
+.pop > * { animation: popin .45s ease both; }
+.pop > *:nth-child(2) { animation-delay: .08s; } .pop > *:nth-child(3) { animation-delay: .16s; } .pop > *:nth-child(4) { animation-delay: .22s; }
+.pop > *:nth-child(5) { animation-delay: .28s; } .pop > *:nth-child(6) { animation-delay: .34s; } .pop > *:nth-child(7) { animation-delay: .4s; }
+@keyframes popin { from { opacity: 0; transform: translateY(8px) scale(.97); } }
+@media (max-width: 860px) { .barres { grid-template-columns: minmax(0, 1fr); } .bstep + .bstep::before { display: none; } }
 /* Появление при прокрутке */
 html.rv .card, html.rv .fig, html.rv .mini, html.rv .pick, html.rv .how, html.rv .norm, html.rv .issue { opacity: 0; transform: translateY(14px); transition: opacity .5s ease var(--d, 0ms), transform .5s ease var(--d, 0ms), border-color .15s; }
 html.rv .in { opacity: 1 !important; transform: none !important; }

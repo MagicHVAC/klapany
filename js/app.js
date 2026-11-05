@@ -1,11 +1,11 @@
 /* Разделы, маршруты, поиск, режимы анимации */
 var ROUTES = [
   ['home', 'Главная'], ['how', 'Как работает'], ['no', 'НО'], ['nz', 'НЗ и ДД'], ['prod', 'Производство'],
-  ['fire', 'Огнезащита'], ['smoke', 'Противодым'], ['auto', 'Автоматика'], ['norms', 'Нормы']
+  ['fire', 'Огнезащита'], ['smoke', 'Противодым'], ['build', 'Здание'], ['auto', 'Автоматика'], ['norms', 'Нормы']
 ];
 var ICON = {
   home: 'M4 11 12 4l8 7v9h-5v-6H9v6H4z', how: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 3v18M7 7l10 10', no: 'M3 12h18M12 5v14', nz: 'M3 12h7m4 0h7M10 7v10m4-10v10', prod: 'M3 20V10l6 4V10l6 4V5h6v15z',
-  smoke: 'M5 20h14M8 20V9m8 11V9M6 9h12M9 6c0-2 2-2 2-4m3 4c0-2 2-2 2-4', fire: 'M12 3c4 5 6 8 6 12a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3 1-3 1-5 0-8z', auto: 'M13 3 5 14h6l-1 7 8-11h-6z', norms: 'M6 3h9l4 4v14H6zM9 11h7M9 15h7'
+  build: 'M4 21V8l8-5 8 5v13M9 21v-6h6v6M4 12h16', smoke: 'M5 20h14M8 20V9m8 11V9M6 9h12M9 6c0-2 2-2 2-4m3 4c0-2 2-2 2-4', fire: 'M12 3c4 5 6 8 6 12a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3 1-3 1-5 0-8z', auto: 'M13 3 5 14h6l-1 7 8-11h-6z', norms: 'M6 3h9l4 4v14H6zM9 11h7M9 15h7'
 };
 var ALL = [], ROOT;
 var $ = function (s) { return document.querySelector(s); };
@@ -106,6 +106,19 @@ var PAGES = {
       '</tbody></table></div>' + mini(VALVE_EI_NOTE) +
       '<h2>Оборудование</h2>' + mini(SMOKE_EQUIP) + '<h2>Выброс дыма и забор воздуха</h2>' + mini(SMOKE_OUT);
   },
+  build: function () {
+    return '<h1>Огнестойкость здания</h1><p class="lead">Степени огнестойкости, противопожарные преграды и их заполнения, огнезащита конструкций. Сначала выбери преграду — справочник покажет предел, двери и тамбур-шлюз.</p>' +
+      '<h2>Подбор по преграде</h2>' + barBlock() +
+      '<h2>Как читать предел</h2>' + mini(LIMIT_READ) +
+      '<h2 id="deg">Степени огнестойкости</h2>' + degBlock() +
+      '<h2>Заполнение проёмов по типам</h2><div class="tscroll"><table class="vei"><thead><tr><th>Элемент</th><th>1-й тип</th><th>2-й тип</th><th>3-й тип</th></tr></thead><tbody>' +
+      FILL.map(function (r) { return '<tr><td>' + esc(r[0]) + '</td>' + r[1].map(function (v) { return '<td><span class="ei">' + v + '</span></td>'; }).join('') + '</tr>'; }).join('') +
+      '</tbody></table></div><p class="tnote">Двери шахт лифтов — 2-й тип, EI 30, в зданиях до 28 м — E 30. Занавесы — 1-й тип, EI 60.</p>' + refs([['fz123', 'табл. 24']]) +
+      '<h2>Правила для преград</h2>' + mini(BAR_RULES) +
+      '<h2 id="sfp">Огнезащита строительных конструкций</h2><p class="sub">Для несущих конструкций и преград. Воздуховоды — в разделе «Огнезащита».</p>' + mini(STRUCT_FP) +
+      '<h2>Конструкции, пустоты, потолки</h2>' + mini(STRUCT_RULES) +
+      '<h2>Выделение помещений</h2>' + mini(ROOM_RULES);
+  },
   auto: function () {
     return '<h1>Управление клапанами</h1><p class="lead">Кто даёт команду, что отключается и что контролируется.</p>' + strip(['hero', 'intake', 'gas']) + mini(AUTO);
   },
@@ -159,6 +172,27 @@ function trBlock() {
     }).join('') + '</tbody></table></div>' +
     '<p class="tnote">Числитель: на обслуживаемом этаже. Знаменатель: вне его. ¹ EI 15 в зданиях III, IV степени. ² Запрет для воздуховодов из А и Б. ⚠ Расхождение с СП 60.</p>' + refs([['sp7', 'прил. В, табл. В.1'], ['sp60', 'прил. Н']]);
 }
+function barBlock() {
+  return '<div class="trpick"><label for="bar">Преграда</label><select id="bar">' + BAR.map(function (b, i) { return '<option value="' + i + '"' + (i === 2 ? ' selected' : '') + '>' + b.n + '</option>'; }).join('') + '</select>' +
+    '<div class="barres" id="bar-res"></div></div>' + refs([['fz123', 'табл. 23'], ['fz123', 'табл. 24'], ['fz123', 'табл. 25']]);
+}
+function barShow() {
+  var s = $('#bar'), o = $('#bar-res');
+  if (!s || !o) return;
+  var b = BAR[s.value], t = TAMB[b.t], f = b.f - 1;
+  var step = function (k, v, n) { return '<div class="bstep"><span>' + k + '</span><b>' + v + '</b>' + (n ? '<small>' + n + '</small>' : '') + '</div>'; };
+  o.innerHTML = step('Предел преграды', b.ei) +
+    step('Заполнение проёмов', b.f + '-й тип', 'двери ' + FILL[0][1][f] + ', остеклённые ' + FILL[1][1][f] + ', дымогазонепроницаемые ' + FILL[2][1][f] + ', окна ' + FILL[4][1][f]) +
+    step('Тамбур-шлюз', b.t + '-й тип', 'перегородки ' + t[0] + '-го типа ' + BAR[t[0] === 1 ? 2 : 3].ei + ', перекрытия ' + t[1] + '-го типа ' + BAR[5 + t[1]].ei + ', двери ' + t[2] + '-го типа ' + FILL[0][1][t[2] - 1]);
+  o.classList.remove('pop'); void o.offsetWidth; o.classList.add('pop');
+}
+function degBlock() {
+  return '<div class="eibtns" role="group" aria-label="Степень огнестойкости">' + DEG_ROWS.map(function (r, i) { return '<button type="button" class="eibtn' + (i ? '' : ' on') + '" data-deg="' + i + '">' + r[0] + ' степень</button>'; }).join('') + '</div>' +
+    '<div class="degs" id="deg-res">' + degCards(0) + '</div>' + refs([['fz123', 'табл. 21'], ['sp2', '5.4.2']]);
+}
+function degCards(i) {
+  return DEG_COLS.map(function (c, j) { return '<div class="deg"><b>' + DEG_ROWS[i][1][j] + '</b><span>' + c + '</span></div>'; }).join('');
+}
 function trShow() {
   var a = $('#tr-r'), b = $('#tr-c'), o = $('#tr-res');
   if (!a || !o) return;
@@ -195,6 +229,7 @@ function show(name, arg) {
   reveal();
   document.querySelectorAll('.nav a').forEach(function (a) { a.classList.toggle('on', a.dataset.r === name); });
   trShow();
+  barShow();
 }
 function route() {
   var h = location.hash.slice(1) || 'home', s = sectionOf(h);
@@ -247,12 +282,16 @@ function init() {
       box.querySelectorAll('.eibtn').forEach(function (x) { x.classList.toggle('on', x === b); });
       box.querySelector('.eires').innerHTML = '<b>' + e0.v + '</b><span>' + e0.n + '.</span>';
     }
+    if (b.dataset.deg !== undefined) {
+      b.parentNode.querySelectorAll('.eibtn').forEach(function (x) { x.classList.toggle('on', x === b); });
+      var dr = $('#deg-res'); dr.innerHTML = degCards(+b.dataset.deg); dr.classList.remove('pop'); void dr.offsetWidth; dr.classList.add('pop');
+    }
     if (b.id === 'newsbtn') $('#newsdlg').showModal();
     if (b.id === 'newsclose') $('#newsdlg').close();
     var td = b.closest('.tr td');
     if (td) { $('#tr-r').value = td.dataset.r; $('#tr-c').value = td.dataset.c; trShow(); }
   });
-  document.addEventListener('change', function (e) { if (e.target.id === 'tr-r' || e.target.id === 'tr-c') trShow(); });
+  document.addEventListener('change', function (e) { if (e.target.id === 'tr-r' || e.target.id === 'tr-c') trShow(); if (e.target.id === 'bar') barShow(); });
   document.addEventListener('toggle', function (e) { if (e.target.tagName === 'DETAILS' && e.target.open) fillSlot(e.target); }, true);
   $('#q').addEventListener('input', function () {
     var v = this.value.trim();
