@@ -179,7 +179,87 @@ html[data-mode="a"] .flame.on-a { opacity: .35; }
   #q { order: 3; flex-basis: 100%; }
   .brand { flex: 1; }
 }
+
+/* v1.1.0: частицы, дым от очага, кольцо смены положения, фазы с пояснениями */
+.dflow { stroke-width: 2.5; }
+html[data-mode="n"] .dflow.on-n, html[data-mode="f"] .dflow.on-f, html[data-mode="a"] .dflow.on-a { opacity: .45; }
+.pt { opacity: 0; transition: opacity .5s; }
+.pt-air circle { fill: var(--air); }
+.pt-smoke circle { fill: color-mix(in srgb, var(--fire) 55%, var(--muted)); }
+html[data-mode="n"] .pt.on-n, html[data-mode="f"] .pt.on-f, html[data-mode="a"] .pt.on-a { opacity: 1; }
+.ring { fill: none; stroke: var(--air); stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.vNO .ring { stroke: var(--no); } .vNZ .ring { stroke: var(--nz); } .vDD .ring { stroke: var(--dd); }
+html[data-mode="n"] .v.ch-n .ring, html[data-mode="f"] .v.ch-f .ring, html[data-mode="a"] .v.ch-a .ring { animation: ring 1.1s ease-out 2; }
+@keyframes ring { from { opacity: .9; transform: scale(.7); } to { opacity: 0; transform: scale(2.1); } }
+html[data-mode="n"] .v.ch-n .vb, html[data-mode="f"] .v.ch-f .vb, html[data-mode="a"] .v.ch-a .vb { animation: bump .7s ease-out; transform-box: fill-box; transform-origin: center; }
+@keyframes bump { 40% { transform: scale(1.18); } }
+.glow { fill: var(--fire); opacity: .18; transform-box: fill-box; transform-origin: center; animation: glow 1.4s ease-in-out infinite alternate; }
+@keyframes glow { from { transform: scale(.8); opacity: .1; } to { transform: scale(1.15); opacity: .28; } }
+.puffs circle { fill: color-mix(in srgb, var(--muted) 70%, var(--fire)); opacity: 0; transform-box: fill-box; transform-origin: center; }
+html[data-mode="f"] .flame .puffs circle, html[data-mode="a"] .flame .puffs circle { animation: rise 2.6s ease-out infinite; }
+html[data-mode] .flame .puffs circle:nth-child(2) { animation-delay: -.9s; } html[data-mode] .flame .puffs circle:nth-child(3) { animation-delay: -1.7s; }
+@keyframes rise { 0% { opacity: 0; transform: translate(0, -10px) scale(.4); } 25% { opacity: .55; } 100% { opacity: 0; transform: translate(6px, -58px) scale(1.7); } }
+html[data-mode="f"] .z-hot { animation: hot 1.8s ease-in-out infinite alternate; }
+@keyframes hot { to { fill: color-mix(in srgb, var(--fire) 24%, transparent); } }
+
+.phase { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 8px 12px 0; }
+.phase button { display: flex; gap: 6px; align-items: center; justify-content: center; border: 1px solid var(--line); background: var(--bg); color: var(--muted); border-radius: 9px; padding: 5px 4px; font: 500 13px var(--body); cursor: pointer; transition: background .3s, color .3s, border-color .3s; }
+.phase b { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: 11px; background: var(--line); color: var(--text); }
+html[data-mode="n"] .phase .ph-n { background: var(--air); border-color: var(--air); color: #fff; }
+html[data-mode="f"] .phase .ph-f { background: var(--fire); border-color: var(--fire); color: #fff; }
+html[data-mode="a"] .phase .ph-a { background: var(--dd); border-color: var(--dd); color: #fff; }
+.phase .prog { position: absolute; left: 12px; bottom: -4px; height: 2px; width: 0; background: var(--air); border-radius: 2px; }
+html[data-auto][data-mode="n"] .prog { animation: prog-n 6s linear forwards; }
+html[data-auto][data-mode="f"] .prog { animation: prog-f 6s linear forwards; background: var(--fire); }
+html[data-auto][data-mode="a"] .prog { animation: prog-a 6s linear forwards; background: var(--dd); }
+@keyframes prog-n { to { width: calc(100% - 24px); } }
+@keyframes prog-f { to { width: calc(100% - 24px); } }
+@keyframes prog-a { to { width: calc(100% - 24px); } }
+.steps { display: grid; padding: 10px 13px 0; }
+.steps p { grid-area: 1 / 1; margin: 0; font-size: 14.5px; line-height: 1.45; opacity: 0; transform: translateY(6px); transition: opacity .45s, transform .45s; pointer-events: none; }
+html[data-mode="n"] .steps .st-n, html[data-mode="f"] .steps .st-f, html[data-mode="a"] .steps .st-a { opacity: 1; transform: none; pointer-events: auto; }
+.steps p::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; background: var(--air); }
+.steps .st-f::before { background: var(--fire); } .steps .st-a::before { background: var(--dd); }
+
+/* Раздел «Как работает» */
+.cta { display: inline-block; margin-top: 14px; padding: 9px 14px; border-radius: 11px; background: var(--air); color: #fff; text-decoration: none; font-weight: 600; transition: transform .15s, box-shadow .15s; }
+.cta:hover { transform: translateY(-2px); box-shadow: 0 6px 18px color-mix(in srgb, var(--air) 35%, transparent); }
+.hows { display: grid; gap: 14px; margin-top: 18px; }
+.how { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 15px; padding: 14px; display: grid; gap: 10px; }
+.howgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.howdl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; font-size: 14.5px; }
+.howdl dt { font-weight: 700; color: var(--text); }
+.howdl dd { margin: 0; color: var(--muted); }
+.an .vt { display: none; }
+.an-duct { fill: color-mix(in srgb, var(--muted) 14%, transparent); stroke: color-mix(in srgb, var(--muted) 45%, transparent); }
+.an-box { fill: var(--surface); stroke: var(--muted); stroke-width: 1.5; }
+.an-bt { font: 600 12.5px var(--body); fill: var(--text); }
+.an-wire { fill: none; stroke: var(--line); stroke-width: 3; }
+.an-sig { fill: none; stroke: var(--fire); stroke-width: 3; stroke-dasharray: 6 6; opacity: 0; transition: opacity .3s; }
+html[data-mode="n"] .an-sig.on-n, html[data-mode="f"] .an-sig.on-f, html[data-mode="a"] .an-sig.on-a { opacity: 1; animation: run .6s linear infinite; }
+.an-shaft { stroke: var(--muted); stroke-width: 3; stroke-dasharray: 3 3; }
+.gear circle, .gear path { fill: none; stroke: var(--muted); stroke-width: 2; }
+.gear { transform-box: fill-box; transform-origin: center; }
+html[data-mode="n"] .an.ch-n .gear, html[data-mode="f"] .an.ch-f .gear, html[data-mode="a"] .an.ch-a .gear { animation: spin .5s linear 3; }
+.an-mot { fill: color-mix(in srgb, var(--muted) 20%, transparent); stroke: var(--muted); stroke-width: 1.5; }
+.spring { fill: none; stroke: var(--no); stroke-width: 2; transform-box: fill-box; transform-origin: left center; transition: transform .7s cubic-bezier(.5, 0, .2, 1); transform: scaleX(.55); }
+html[data-mode="f"] .spring, html[data-mode="a"] .spring { transform: scaleX(1); }
+.tline td { text-align: center; vertical-align: middle; }
+.tline th[scope="row"] { white-space: nowrap; }
+html[data-mode="n"] .tline .tl-n, html[data-mode="f"] .tline .tl-f, html[data-mode="a"] .tline .tl-a { background: color-mix(in srgb, var(--air) 8%, transparent); }
+
+/* Появление при прокрутке */
+html.rv .card, html.rv .fig, html.rv .mini, html.rv .pick, html.rv .how, html.rv .norm, html.rv .issue { opacity: 0; transform: translateY(14px); transition: opacity .5s ease var(--d, 0ms), transform .5s ease var(--d, 0ms), border-color .15s; }
+html.rv .in { opacity: 1 !important; transform: none !important; }
+html.rv .pick.in:hover { transform: translateY(-2px) !important; }
+.hero h1 { animation: up .7s ease both; } .hero .lead { animation: up .7s .12s ease both; } .hero .legend { animation: up .7s .24s ease both; }
+@keyframes up { from { opacity: 0; transform: translateY(12px); } }
+.how { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+@media (max-width: 860px) { .howgrid { grid-template-columns: minmax(0, 1fr); } .howdl { display: block; } .howdl dt { margin-top: 8px; } .nav a { flex-basis: 60px; font-size: 10.5px; } }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
   html[data-mode] .dflow { stroke-dashoffset: 0; }
+  .pt circle, .puffs { display: none; }
+  html.rv .card, html.rv .fig, html.rv .mini, html.rv .pick, html.rv .how, html.rv .norm, html.rv .issue { opacity: 1; transform: none; }
 }

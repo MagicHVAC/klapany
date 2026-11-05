@@ -1,10 +1,10 @@
 /* Разделы, маршруты, поиск, режимы анимации */
 var ROUTES = [
-  ['home', 'Главная'], ['no', 'НО'], ['nz', 'НЗ и ДД'], ['prod', 'Производство'],
+  ['home', 'Главная'], ['how', 'Как работает'], ['no', 'НО'], ['nz', 'НЗ и ДД'], ['prod', 'Производство'],
   ['fire', 'Огнезащита'], ['auto', 'Автоматика'], ['norms', 'Нормы']
 ];
 var ICON = {
-  home: 'M4 11 12 4l8 7v9h-5v-6H9v6H4z', no: 'M3 12h18M12 5v14', nz: 'M3 12h7m4 0h7M10 7v10m4-10v10', prod: 'M3 20V10l6 4V10l6 4V5h6v15z',
+  home: 'M4 11 12 4l8 7v9h-5v-6H9v6H4z', how: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 3v18M7 7l10 10', no: 'M3 12h18M12 5v14', nz: 'M3 12h7m4 0h7M10 7v10m4-10v10', prod: 'M3 20V10l6 4V10l6 4V5h6v15z',
   fire: 'M12 3c4 5 6 8 6 12a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 2 3 3 3 1-3 1-5 0-8z', auto: 'M13 3 5 14h6l-1 7 8-11h-6z', norms: 'M6 3h9l4 4v14H6zM9 11h7M9 15h7'
 };
 var ALL = [], ROOT;
@@ -49,11 +49,18 @@ var PAGES = {
   home: function () {
     return '<section class="hero"><div class="htext"><p class="eyebrow">Вентиляция и пожарная безопасность</p><h1>Какой клапан поставить и на каком основании</h1>' +
       '<p class="lead">' + CASES_NO.length + ' случаев НО, ' + CASES_NZ.length + ' случаев НЗ, категории производства и огнезащита. Каждая запись ведёт на пункт нормы.</p>' +
-      '<div class="legend"><span>' + tag('NO') + ' открыт, при пожаре закрывается</span><span>' + tag('NZ') + ' закрыт, при пожаре открывается</span><span>' + tag('DD') + ' закрывается при пожаре, открывается после</span></div></div>' +
+      '<div class="legend"><span>' + tag('NO') + ' открыт, при пожаре закрывается</span><span>' + tag('NZ') + ' закрыт, при пожаре открывается</span><span>' + tag('DD') + ' закрывается при пожаре, открывается после</span></div>' +
+      '<a class="cta" href="#how">Как устроен и работает каждый клапан →</a></div>' +
       figure('hero') + '</section>' +
       '<h2>Что проектируешь</h2><div class="picks">' + PICK.map(function (p) { return '<a class="pick" href="#' + p.to + '">' + esc(p.t) + '</a>'; }).join('') + '</div>' +
       '<h2>Предел клапана по п. 6.22</h2>' + eiBlock() +
       '<h2>Где нужна осторожность</h2><p class="sub">Расхождения норм и пробелы проверки.</p>' + issues();
+  },
+  how: function () {
+    return '<h1>Как работает клапан</h1><p class="lead">Разрез каждого типа: привод, команда от пожарной сигнализации и заслонка. Нажми фазу под схемой или включи «Авто» вверху — клапан пройдёт работу, пожар и время после пожара.</p>' +
+      '<h2>Положение в каждой фазе</h2>' + howTimeline() +
+      '<div class="hows">' + HOW.map(howCard).join('') + '</div>' +
+      '<h2>Как читать</h2>' + mini(HOW_READ);
   },
   no: function () {
     return '<h1>Нормально открытые</h1><p class="lead">Стоят в общеобменных системах и закрываются при пожаре, чтобы дым не ушёл по воздуховодам.</p>' +
@@ -170,6 +177,7 @@ function sectionOf(id) {
 }
 function show(name, arg) {
   ROOT.innerHTML = PAGES[name](arg);
+  reveal();
   document.querySelectorAll('.nav a').forEach(function (a) { a.classList.toggle('on', a.dataset.r === name); });
   trShow();
 }
@@ -180,6 +188,16 @@ function route() {
   else { show('home'); }
 }
 
+/* Плавное появление блоков при прокрутке */
+var IO = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) {
+  es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); IO.unobserve(e.target); } });
+}, { rootMargin: '0px 0px -8% 0px' }) : null;
+function reveal() {
+  if (!IO) return;
+  document.documentElement.classList.add('rv');
+  ROOT.querySelectorAll('.card,.fig,.mini,.pick,.how,.norm,.issue').forEach(function (el, i) { el.style.setProperty('--d', (i % 6) * 60 + 'ms'); IO.observe(el); });
+}
+
 /* Режимы: автопоказ или ручной выбор */
 var AUTOPLAY = true, TIMER = null, CYCLE = ['n', 'f', 'a'], STEP = 0;
 function setMode(m) {
@@ -188,9 +206,10 @@ function setMode(m) {
 }
 function setAuto(on) {
   AUTOPLAY = on;
+  document.documentElement.toggleAttribute('data-auto', on);
   $('#m-auto').classList.toggle('on', on);
   clearInterval(TIMER);
-  if (on) TIMER = setInterval(function () { STEP = (STEP + 1) % 3; setMode(CYCLE[STEP]); }, 3600);
+  if (on) TIMER = setInterval(function () { STEP = (STEP + 1) % 3; setMode(CYCLE[STEP]); }, 6000);
 }
 
 function init() {
