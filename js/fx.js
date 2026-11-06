@@ -158,7 +158,7 @@
     }
     function level(I, m) {
       if (!on || !ac) return;
-      var now = ac.currentTime, vol = m === 'a' ? .18 : .25 + .55 * I;
+      var now = ac.currentTime, vol = (m === 'a' ? .18 : .25 + .55 * I) * .4;   /* инженер 06.11: тише */
       master.gain.setTargetAtTime(vol, now, .4);
       rum.gain.setTargetAtTime(.35 + .5 * I, now, .5);
       hiss.gain.setTargetAtTime(.01 + .05 * I, now, .5);
