@@ -24,11 +24,9 @@ body.vent { --bg: #0a1a1c; --surface: #102629; --line: #224347; --text: #e6f3f1;
 .vcalcin small { flex-basis: 100%; font-size: 12.5px; }
 .vcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px; }
 .vc { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--air); border-radius: 13px; padding: 12px 14px; display: flex; flex-direction: column; gap: 7px; min-width: 0; }
-.vc.vpr { border-left-color: var(--muted); }
 .vc.vwide { grid-column: 1 / -1; }
 .vc header { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; justify-content: space-between; }
 .vc h3 { overflow-wrap: anywhere; }
-.vbad { font-size: 11.5px; color: #1b1405; background: var(--out); border-radius: 6px; padding: 1px 7px; font-weight: 600; white-space: nowrap; }
 .vbt { display: flex; flex-wrap: wrap; gap: 4px; }
 .vbt span { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; }
 .vbt .all { border-style: dashed; }
@@ -58,6 +56,36 @@ mark { background: color-mix(in srgb, var(--air) 35%, transparent); color: inher
 .vclim tbody th { white-space: normal; min-width: 150px; }
 @media (max-width: 860px) {
   .pages { order: 2; }
-  .vtabs { top: 104px; }
+  .vtabs { top: 96px; }
   .vcards { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* 1.22.2: поиск и уточнения — в теле страницы */
+.vsearch { position: relative; z-index: 1; padding: 14px; margin: 0 0 12px; border: 1px solid var(--line); border-radius: 16px; background: color-mix(in srgb, var(--surface) 78%, transparent); backdrop-filter: blur(10px); }
+.vsearch #q { display: block; width: 100%; height: 48px; font-size: 17px; padding: 0 16px; border-radius: 12px; border-color: color-mix(in srgb, var(--air) 45%, var(--line)); }
+.vsearch #q:focus { outline: none; border-color: var(--air); box-shadow: 0 0 0 3px color-mix(in srgb, var(--air) 25%, transparent); }
+.vfilt { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-top: 10px; font-size: 14px; color: var(--muted); }
+.vfilt select { background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 9px; padding: 6px 9px; font: inherit; margin-left: 6px; max-width: 300px; }
+.vfilt .chk input { margin: 0 6px 0 0; }
+.vreset { border: 1px dashed var(--line); background: none; color: var(--text); border-radius: 9px; padding: 5px 10px; font: 500 13px var(--body); cursor: pointer; }
+.vsearch .vex { margin: 10px 0 0; }
+.vwrap, .foot { position: relative; z-index: 1; }
+
+/* Фон «свежесть · тепло · приятное»: мятный и небесный свет (свежий воздух) и мягкий персиковый (тепло),
+   медленно плывут. Без огня и частиц; при «уменьшить движение» — неподвижно. */
+body.vent { background-image: none; }
+.vbg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+  background: linear-gradient(160deg, #0b1d21 0%, #0a1a1c 45%, #14191a 100%); }
+.vbg::after { content: ''; position: absolute; inset: 0; background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 28px 28px; }
+.vbg i { position: absolute; border-radius: 50%; filter: blur(70px); opacity: .72; will-change: transform; }
+.vbg i:nth-child(1) { width: 52vmax; height: 40vmax; left: -12vmax; top: -14vmax; background: radial-gradient(closest-side, rgba(70, 220, 190, .55), transparent); animation: vb1 34s ease-in-out infinite alternate; }
+.vbg i:nth-child(2) { width: 44vmax; height: 34vmax; right: -14vmax; top: 6vmax; background: radial-gradient(closest-side, rgba(110, 185, 255, .42), transparent); animation: vb2 41s ease-in-out infinite alternate; }
+.vbg i:nth-child(3) { width: 50vmax; height: 38vmax; right: -8vmax; bottom: -16vmax; background: radial-gradient(closest-side, rgba(255, 170, 120, .40), transparent); animation: vb3 38s ease-in-out infinite alternate; }
+.vbg i:nth-child(4) { width: 36vmax; height: 28vmax; left: 10vmax; bottom: -10vmax; background: radial-gradient(closest-side, rgba(255, 214, 160, .26), transparent); animation: vb4 46s ease-in-out infinite alternate; }
+@keyframes vb1 { to { transform: translate(14vmax, 10vmax) scale(1.15); } }
+@keyframes vb2 { to { transform: translate(-12vmax, 12vmax) scale(.9); } }
+@keyframes vb3 { to { transform: translate(-16vmax, -8vmax) scale(1.1); } }
+@keyframes vb4 { to { transform: translate(12vmax, -6vmax) scale(1.2); } }
+@media (prefers-reduced-motion: reduce) { .vbg i { animation: none; } }
+body.vent .vtabs { background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(10px); border-radius: 14px; padding: 8px; margin-left: -8px; margin-right: -8px; }
+body.vent .vc { background: color-mix(in srgb, var(--surface) 88%, transparent); }

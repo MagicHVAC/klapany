@@ -4,7 +4,7 @@
   var D = VENT, $ = function (s) { return document.querySelector(s); };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function f(v, d) { if (v == null || v === '') return '—'; var n = Number(v); if (isNaN(n)) return esc(v); var s = d == null ? String(Math.round(n * 1000) / 1000) : n.toFixed(d); return s.replace('.', ',').replace('-', '−'); }
-  var METH = { krat: 'по кратности', people: 'по норме на человека', krat_people: 'кратность, но не менее нормы на человека', device: 'по санитарным приборам (вкладка «Приборы»)', transfer: 'перетеканием / вытяжкой', tech: 'по технологическому заданию', manual: 'по расчёту (вредности, тепло, влага)' };
+  var METH = { krat: 'по кратности', people: 'по норме на человека', krat_people: 'кратность, но не менее нормы на человека', device: 'по санитарным приборам (вкладка «Приборы»)', transfer: 'перетеканием / вытяжкой', tech: 'по технологическому заданию', manual: 'по расчёту (вредности, тепло, влага)', temp: 'в справочнике — только норма температуры' };
   var DIR = { in: 'приток', out: 'вытяжка', both: 'приток и вытяжка' };
   var store = {}; try { store = JSON.parse(localStorage.getItem('vent-st') || '{}'); } catch (x) {}
   function save() { try { localStorage.setItem('vent-st', JSON.stringify(store)); } catch (x) {} }
@@ -18,7 +18,7 @@
     { id: 'hoods', t: 'Местные отсосы', list: D.hoods, fields: simpleFields, card: simpleCard },
     { id: 'heat', t: 'Тепло от людей', list: D.heat.rows, fields: function (r) { return [[r.n, 3], [r.h, 2], ['тепловыделения людей теплопоступления влаговыделения явное полное', 0.5]]; }, card: heatCard },
     { id: 'climate', t: 'Климат', list: D.climate.rows, fields: function (r) { return [[r.c, 3], [r.r, 2], ['климат наружный воздух', 0.3]]; }, card: null }
-  ];
+  ].filter(function (T) { return T.list.length; }); /* 1.22.2: пустую вкладку (отсосы без нормы) не показывать */
   TABS.forEach(function (T) { T.idx = VS.build(T.list.map(function (r, i) { return { i: i, r: r, f: T.fields(r) }; })); });
   function simpleFields(r) { return [[r.n, 3], [r.kind || '', 2], [r.no, 1], [r.s, 1], [r.u, 0.8], [DIR[r.d] || '', 0.6]]; }
 
@@ -32,8 +32,7 @@
   }
   function num(lbl, v, unit, cls) { return '<div class="vnum ' + (cls || '') + '"><small>' + lbl + '</small><b>' + v + '</b>' + (unit ? '<i>' + unit + '</i>' : '') + '</div>'; }
   function roomCard(r, used) {
-    var h = '<article class="vc' + (r.pr ? ' vpr' : '') + '"><header><h3>' + hl(r.n, used) + '</h3>';
-    if (r.pr) h += '<span class="vbad" title="Норматив в базе не указан — значение принято проектировщиком">принято в проекте, не норма</span>';
+    var h = '<article class="vc"><header><h3>' + hl(r.n, used) + '</h3>';
     h += '</header><div class="vbt">' + ((r.b && r.b.length) ? r.b.map(function (b) { return '<span>' + esc(b) + '</span>'; }).join('') : '<span class="all">любые здания</span>') + '</div><div class="vnums">';
     var ki = r.ki || 0, ko = r.ko || 0;
     if (ki || ko || r.m === 'krat' || r.m === 'krat_people') { h += num('Приток', ki ? f(ki) : '—', ki ? '1/ч' : '', 'in') + num('Вытяжка', ko ? f(ko) : '—', ko ? '1/ч' : '', 'out'); }
@@ -45,7 +44,7 @@
     h += '</div><p class="vm">Способ: <b>' + esc(METH[r.m] || r.m || '—') + '</b>' + (r.d ? ' · ' + esc(DIR[r.d] || r.d) : '') + '</p>';
     if (r.no) h += '<p class="vno">' + hl(r.no, used) + '</p>';
     h += calc(r);
-    h += '<p class="vsrc"><span>Воздухообмен:</span> ' + esc(r.s || '—') + '</p>';
+    if (r.s) h += '<p class="vsrc"><span>Воздухообмен:</span> ' + esc(r.s) + '</p>';
     if (r.ts) h += '<p class="vsrc"><span>Температура:</span> ' + esc(r.ts) + '</p>';
     return h + '</article>';
   }
@@ -69,7 +68,7 @@
     h += '</div>';
     if (r.kind) h += '<p class="vm">' + esc(r.kind) + '</p>';
     if (r.no) h += '<p class="vno">' + hl(r.no, used) + '</p>';
-    h += '<p class="vsrc"><span>Источник:</span> ' + (r.s ? esc(r.s) : '<em>в базе не указан — значение принято в проекте / по паспорту оборудования</em>') + '</p>';
+    h += '<p class="vsrc"><span>Источник:</span> ' + esc(r.s) + '</p>';
     return h + '</article>';
   }
   function heatCard(r, used) {
@@ -93,9 +92,10 @@
   function tabRes(T, q) {
     var r = VS.run(T.idx, q), rows = r.rows;
     if (T.id === 'rooms') {
-      var bt = store.bt || '', onlyN = !!store.onlyN;
-      rows = rows.filter(function (x) { var b = x.it.r.b; return (!bt || !b || !b.length || b.indexOf(bt) >= 0) && (!onlyN || !x.it.r.pr); });
+      var bt = store.bt || '', mt = store.mt || '', tt = !!store.tt;
+      rows = rows.filter(function (x) { var r = x.it.r, b = r.b; return (!bt || !b || !b.length || b.indexOf(bt) >= 0) && (!mt || r.m === mt || (mt === 'krat' && r.m === 'krat_people')) && (!tt || r.t != null); });
     }
+    if (T.id === 'climate' && store.reg) rows = rows.filter(function (x) { return x.it.r.r === store.reg; });
     return { rows: rows, how: r.how };
   }
   function render() {
@@ -111,9 +111,7 @@
       h += '<p class="vhow">Найдено ' + res.rows.length + (bits.length ? ' · ' + bits.join(' · ') : '') + '</p>';
     }
     if (T.id === 'rooms') {
-      h += '<div class="vtool"><label>Тип здания <select id="vbt"><option value="">все</option>' + Object.keys(BT).sort().map(function (b) { return '<option' + (store.bt === b ? ' selected' : '') + '>' + esc(b) + '</option>'; }).join('') + '</select></label>' +
-        '<label class="chk"><input type="checkbox" id="vonly"' + (store.onlyN ? ' checked' : '') + '> только нормы (без «принято в проекте»)</label></div>' +
-        '<div class="vtool vcalcin"><span>Прикинуть расход:</span><label>S, м² <input id="vA" inputmode="decimal" value="' + esc(store.A || '') + '"></label><label>h, м <input id="vH" inputmode="decimal" value="' + esc(store.H || '') + '"></label><label>людей <input id="vN" inputmode="numeric" value="' + esc(store.N || '') + '"></label><small>ориентир: кратность × объём, норма × людей; без расчёта вредностей и баланса</small></div>';
+      h += '<div class="vtool vcalcin"><span>Прикинуть расход:</span><label>S, м² <input id="vA" inputmode="decimal" value="' + esc(store.A || '') + '"></label><label>h, м <input id="vH" inputmode="decimal" value="' + esc(store.H || '') + '"></label><label>людей <input id="vN" inputmode="numeric" value="' + esc(store.N || '') + '"></label><small>ориентир: кратность × объём, норма × людей; без расчёта вредностей и баланса</small></div>';
     }
     if (T.id === 'heat') h += '<p class="vsrc">' + esc(D.heat.src) + '</p><p class="vno">' + esc(D.heat.note) + '</p>';
     if (T.id === 'climate') h += '<p class="vsrc">' + esc(D.climate.src) + '. Наведи на заголовок графы — пояснение. По СП 60.13330.2020, п. 5.13: параметры А — вентиляция летом; Б — отопление и вентиляция зимой, кондиционирование.</p>';
@@ -123,7 +121,26 @@
     var lim = T.id === 'climate' ? shown * 4 : shown;
     if (res.rows.length > lim) h += '<button type="button" id="vmore" class="vmore">Показать ещё (' + (res.rows.length - lim) + ')</button>';
     $('#view').innerHTML = h;
+    filt(T);
     last = q;
+  }
+
+  /* Фильтры уточнений — рядом со строкой поиска, свои у каждой вкладки */
+  var REG = {}; D.climate.rows.forEach(function (c) { REG[c.r] = 1; });
+  var MT = {}; D.rooms.forEach(function (r) { MT[r.m === 'krat_people' ? 'krat' : r.m] = 1; });
+  function opt(v, t, sel) { return '<option value="' + esc(v) + '"' + (sel === v ? ' selected' : '') + '>' + esc(t) + '</option>'; }
+  function filt(T) {
+    var h = '';
+    if (T.id === 'rooms') {
+      h += '<label>Тип здания <select id="vbt">' + opt('', 'все', store.bt || '') + Object.keys(BT).sort().map(function (b) { return opt(b, b, store.bt); }).join('') + '</select></label>';
+      h += '<label>Способ <select id="vmt">' + opt('', 'любой', store.mt || '') + Object.keys(MT).map(function (m) { return opt(m, METH[m] || m, store.mt); }).join('') + '</select></label>';
+      h += '<label class="chk"><input type="checkbox" id="vtt"' + (store.tt ? ' checked' : '') + '> с нормой температуры</label>';
+    } else if (T.id === 'climate') {
+      h += '<label>Регион <select id="vreg">' + opt('', 'все', store.reg || '') + Object.keys(REG).sort().map(function (r) { return opt(r, r, store.reg); }).join('') + '</select></label>';
+    }
+    var any = store.bt || store.mt || store.tt || store.reg;
+    if (h && any) h += '<button type="button" id="vreset" class="vreset">Сбросить уточнения</button>';
+    $('#vfilt').innerHTML = h; $('#vfilt').hidden = !h;
   }
 
   /* ---------- события ---------- */
@@ -132,13 +149,14 @@
     var b = e.target.closest('button'); if (!b) return;
     if (b.dataset.t) { cur = b.dataset.t; store.tab = cur; save(); shown = 40; history.replaceState(null, '', '#' + cur); render(); window.scrollTo(0, 0); }
     else if (b.id === 'vmore') { shown += 60; render(); }
+    else if (b.id === 'vreset') { store.bt = store.mt = store.reg = ''; store.tt = false; save(); shown = 40; render(); }
     else if (b.id === 'newsbtn') $('#newsdlg').showModal();
     else if (b.id === 'newsclose') $('#newsdlg').close();
     else if (b.dataset.ex) { $('#q').value = b.dataset.ex; shown = 40; render(); }
   });
   document.addEventListener('change', function (e) {
     var id = e.target.id;
-    if (id === 'vbt') store.bt = e.target.value; else if (id === 'vonly') store.onlyN = e.target.checked; else return;
+    if (id === 'vbt') store.bt = e.target.value; else if (id === 'vmt') store.mt = e.target.value; else if (id === 'vtt') store.tt = e.target.checked; else if (id === 'vreg') store.reg = e.target.value; else return;
     save(); shown = 40; render();
   });
   document.addEventListener('input', function (e) {
