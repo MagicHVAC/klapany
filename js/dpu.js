@@ -30,7 +30,7 @@ function dpuBlock() {
     dpuF('dp-hd', 'Низ ДПУ от пола, м', '4.2', 'any') +
     dpuF('dp-y', 'Низ дымового слоя от пола, м — из расчёта', '2.5', 'any') +
     dpuF('dp-door', 'Верх дверей эвакуационных выходов, м', '2.1', 'any') +
-    dpuF('dp-vv', 'Скорость в сечении клапана, м/с — по каталогу', '8', 'any', 'пример, замени по каталогу клапана') +
+    dpuF('dp-vv', 'Скорость в сечении клапана, м/с — для подбора', '10', 'any', 'не больше 11, лучше 9–11 (МР ВНИИПО п. 5.1.1)') +
     '</div><div class="barres stres" id="dp-res"></div>' +
     '<div class="stanim" id="dp-anim"></div>' +
     '<div class="dpbtns"><button type="button" class="eibtn on" id="dp-doc">Скачать расчёт в Word</button></div>' +
@@ -78,6 +78,10 @@ function dpuCompute() {
   r.Vone = r.N ? r.G / r.ro / r.N : NaN;
   if (r.k === 'corr' && r.N > 1 && r.L / r.N < r.Lmin) r.warn.push('На длине ' + dpuFmt(r.L, 1) + ' м при ' + r.N + ' ДПУ шаг ' + dpuFmt(r.L / r.N) + ' м меньше Lmin = ' + dpuFmt(r.Lmin) + ' м. Проверь расстановку или уменьши расход на ДПУ.');
   r.sizes = dpuSizes(r);
+  /* скорость в введённом ДПУ: МР ВНИИПО п. 5.1.1 — сечения решёток и клапанов на скорость не больше 11 м/с, лучше 9–11 */
+  r.Ain = r.sh === 'round' ? Math.PI * r.a * r.a / 4 : r.a * r.b; r.vIn = r.Vone / r.Ain;
+  if (r.vv > 11) r.marks.push(['dp-vv', 'warnf', 'Больше 11 м/с — МР ВНИИПО п. 5.1.1: не больше 11, лучше 9–11']);
+  if (r.vIn > 11) { r.warn.push('В введённом ДПУ ' + dpuFmt(r.a * 1000, 0) + (r.sh === 'round' ? ' мм' : ' × ' + dpuFmt(r.b * 1000, 0) + ' мм') + ' скорость ' + dpuFmt(r.vIn, 1) + ' м/с — больше 11 м/с (МР ВНИИПО к СП 7, п. 5.1.1: не больше 11, лучше 9–11). Возьми клапан больше или добавь ДПУ.'); r.marks.push(['dp-w', 'warnf', 'v = ' + dpuFmt(r.vIn, 1) + ' м/с > 11']); }
   if (r.ts - r.tr < 20 && r.k === 'room' && r.A > 3000) r.warn.push('Tsm − Tr меньше 20 °C — условно делить на зоны нельзя, только конструктивно (п. 7.9).');
   return r;
 }
@@ -117,10 +121,11 @@ function dpuCalc() {
   else {
     h += c('Принять ДПУ', r.N + ' шт.', 'Большее из Nmin = ' + r.Nmin + ' (прил. Е) и ' + r.Ngeo + ' (' + (r.k === 'room' ? 'п. 7.9' : 'п. 7.8') + ').', 'final');
     h += c('Vmax на 1 ДПУ, Е.1', dpuFmt(r.Vmax) + ' м³/с', 'γ = ' + dpuFmt(r.gamma, 1) + ', d = ' + dpuFmt(r.d) + ' м, D = ' + dpuFmt(r.D, 3) + ' м. Это ' + dpuFmt(r.Vmax * 3600, 0) + ' м³/ч.');
-    h += c('Шаг между ДПУ, Е.2', 'не меньше ' + dpuFmt(r.Lmin) + ' м', 'Lmin = 0,9 · Vmax^1/2.');
+    h += c('Шаг между ДПУ, Е.2', 'не меньше ' + dpuFmt(r.Lmin) + ' м', 'Lmin = 0,9 · Vmax^1/2 — по формуле Е.2 СП 7 от наибольшего расхода Vmax, а не от фактического.');
+    h += c('Скорость в твоём ДПУ', dpuFmt(r.vIn, 1) + ' м/с', 'Введённый ' + dpuFmt(r.a * 1000, 0) + (r.sh === 'round' ? ' мм' : ' × ' + dpuFmt(r.b * 1000, 0) + ' мм') + ', живое сечение ' + dpuFmt(r.Ain, 3) + ' м². Верно: не больше 11 м/с, лучше 9–11 (МР ВНИИПО, п. 5.1.1).', r.vIn > 11 ? 'warn' : '');
     h += c('Фактически через 1 ДПУ', dpuFmt(r.Vone) + ' м³/с', 'Gsm / ρsm / N = ' + dpuFmt(r.G, 2) + ' / ' + dpuFmt(r.ro, 3) + ' / ' + r.N + (r.roAuto ? '; ρ = 353/Tsm' : '') + '.');
     var z = r.sizes;
-    if (z.list.length) h += c('Размер клапана, мм', z.list[0].a + ' × ' + z.list[0].b, 'Живое сечение не меньше ' + dpuFmt(z.need, 3) + ' м² при ' + dpuFmt(r.vv, 1) + ' м/с. Варианты: ' + z.list.map(function (q) { return q.a + '×' + q.b + ' (v ' + dpuFmt(q.v, 1) + ' м/с' + (q.g1 ? '' : ', γ = 0,5') + ')'; }).join('; ') + '. Ограничение прил. Е: D ≤ d/2 = ' + dpuFmt(z.Dmax, 2) + ' м. Кратно 50 мм — сверь с каталогом производителя.', 'final');
+    if (z.list.length) h += c('Размер клапана, мм', z.list[0].a + ' × ' + z.list[0].b, (z.list[0].a !== Math.round(r.a * 1000) || z.list[0].b !== Math.round(r.b * 1000) ? 'Это подбор под скорость ' + dpuFmt(r.vv, 1) + ' м/с, а не твой ДПУ — чтобы расчёт Vmax шёл по нему, введи этот размер выше. ' : '') + 'Живое сечение не меньше ' + dpuFmt(z.need, 3) + ' м² при ' + dpuFmt(r.vv, 1) + ' м/с. Варианты: ' + z.list.map(function (q) { return q.a + '×' + q.b + ' (v ' + dpuFmt(q.v, 1) + ' м/с' + (q.g1 ? '' : ', γ = 0,5') + ')'; }).join('; ') + '. Ограничение прил. Е: D ≤ d/2 = ' + dpuFmt(z.Dmax, 2) + ' м. Кратно 50 мм — сверь с каталогом производителя.', 'final');
     else if (isFinite(z.need)) h += c('Размер клапана', 'Не подобрать', 'Нужно сечение ' + dpuFmt(z.need, 3) + ' м², а по d ≥ 2D клапан не больше D = ' + dpuFmt(z.Dmax, 2) + ' м. Увеличь число ДПУ' + (z.needN ? ' примерно до ' + z.needN : '') + ', подними ДПУ или прими большую скорость по каталогу.', 'warn');
   }
   h += r.warn.map(function (w) { return c('Внимание', 'Проверь', w, 'warn'); }).join('');

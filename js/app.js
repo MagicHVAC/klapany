@@ -162,7 +162,7 @@ var PAGES = {
       '<div class="normlist">' + Object.keys(NORMS).map(function (k) {
         var n = NORMS[k];
         return '<article class="norm"><span class="st st-' + n.status + '">' + (n.status === 'ok' ? 'Сверено' : 'Проверить') + '</span><h3>' + esc(n.name) + '</h3><p>' + esc(n.ed) + '</p><p class="muted">' + esc(n.role) + '</p>' +
-          '<div class="refs"><a class="ref" href="' + n.url + '" target="_blank" rel="noopener">Открыть текст</a>' + n.alt.map(function (a) { return '<a class="ref" href="' + a[1] + '" target="_blank" rel="noopener">' + a[0] + '</a>'; }).join('') + '</div></article>';
+          '<div class="refs"><a class="ref" href="' + n.url + '" target="_blank" rel="noopener">Открыть текст</a>' + (n.alt || []).map(function (a) { return '<a class="ref" href="' + a[1] + '" target="_blank" rel="noopener">' + a[0] + '</a>'; }).join('') + '</div></article>';
       }).join('') + '</div><h2>Спорные места и пробелы</h2>' + issues();
   },
   search: function (q) {
@@ -282,6 +282,7 @@ function show(name, arg) {
   fareaCalc();
   auCalc();
   if (window.dbnMark) dbnMark();
+  if (window.hintsAttach) hintsAttach();
 }
 function route() {
   var h = location.hash.slice(1) || 'home', s = sectionOf(h);

@@ -481,3 +481,8 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .stsvg .vnflame { fill: var(--fire); animation: vnflick .6s ease-in-out infinite alternate; transform-origin: 280px 180px; }
 @keyframes vnflick { to { transform: scaleY(1.15); } }
 @media (prefers-reduced-motion: reduce) { .stsvg .vnflame { animation: none; } }
+
+/* Подсказки полей (hints.js) */
+.htip { position: fixed; z-index: 60; max-width: 340px; padding: 9px 11px; border-radius: 10px; background: #0f1b2e; color: var(--text); border: 1px solid var(--air); box-shadow: 0 8px 24px rgba(0,0,0,.45); font: 500 13px/1.45 var(--body); pointer-events: none; }
+.hq { display: inline-grid; place-items: center; width: 17px; height: 17px; margin-left: 4px; padding: 0; border-radius: 50%; border: 1px solid var(--air); background: transparent; color: var(--air); font: 700 11px/1 var(--body); cursor: help; vertical-align: 1px; }
+.hq:hover { background: color-mix(in srgb, var(--air) 20%, transparent); }
