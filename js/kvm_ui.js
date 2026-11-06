@@ -134,11 +134,13 @@ function kvSegs() {
   var p = KV.p;
   return '<p class="sub">Участки снизу вверх: 1-й — на этаже пожара (клапан открыт), последний — только вертикаль до вентилятора. Правка строки переводит расчёт на таблицу.</p>' +
     '<div class="dpbtns"><button type="button" class="eibtn" id="kv-retyp">Пересобрать таблицу из типового этажа</button></div>' +
-    '<div class="tscroll"><table class="vei kvseg"><thead><tr><th>№</th>' + KV_SEGC.map(function (c) { return '<th>' + c[1] + '</th>'; }).join('') + '<th></th></tr></thead><tbody>' +
+    (window.kmszSegBar ? kmszSegBar() : '') +
+    '<div class="tscroll"><table class="vei kvseg"><thead><tr>' + (window.kmszSegBar ? '<th><input type="checkbox" class="kvsel-all" title="Выбрать все участки"' + (KV.sel && KV.sel.length === p.segs.length ? ' checked' : '') + '></th>' : '') + '<th>№</th>' + KV_SEGC.map(function (c) { return '<th>' + c[1] + '</th>'; }).join('') + '<th></th></tr></thead><tbody>' +
     p.segs.map(function (s, i) {
-      return '<tr><td>' + (i + 1) + '</td>' + KV_SEGC.map(function (c) {
-        var v = c[0] === 'zkl' ? (isFinite(s.zkl) ? s.zkl : '') : s[c[0]];
-        return '<td><input class="kvc" data-seg="' + i + '" data-c="' + c[0] + '" type="number" step="any" value="' + (v == null ? '' : v) + '"' + (c[0] === 'zkl' ? ' placeholder="' + (isFinite(smkZkl(s.vw, s.vh)) ? smkZkl(s.vw, s.vh) : 'паспорт') + '"' : '') + '></td>';
+      var on = KV.sel && KV.sel.indexOf(i) >= 0;
+      return '<tr' + (on ? ' class="on"' : '') + '>' + (window.kmszSegBar ? '<td><input type="checkbox" class="kvsel" data-seg="' + i + '"' + (on ? ' checked' : '') + ' aria-label="Выбрать участок ' + (i + 1) + '"></td>' : '') + '<td>' + (i + 1) + '</td>' + KV_SEGC.map(function (c) {
+        var v = c[0] === 'zkl' ? (isFinite(s.zkl) ? s.zkl : '') : s[c[0]], els = s[c[0] + 'Els'];
+        return '<td><input class="kvc" data-seg="' + i + '" data-c="' + c[0] + '" type="number" step="any" value="' + (v == null ? '' : v) + '"' + (c[0] === 'zkl' ? ' placeholder="' + (isFinite(smkZkl(s.vw, s.vh)) ? smkZkl(s.vw, s.vh) : 'паспорт') + '"' : '') + (els && els.length ? ' title="собрано из ' + els.length + ' эл."' : '') + '>' + (els && els.length ? '<span class="kvels" title="собрано из элементов">◆</span>' : '') + '</td>';
       }).join('') + '<td><button type="button" class="eibtn kvdel" data-seg="' + i + '" title="Удалить участок">×</button></td></tr>';
     }).join('') + '</tbody></table></div>' +
     '<div class="dpbtns"><button type="button" class="eibtn" id="kv-add">+ участок (копия последнего с клапаном)</button>' +
@@ -222,6 +224,7 @@ function kvInput(e) {
   } else if (t.classList && t.classList.contains('kvc')) {
     var s = KV.p.segs[+t.dataset.seg], c = t.dataset.c;
     s[c] = t.value === '' && c === 'zkl' ? NaN : smkNum(t.value);
+    if (s[c + 'Els']) delete s[c + 'Els']; /* число введено руками — состав из элементов больше не действует */
     if (KV.p.segMode !== 'table') { KV.p.segMode = 'table'; var sm = document.querySelector('.kvsegd summary'); if (sm) sm.textContent = 'Таблица участков — для исключений (правлена вручную: считается по таблице)'; }
     kvCalc();
   }
