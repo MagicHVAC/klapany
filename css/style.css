@@ -407,3 +407,13 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .stsvg .dpduct { fill: color-mix(in srgb, var(--muted) 35%, transparent); stroke: var(--muted); }
 .stsvg .dpgrille { fill: var(--fp); }
 .stsvg .dpdim { stroke: var(--air); stroke-width: 1.4; }
+
+.sfil { margin: 6px 0; flex-wrap: wrap; }
+.sgrp { margin: 14px 0; }
+.sgrp h2 { font-size: 16px; margin: 0 0 6px; }
+.sgrp h2 a { color: var(--air); text-decoration: none; }
+.shit { display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 11px; padding: 9px 12px; margin: 5px 0; color: var(--muted); text-decoration: none; font-size: 14px; line-height: 1.45; }
+.shit:hover { border-color: var(--air); }
+.shit b { color: var(--text); }
+.shit mark, .sgrp mark { background: color-mix(in srgb, var(--fp) 35%, transparent); color: var(--text); border-radius: 3px; padding: 0 1px; }
+.sflash { animation: fl 1.6s ease-out; }
