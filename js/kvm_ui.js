@@ -11,7 +11,7 @@ function kvDefSmk() {
   for (var i = 0; i < 15; i++) segs.push({ vw: 800, vh: 300, nodeZ: 3.5, hA: 0.8, hB: 0.3, hL: i === 14 ? 0 : 1, hZ: 0, vA: 0.8, vB: 0.3, vL: 3, vZ: i === 0 || i === 14 ? 0 : 0.09 });
   return { name: 'Коридор', system: 'ДУ1', variant: 0, living: false, L: 5.2, W: 3.77, H: 2.4, Ff: 19.6, doors: [[0.9, 2.1], [2.3, 2.4]], hNz: 1.15, tr: 22, Fo: 9,
     qp: 600, Q: 14, v: 0.015, psi: 0.0137, cL: 43.43, cA: 112.8, dA: 1.89, dH: 2.1, cH: 2.3, eta: 0.8, r: 0.75, tOut: 28, tComp: -13, wind: 6.2,
-    segs: segs, Skl: 11000, eps: 0.0001, endExhaust: false, ductRes: 100, vOut: 20, dpuH: 2.3, dpuW: 800, dpuB: 400, dpuType: 2 };
+    segs: segs, typ: kvTypDef(), segMode: 'typ', Skl: 11000, eps: 0.0001, endExhaust: false, ductRes: 100, vOut: 20, dpuH: 2.3, dpuW: 800, dpuB: 400, dpuType: 2 };
 }
 function kvDefStair() {
   return { kind: 'stair', name: 'Лестничная клетка Н2', system: 'ПД1', windows: true, outerExit: true, noFloor1: false, floorTamb: false, N: 15, h1: 3.9, hf: 3.15, p: 1,
@@ -70,6 +70,41 @@ function kvSet(p, k, v) { var a = k.split('.'), o = p; for (var i = 0; i < a.len
 function kvDoorsTxt(d) { return (d || []).map(function (x) { return String(x[0]).replace('.', ',') + 'x' + String(x[1]).replace('.', ','); }).join('; '); }
 function kvDoorsParse(s) { return String(s).split(/[;\n]/).map(function (x) { var m = x.replace(/,/g, '.').match(/([\d.]+)\s*[xх×*]\s*([\d.]+)/i); return m ? [+m[1], +m[2]] : null; }).filter(Boolean); }
 
+/* ---------- 1.21.6: сеть «типовой этаж × N» — из полей собирается тот же массив p.segs, ядро smkCalc не меняется ---------- */
+function kvTypDef() { return { n: 15, vw: 800, vh: 300, zkl: '', nodeZ: 3.5, hA: 0.8, hB: 0.3, hL: 1, hZ: 0, vA: 0.8, vB: 0.3, vL: 3, vZ: 0.09, z1: 0, topL: 3, topZ: 0 }; }
+function kvBuildSegs(t) {
+  var n = Math.max(1, Math.round(+t.n || 1)), a = [];
+  for (var i = 0; i < n; i++) {
+    var s = { vw: +t.vw, vh: +t.vh, nodeZ: +t.nodeZ, hA: +t.hA, hB: +t.hB, hL: +t.hL, hZ: +t.hZ, vA: +t.vA, vB: +t.vB, vL: +t.vL, vZ: +t.vZ };
+    if (t.zkl !== '' && isFinite(+t.zkl)) s.zkl = +t.zkl;
+    if (i === 0) s.vZ = +t.z1;
+    if (i === n - 1 && n > 1) { s.hL = 0; s.vL = +t.topL; s.vZ = +t.topZ; }
+    a.push(s);
+  }
+  return a;
+}
+var KV_TYP = [
+  ['Сеть: типовой этаж', [['typ.n', 'Участков сети (этажей), шт.', '', 'снизу вверх: 1-й — этаж пожара, последний — до вентилятора'],
+    ['typ.vw', 'Клапан a, мм'], ['typ.vh', 'Клапан b, мм'], ['typ.zkl', 'ζкл клапана', '', 'пусто — по типоразмеру'], ['typ.nodeZ', 'ζ узла присоединения'],
+    ['typ.hA', 'Горизонталь a, м'], ['typ.hB', 'Горизонталь b, м'], ['typ.hL', 'Горизонталь L, м'], ['typ.hZ', 'Горизонталь Σζ'],
+    ['typ.vA', 'Вертикаль a, м'], ['typ.vB', 'Вертикаль b, м'], ['typ.vL', 'Вертикаль L (высота этажа), м'], ['typ.vZ', 'Вертикаль Σζ']]],
+  ['Отличия крайних участков', [['typ.z1', '1-й участок (этаж пожара): Σζ вертикали'], ['typ.topL', 'Верхний участок: L вертикали до вентилятора, м', '', 'горизонтали на нём нет'], ['typ.topZ', 'Верхний участок: Σζ вертикали']]]
+];
+function kvField(p, f) {
+  var id = 'kv-' + f[0].replace('.', '_'), v = f[0] === 'doorsTxt' ? kvDoorsTxt(p.doors) : kvGet(p, f[0]);
+  if (Array.isArray(f[2])) return '<div class="stf"><label for="' + id + '">' + f[1] + '</label><select id="' + id + '" data-kv="' + f[0] + '">' +
+    f[2].map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(v) ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>';
+  return '<div class="stf"><label for="' + id + '">' + f[1] + '</label><input id="' + id + '" data-kv="' + f[0] + '" ' + (f[2] === 't' ? 'type="text"' : 'type="number" step="any" inputmode="decimal"') +
+    ' value="' + (v == null || (typeof v === 'number' && !isFinite(v)) ? '' : String(v).replace(/"/g, '&quot;')) + '">' + (f[3] ? '<small class="dhint">' + f[3] + '</small>' : '') + '</div>';
+}
+function kvTypForm() {
+  var p = KV.p;
+  if (!p.typ) { p.typ = kvTypDef(); p.segMode = 'typ'; p.segs = kvBuildSegs(p.typ); }
+  return KV_TYP.map(function (g) { return '<h3 class="nh">' + g[0] + '</h3><div class="trpick stpick">' + g[1].map(function (f) { return kvField(p, f); }).join('') + '</div>'; }).join('') +
+    '<details class="issue kvsegd"' + (p.segMode === 'table' ? ' open' : '') + '><summary>Таблица участков — для исключений' +
+    (p.segMode === 'table' ? ' (правлена вручную: считается по таблице)' : ' (собрана из типового этажа)') + '</summary><div id="kv-segs">' + kvSegs() + '</div></details>';
+}
+
 function kvForm() {
   var p = KV.p, h = '';
   KV_F[KV.mode].forEach(function (g) {
@@ -83,13 +118,14 @@ function kvForm() {
     });
     h += '</div>';
   });
-  if (KV.mode === 'smk') h += kvSegs();
+  if (KV.mode === 'smk') h += kvTypForm();
   return h;
 }
 var KV_SEGC = [['vw', 'Клапан a, мм'], ['vh', 'b, мм'], ['zkl', 'ζкл'], ['nodeZ', 'ζ узла'], ['hA', 'Гориз. a, м'], ['hB', 'b, м'], ['hL', 'L, м'], ['hZ', 'Σζ'], ['vA', 'Верт. a, м'], ['vB', 'b, м'], ['vL', 'L, м'], ['vZ', 'Σζ']];
 function kvSegs() {
   var p = KV.p;
-  return '<h3 class="nh">Сеть: участки снизу вверх — 1-й на этаже пожара (клапан открыт), последний — только вертикаль до вентилятора</h3>' +
+  return '<p class="sub">Участки снизу вверх: 1-й — на этаже пожара (клапан открыт), последний — только вертикаль до вентилятора. Правка строки переводит расчёт на таблицу.</p>' +
+    '<div class="dpbtns"><button type="button" class="eibtn" id="kv-retyp">Пересобрать таблицу из типового этажа</button></div>' +
     '<div class="tscroll"><table class="vei kvseg"><thead><tr><th>№</th>' + KV_SEGC.map(function (c) { return '<th>' + c[1] + '</th>'; }).join('') + '<th></th></tr></thead><tbody>' +
     p.segs.map(function (s, i) {
       return '<tr><td>' + (i + 1) + '</td>' + KV_SEGC.map(function (c) {
@@ -144,11 +180,14 @@ function kvInput(e) {
     var k = t.dataset.kv, v = t.value;
     if (k === 'doorsTxt') KV.p.doors = kvDoorsParse(v);
     else if (t.tagName === 'SELECT') kvSet(KV.p, k, v === 'true' ? true : v === 'false' ? false : (isFinite(+v) ? +v : v));
-    else kvSet(KV.p, k, t.type === 'text' ? v : smkNum(v));
+    else kvSet(KV.p, k, t.type === 'text' || (k === 'typ.zkl' && v.trim() === '') ? v : smkNum(v));
+    if (k.indexOf('typ.') === 0 && KV.p.segMode !== 'table') { KV.p.segs = kvBuildSegs(KV.p.typ); var sg = $('#kv-segs'); if (sg) sg.innerHTML = kvSegs(); }
     kvCalc();
   } else if (t.classList && t.classList.contains('kvc')) {
     var s = KV.p.segs[+t.dataset.seg], c = t.dataset.c;
-    s[c] = t.value === '' && c === 'zkl' ? NaN : smkNum(t.value); kvCalc();
+    s[c] = t.value === '' && c === 'zkl' ? NaN : smkNum(t.value);
+    if (KV.p.segMode !== 'table') { KV.p.segMode = 'table'; var sm = document.querySelector('.kvsegd summary'); if (sm) sm.textContent = 'Таблица участков — для исключений (правлена вручную: считается по таблице)'; }
+    kvCalc();
   }
 }
 document.addEventListener('input', kvInput);
@@ -157,9 +196,10 @@ document.addEventListener('click', function (e) {
   var m = e.target.closest && e.target.closest('[data-kvm]');
   if (m) { KV.mode = m.dataset.kvm; KV.p = kvDef(KV.mode); KV.file = ''; try { localStorage.setItem('klapany-kv-mode', KV.mode); } catch (x) {} show('pdv'); return; }
   if (e.target.id === 'kv-new') { KV.p = kvDef(KV.mode); KV.file = ''; show('pdv'); return; }
-  if (e.target.id === 'kv-add') { var L = KV.p.segs, last = L[L.length - 1], prev = L[L.length - 2] || last; L.splice(L.length - 1, 0, JSON.parse(JSON.stringify(prev))); $('#kv-form').innerHTML = kvForm(); if (window.hintsAttach) hintsAttach(); kvCalc(); return; }
+  if (e.target.id === 'kv-retyp') { KV.p.segMode = 'typ'; KV.p.segs = kvBuildSegs(KV.p.typ); $('#kv-form').innerHTML = kvForm(); if (window.hintsAttach) hintsAttach(); kvCalc(); return; }
+  if (e.target.id === 'kv-add') { KV.p.segMode = 'table'; var L = KV.p.segs, last = L[L.length - 1], prev = L[L.length - 2] || last; L.splice(L.length - 1, 0, JSON.parse(JSON.stringify(prev))); $('#kv-form').innerHTML = kvForm(); if (window.hintsAttach) hintsAttach(); kvCalc(); return; }
   var del = e.target.closest && e.target.closest('.kvdel');
-  if (del) { if (KV.p.segs.length > 1) KV.p.segs.splice(+del.dataset.seg, 1); $('#kv-form').innerHTML = kvForm(); kvCalc(); return; }
+  if (del) { KV.p.segMode = 'table'; if (KV.p.segs.length > 1) KV.p.segs.splice(+del.dataset.seg, 1); $('#kv-form').innerHTML = kvForm(); kvCalc(); return; }
   if (e.target.id === 'kv-doc' && KV.o && isFinite(KV.o.Lv)) {
     var nm = String(KV.p.system || 'ПДВ').replace(/[^0-9A-Za-zА-Яа-яЁё., -]/g, '_') + '_расчёт';
     var doc = function (png) { repDoc(kvReport(KV.p, KV.o).replace('<h3 class="rep-h">1.', (png ? '<p style="text-align:center"><img src="' + png + '" width="620"></p>' : '') + '<h3 class="rep-h">1.'), nm); };
