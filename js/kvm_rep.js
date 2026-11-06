@@ -143,10 +143,19 @@ var REP_CSS = '@page Section1{size:21cm 29.7cm;margin:2cm 1cm 2cm 2cm}div.Sectio
   'body{font-family:' + REP_FONT + ';font-size:12pt;color:#000}' +
   '.rep-title{font-size:16pt;font-weight:bold;text-align:center;margin:0 0 8pt}' +
   'table{border-collapse:collapse;width:100%}td,th{border:0.5pt solid #000;padding:2pt 4pt;font-size:10.5pt;vertical-align:top}th{background:#eee;font-weight:bold}' +
-  '.rep-hd td:first-child{width:22%;font-weight:bold}.rep-h{font-size:13pt;margin:14pt 0 6pt}.n{text-align:right}.c{text-align:center}' +
+  '.rep-hd td:first-child{width:22%;font-weight:bold}.rep-h{font-size:13pt;margin:14pt 0 6pt}.n{text-align:right;white-space:nowrap}.c{text-align:center}' +
   '.rep-sum{margin:8pt 0}.rep-sum div{border:0.5pt solid #000;padding:3pt 6pt;margin:0 0 3pt}.rep-sum span{display:block;font-size:9.5pt}.rep-sum b{font-size:13pt}.rep-sum small{font-size:9.5pt;margin-left:6pt}' +
   '.rep-x{font-family:Arial}.rep-f{margin:4pt 0}.rep-fn{font-size:10.5pt;color:#333}.rep-fx{font-size:12pt;margin-left:12pt}.rep-p{font-size:10.5pt}.rep-note{border:0.5pt solid #000;padding:4pt 8pt;margin-top:10pt;font-size:10.5pt}';
+/* 1.22.5: Word не понимает плитки сводки (div/span) — склеивал «Подача вентилятора15569 м³/ч». Для Word сводка — таблица */
+function repSumWord(html) {
+  return html.replace(/<div class="rep-sum">([\s\S]*?)<\/div>(?=<h3|<div class="rep-f|<table)/, function (m, inner) {
+    var rows = inner.replace(/<div><span>([\s\S]*?)<\/span><b>([\s\S]*?)<\/b>(?:<small>([\s\S]*?)<\/small>)?<\/div>/g, function (x, a, v, n) {
+      return '<tr><td style="width:40%">' + a + '</td><td style="width:28%;white-space:nowrap"><b>' + v + '</b></td><td>' + (n || '') + '</td></tr>'; });
+    return '<table class="rep-t" style="margin:8pt 0"><tbody>' + rows + '</tbody></table>';
+  });
+}
 function repDoc(html, file) {
+  html = repSumWord(html);
   var doc = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>Расчёт ПДВ</title><style>' + REP_CSS + '</style></head><body><div class="Section1">' +
     html.replace(/<div class="rep-scroll">|<\/div><!--s-->/g, '') + '<p style="font-size:9pt;color:#555;margin-top:14pt">Решение принимает ГИП.</p></div></body></html>';
   var blob = new Blob(['﻿', doc], { type: 'application/msword' }), a = document.createElement('a');
