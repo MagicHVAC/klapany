@@ -27,7 +27,7 @@ function vnTable(head, rows) {
 }
 function vnDoc(title, body, file) {
   var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>' + title + '</title>' +
-    '<style>body{font-family:\'GOST type B\',\'GOST Type BU\',ISOCPEUR,Arial,sans-serif;font-size:12pt}h1{font-size:14pt}h2{font-size:12pt}table{border-collapse:collapse}td,th{border:1px solid #000;padding:3pt 6pt;font-size:10pt}</style></head><body>' +
+    '<style>body{font-family:"Times New Roman";font-size:12pt}h1{font-size:14pt}h2{font-size:12pt}table{border-collapse:collapse}td,th{border:1px solid #000;padding:3pt 6pt;font-size:10pt}</style></head><body>' +
     '<h1>' + title + '</h1><p>Основание: СП 7.13130.2013 с Изм. № 1–3; «Расчётное определение основных параметров противодымной вентиляции зданий. Методические рекомендации к СП 7.13130.2013» (ФГБУ ВНИИПО МЧС России, 2013, согласованы МЧС России 30.01.2013).</p>' +
     body.replace(/<div class="tscroll">|<\/div>/g, '').replace(/ class="[^"]*"/g, '') +
     '<p style="font-size:10pt;color:#555">Сформировано: «Справочник инженера ОВиК» v' + APP.ver + ', ' + new Date().toLocaleDateString('ru-RU') + '. Решение принимает ГИП.</p></body></html>';

@@ -177,7 +177,7 @@ function auDraw(t) {
 function auDoc() {
   var R = AU.r; if (!R || R.err.length) return;
   var f = auFm, row = function (a, b) { return '<tr><td>' + a + '</td><td>' + b + '</td></tr>'; }, pn = function (p) { return 'ГОСТ ' + p[0] + ', DN ' + p[1] + ' (' + f(p[2], 1) + '×' + f(p[3], 1) + '), Kт = ' + f(p[4], 4) + ' л²/с²'; };
-  var html = '<html><head><meta charset="utf-8"><style>body{font-family:\'GOST type B\',\'GOST Type BU\',ISOCPEUR,Arial,sans-serif;font-size:12pt}table{border-collapse:collapse}td,th{border:1px solid #000;padding:3pt 6pt}</style></head><body>' +
+  var html = '<html><head><meta charset="utf-8"><style>body{font-family:"Times New Roman";font-size:12pt}table{border-collapse:collapse}td,th{border:1px solid #000;padding:3pt 6pt}</style></head><body>' +
     '<h1 style="font-size:14pt">Гидравлический расчёт спринклерной установки ' + (R.w === 'f' ? 'пенного' : 'водяного') + ' пожаротушения</h1>' +
     '<p>Основание: СП 485.1311500.2020 с Изм. № 1 (приказ МЧС России от 15.12.2025 № 1196) и № 2 (приказ от 26.05.2026 № 373): табл. 6.1, приложение А, приложение Б. Схема — тупиковая симметричная (рис. Б.2, секция А).</p>' +
     '<h2 style="font-size:12pt">Исходные данные</h2><table>' +

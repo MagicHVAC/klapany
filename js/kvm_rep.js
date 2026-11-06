@@ -1,7 +1,7 @@
 /* Отчёт расчёта ПДВ (kvm_ui.js): аккуратная вёрстка на экране и в Word.
    Шапка, нумерованные разделы, исходные данные таблицей, формулы с подстановкой и результатом, таблицы по участкам и этажам, сводка.
-   Шрифт отчёта — чертёжный «GOST type B» (ГОСТ 2.304), если установлен; иначе ISOCPEUR, затем Arial. */
-var REP_FONT = "'GOST type B', 'GOST Type BU', 'ISOCPEUR', 'Arial Narrow', Arial, sans-serif";
+   Шрифт: на странице — шрифт сайта, в Word — Times New Roman (есть на любом ПК; 1.21.5 по указанию инженера). */
+var REP_FONT = "'Times New Roman', Times, serif";
 /* в чертёжном шрифте нет знаков ², ³, ⁻¹ — заменяем верхним индексом */
 function repSup(h) { return h.replace(/×/g, '<span class="rep-x">×</span>').replace(/⁻¹/g, '<sup>−1</sup>').replace(/²/g, '<sup>2</sup>').replace(/³/g, '<sup>3</sup>'); }
 var rf = function (v, n) { return dpuFmt(v, n === undefined ? 2 : n); };

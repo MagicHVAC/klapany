@@ -168,7 +168,7 @@ function faDoc() {
   var r = FA.r, st = FA.st; if (!r) return;
   var row = function (a, b) { return '<tr><td>' + a + '</td><td>' + b + '</td></tr>'; }, m = $('#fa-m'), mat = m.value ? m.options[m.selectedIndex].text : 'задана вручную';
   var steps = []; for (var q = 1; q <= Math.ceil(r.t); q++) steps.push(q);
-  var html = '<html><head><meta charset="utf-8"><style>body{font-family:\'GOST type B\',\'GOST Type BU\',ISOCPEUR,Arial,sans-serif;font-size:12pt}table{border-collapse:collapse}td,th{border:1px solid #000;padding:3pt 6pt}</style></head><body>' +
+  var html = '<html><head><meta charset="utf-8"><style>body{font-family:"Times New Roman";font-size:12pt}table{border-collapse:collapse}td,th{border:1px solid #000;padding:3pt 6pt}</style></head><body>' +
     '<h1 style="font-size:14pt">Расчёт площади пожара по тактической модели</h1>' +
     '<p>Основание: ' + FA_SRC + ', формулы (1)–(4). Значение линейной скорости: ' + (m.value ? 'СИТИС СПН-1, табл. 2' : 'принято разработчиком') + '.</p>' +
     '<table>' + row('Горючая нагрузка', esc(mat)) + row('Линейная скорость табличная vл.т, м/мин', faF(r.v, 3)) + row('Размеры помещения, м', faF(r.A) + ' × ' + faF(r.B)) +

@@ -498,7 +498,7 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 
 /* Отчёт «Расчёта ПДВ» — лист (kvm_rep.js) */
 .rep { background: #fdfdfb; color: #111; border-radius: 6px; padding: 28px 30px 24px; margin: 18px 0; box-shadow: 0 10px 30px rgba(0,0,0,.35);
-  font-family: 'GOST type B', 'GOST Type BU', 'ISOCPEUR', 'Arial Narrow', Arial, sans-serif; font-size: 15px; line-height: 1.45; }
+  font-family: var(--body); font-size: 15px; line-height: 1.45; }
 .rep sub, .rep sup { font-size: 70%; }
 .rep-top { border: 1.5px solid #111; padding: 12px 14px; margin-bottom: 14px; }
 .rep-title { font-size: 21px; font-weight: 700; text-align: center; margin-bottom: 8px; letter-spacing: .2px; }
