@@ -1,0 +1,63 @@
+/* Страница «Воздухообмены» (vent.html): та же синька, другой оттенок — глубокий сине-зелёный, без огня.
+   Переключатель страниц .pages — общий для обеих страниц. */
+.pages { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.pages a { text-decoration: none; color: var(--muted); font: 500 13px var(--body); padding: 6px 11px; border-radius: 9px; white-space: nowrap; }
+.pages a.on { background: var(--air); color: #06141a; font-weight: 600; }
+.pages a:not(.on):hover { color: var(--text); }
+
+body.vent { --bg: #0a1a1c; --surface: #102629; --line: #224347; --text: #e6f3f1; --muted: #93b3b0; --air: #3fd0b0; --in: #63b3ff; --out: #f0b35a; --t: #ff8f73; --pp: #b49bff; --grid: rgba(63, 208, 176, .045); }
+.vwrap { max-width: 1120px; margin: 0 auto; padding: 18px 16px 56px; }
+.vex { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--muted); font-size: 13.5px; margin: 0 0 14px; }
+.vex button { border: 1px dashed var(--line); background: none; color: var(--text); border-radius: 99px; padding: 3px 10px; font: 500 13px var(--body); cursor: pointer; }
+.vex button:hover { border-color: var(--air); }
+.vtabs { position: sticky; top: 60px; z-index: 10; display: flex; gap: 6px; overflow-x: auto; padding: 8px 0; background: var(--bg); margin-bottom: 6px; }
+.vtabs button { flex: none; border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 11px; padding: 7px 13px; font: 500 14px var(--body); cursor: pointer; }
+.vtabs button i { font-style: normal; color: var(--muted); font-size: 12.5px; margin-left: 3px; }
+.vtabs button.on { border-color: var(--air); box-shadow: inset 0 -3px 0 var(--air); }
+.vtabs button.zero { opacity: .45; }
+.vhow { color: var(--muted); font-size: 13.5px; margin: 4px 0 10px; }
+.vtool { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 4px 0 10px; font-size: 14px; color: var(--muted); }
+.vtool select, .vtool input { background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 9px; padding: 6px 9px; font: inherit; margin-left: 6px; }
+.vtool input { width: 74px; }
+.vtool select { max-width: 280px; }
+.vtool .chk input { width: auto; margin: 0 6px 0 0; }
+.vcalcin small { flex-basis: 100%; font-size: 12.5px; }
+.vcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px; }
+.vc { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--air); border-radius: 13px; padding: 12px 14px; display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.vc.vpr { border-left-color: var(--muted); }
+.vc.vwide { grid-column: 1 / -1; }
+.vc header { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; justify-content: space-between; }
+.vc h3 { overflow-wrap: anywhere; }
+.vbad { font-size: 11.5px; color: #1b1405; background: var(--out); border-radius: 6px; padding: 1px 7px; font-weight: 600; white-space: nowrap; }
+.vbt { display: flex; flex-wrap: wrap; gap: 4px; }
+.vbt span { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; }
+.vbt .all { border-style: dashed; }
+.vnums { display: flex; flex-wrap: wrap; gap: 6px; }
+.vnum { min-width: 86px; padding: 5px 9px 6px; border-radius: 9px; background: color-mix(in srgb, var(--bg) 70%, var(--surface)); border-top: 2px solid var(--line); }
+.vnum small { display: block; font-size: 11.5px; color: var(--muted); }
+.vnum b { font: 700 18px var(--display); letter-spacing: -.02em; }
+.vnum i { font-style: normal; font-size: 12px; color: var(--muted); margin-left: 4px; }
+.vnum.in { border-top-color: var(--in); } .vnum.out { border-top-color: var(--out); } .vnum.t { border-top-color: var(--t); } .vnum.pp { border-top-color: var(--pp); }
+.vm { margin: 0; font-size: 13.5px; color: var(--muted); }
+.vm b { color: var(--text); font-weight: 500; }
+.vno { margin: 0; font-size: 14px; }
+.vcalc { margin: 0; font-size: 13.5px; padding: 6px 9px; border-radius: 8px; background: color-mix(in srgb, var(--air) 12%, transparent); }
+.vsrc { margin: 0; font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.vsrc span { color: var(--air); font-weight: 600; }
+.vempty { color: var(--muted); padding: 20px 0; }
+.vmore { display: block; margin: 16px auto; border: 1px solid var(--air); background: none; color: var(--text); border-radius: 11px; padding: 9px 18px; font: 500 14px var(--body); cursor: pointer; }
+mark { background: color-mix(in srgb, var(--air) 35%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+.vtw { overflow-x: auto; }
+.vt { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+.vt th, .vt td { border-bottom: 1px solid var(--line); padding: 6px 9px; text-align: right; white-space: nowrap; }
+.vt thead th { position: sticky; top: 0; background: var(--surface); color: var(--muted); font-weight: 500; font-size: 12.5px; vertical-align: bottom; }
+.vt th:first-child { text-align: left; }
+.vt tbody th { font-weight: 500; }
+.vt small { display: block; font-size: 11px; color: var(--muted); font-weight: 400; white-space: normal; }
+.vclim .tc { color: var(--in); font-weight: 600; } .vclim .tw { color: var(--out); }
+.vclim tbody th { white-space: normal; min-width: 150px; }
+@media (max-width: 860px) {
+  .pages { order: 2; }
+  .vtabs { top: 104px; }
+  .vcards { grid-template-columns: minmax(0, 1fr); }
+}

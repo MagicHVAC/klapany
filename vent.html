@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Воздухообмены и температуры — Справочник инженера ОВиК</title>
+<meta name="description" content="Кратности воздухообмена, нормы на человека, санприборы, местные отсосы, температуры помещений, тепло от людей, климат СП 131 — со ссылками на нормы и поиском по смыслу.">
+<meta name="theme-color" content="#0a1a1c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Справочник ОВиК">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=1.22.1">
+<link rel="stylesheet" href="css/vent.css?v=1.22.1">
+</head>
+<body class="vent">
+<header class="top"><div class="tin">
+  <a class="brand" href="index.html">Справочник инженера ОВиК<small id="ver"></small></a>
+  <nav class="pages" aria-label="Страницы справочника"><a href="index.html">Пожарная безопасность</a><a href="vent.html" class="on" aria-current="page">Воздухообмены</a></nav>
+  <input id="q" type="search" placeholder="Поиск по смыслу: туалет, кухня, 2.5, Краснодар" aria-label="Поиск по нормам воздухообмена">
+</div></header>
+<div class="vwrap">
+  <h1>Воздухообмены и температуры</h1>
+  <p class="lead">Кратности, нормы наружного воздуха на человека, расходы от санприборов и отсосов, температура воздуха зимой, тепло от людей и климат городов. Все записи из базы расчётов кнопки 7, у каждой — пункт нормы.</p>
+  <p class="vex" id="vex"></p>
+  <div class="vtabs" id="vtabs" role="tablist"></div>
+  <main id="view"></main>
+</div>
+<footer class="foot">Справочник для проектировщика, решение принимает ГИП по действующим текстам норм. Записи «принято в проекте» — не норма, а решение из практики. <button type="button" id="newsbtn">Что нового</button></footer>
+<dialog id="newsdlg"><h3>Что нового</h3><div id="news"></div><button type="button" id="newsclose" class="eibtn">Закрыть</button></dialog>
+<script src="js/data_norms.js?v=1.22.1"></script>
+<script src="js/data_vent.js?v=1.22.1"></script>
+<script src="js/vent_search.js?v=1.22.1"></script>
+<script src="js/vent.js?v=1.22.1"></script>
+</body>
+</html>

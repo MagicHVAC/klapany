@@ -126,7 +126,7 @@ function pdv3d(mode, p, o) {
 }
 /* PNG для отчёта: SVG → canvas → data:image/png */
 function pdv3dPng(svg, cb) {
-  var img = new Image(), url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replace('class="p3spin"', ''));
+  var img = new Image(), url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replace(/class="p3(spin|flow)"/g, ''));
   img.onload = function () {
     var c = document.createElement('canvas'); c.width = img.width * 2; c.height = img.height * 2;
     var g = c.getContext('2d'); g.scale(2, 2); g.drawImage(img, 0, 0); cb(c.toDataURL('image/png'));

@@ -11,7 +11,7 @@ function kvDefSmk() {
   for (var i = 0; i < 15; i++) segs.push({ vw: 800, vh: 300, nodeZ: 3.5, hA: 0.8, hB: 0.3, hL: i === 14 ? 0 : 1, hZ: 0, vA: 0.8, vB: 0.3, vL: 3, vZ: i === 0 || i === 14 ? 0 : 0.09 });
   return { name: 'Коридор', system: 'ДУ1', variant: 0, living: false, L: 5.2, W: 3.77, H: 2.4, Ff: 19.6, doors: [[0.9, 2.1], [2.3, 2.4]], hNz: 1.15, tr: 22, Fo: 9,
     qp: 600, Q: 14, v: 0.015, psi: 0.0137, cL: 43.43, cA: 112.8, dA: 1.89, dH: 2.1, cH: 2.3, eta: 0.8, r: 0.75, tOut: 28, tComp: -13, wind: 6.2,
-    segs: segs, typ: kvTypDef(), segMode: 'typ', Skl: 11000, eps: 0.0001, endExhaust: false, ductRes: 100, vOut: 20, dpuH: 2.3, dpuW: 800, dpuB: 400, dpuType: 2 };
+    segs: segs, typ: kvTypDef(), segMode: 'typ', comp: window.compDef ? compDef() : null, Skl: 11000, eps: 0.0001, endExhaust: false, ductRes: 100, vOut: 20, dpuH: 2.3, dpuW: 800, dpuB: 400, dpuType: 2 };
 }
 function kvDefStair() {
   return { kind: 'stair', name: 'Лестничная клетка Н2', system: 'ПД1', windows: true, outerExit: true, noFloor1: false, floorTamb: false, N: 15, h1: 3.9, hf: 3.15, p: 1,
@@ -97,6 +97,11 @@ function kvField(p, f) {
   return '<div class="stf"><label for="' + id + '">' + f[1] + '</label><input id="' + id + '" data-kv="' + f[0] + '" ' + (f[2] === 't' ? 'type="text"' : 'type="number" step="any" inputmode="decimal"') +
     ' value="' + (v == null || (typeof v === 'number' && !isFinite(v)) ? '' : String(v).replace(/"/g, '&quot;')) + '">' + (f[3] ? '<small class="dhint">' + f[3] + '</small>' : '') + '</div>';
 }
+function kvCompForm() {
+  var p = KV.p; if (!window.KV_COMP) return '';
+  if (!p.comp) p.comp = compDef();
+  return '<h3 class="nh">' + KV_COMP[0] + '</h3><div class="trpick stpick">' + KV_COMP[1].map(function (f) { return kvField(p, f); }).join('') + '</div>';
+}
 function kvTypForm() {
   var p = KV.p;
   if (!p.typ) { p.typ = kvTypDef(); p.segMode = 'typ'; p.segs = kvBuildSegs(p.typ); }
@@ -118,7 +123,7 @@ function kvForm() {
     });
     h += '</div>';
   });
-  if (KV.mode === 'smk') h += kvTypForm();
+  if (KV.mode === 'smk') h += kvTypForm() + kvCompForm();
   return h;
 }
 var KV_SEGC = [['vw', 'Клапан a, мм'], ['vh', 'b, мм'], ['zkl', 'ζкл'], ['nodeZ', 'ζ узла'], ['hA', 'Гориз. a, м'], ['hB', 'b, м'], ['hL', 'L, м'], ['hZ', 'Σζ'], ['vA', 'Верт. a, м'], ['vB', 'b, м'], ['vL', 'L, м'], ['vZ', 'Σζ']];
@@ -153,6 +158,7 @@ function kvCalc() {
   if (!$('#kv-form')) return;
   var p = KV.p, o;
   try { o = KV.mode === 'smk' ? smkCalc(p) : KV.mode === 'stair' ? supStair(p) : supLift(p); } catch (e) { o = { err: ['Ошибка расчёта: ' + e.message], warn: [] }; }
+  if (KV.mode === 'smk' && window.compCalc && isFinite(o.Lv)) { try { compCalc(p, o); } catch (x) { o.warn.push('Компенсация: ошибка расчёта — ' + x.message); } }
   KV.o = o;
   var h = '';
   if (o.err && o.err.length) h += o.err.map(function (e) { return vnC('Ошибка', 'Проверь данные', e, 'warn'); }).join('');
@@ -162,7 +168,8 @@ function kvCalc() {
     if (KV.mode === 'smk') {
       h += vnC('Удалять дыма', kf(o.G, 2) + ' кг/с', kf(o.L, 0) + ' м³/ч при Tsm = ' + kf(o.Tsm, 0) + ' K; подсосы в сети +' + kf(o.Ga, 3) + ' кг/с');
       h += vnC('ДПУ', o.Nmin + ' шт.', 'V1max = ' + kf(o.V1, 2) + ' м³/с, Lmin = ' + kf(o.Lmin, 3) + ' м (СП 7 прил. Е)');
-      h += vnC('Компенсация', kf(o.LaMin, 0) + '…' + kf(o.LaMax, 0) + ' м³/ч', 'Ga = GШ/(1,3…1,0) при t = ' + kf(p.tComp, 0) + ' °C');
+      h += o.comp ? vnC('Компенсация: вентилятор', kf(o.comp.Lv, 0) + ' м³/ч · ' + kf(o.comp.Psv, 0) + ' Па', 'расход наибольший Ga = GШ/1,0 = ' + kf(o.comp.La, 0) + ' м³/ч + утечки закрытых клапанов; t = ' + kf(p.tComp, 0) + ' °C', 'final')
+        : vnC('Компенсация', kf(o.LaMin, 0) + '…' + kf(o.LaMax, 0) + ' м³/ч', 'Ga = GШ/(1,3…1,0) при t = ' + kf(p.tComp, 0) + ' °C');
     }
   }
   h += (o.warn || []).map(function (w) { return vnC('Внимание', 'Проверь', w, 'warn'); }).join('');
