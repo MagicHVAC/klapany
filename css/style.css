@@ -457,3 +457,14 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .dbn-soft { border-color: var(--nz); } .dbn-soft summary b, .mini.dbn-soft h4 { color: var(--nz); }
 .dbn-diff { border-color: var(--dd); } .dbn-diff summary b, .mini.dbn-diff h4 { color: var(--dd); }
 .dbn-none { border-color: var(--muted); }
+
+/* Сеть дымоудаления (net.js) */
+.nh { font-size: 15px; margin: 14px 0 4px; color: var(--text); }
+.netsvg .dpfan { fill: color-mix(in srgb, var(--fire) 18%, transparent); stroke: var(--fire); stroke-width: 1.5; }
+.netsvg .dpline { stroke: var(--muted); }
+.netsvg .dpfloor { stroke: var(--line); stroke-dasharray: 4 4; }
+.netsvg .dpvalve { fill: var(--bg); stroke: var(--nz); }
+.netsvg .dpleak { stroke: var(--air); stroke-dasharray: 6 5; animation: netflow 1.2s linear infinite; }
+.netsvg .stt.dim { fill: color-mix(in srgb, var(--muted) 75%, transparent); }
+@keyframes netflow { to { stroke-dashoffset: -11; } }
+@media (prefers-reduced-motion: reduce) { .netsvg .dpleak { animation: none; } }
