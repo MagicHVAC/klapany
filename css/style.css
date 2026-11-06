@@ -425,3 +425,10 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .stsvg .fat { fill: color-mix(in srgb, var(--air) 35%, transparent); }
 .stsvg .fatr { fill: none; stroke: color-mix(in srgb, var(--air) 35%, transparent); }
 .stsvg .fa0 { fill: #fff; }
+
+.stsvg .aumain { stroke: var(--air); stroke-width: 4; }
+.stsvg .aurow { stroke: var(--air); stroke-width: 2; opacity: .7; }
+.stsvg .auh { fill: var(--muted); }
+.stsvg .auh.on { fill: var(--air); }
+.stsvg .auh.dict { fill: var(--fp); }
+.stsvg .ausp { fill: color-mix(in srgb, var(--air) 40%, transparent); }
