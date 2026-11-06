@@ -311,7 +311,13 @@ html.rv .pick.in:hover { transform: translateY(-2px) !important; }
   html.rv .card, html.rv .fig, html.rv .mini, html.rv .pick, html.rv .how, html.rv .norm, html.rv .issue { opacity: 1; transform: none; }
 }
 /* Фон-анимация и новые таблицы (1.9.0) */
-.fx { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; opacity: .75; }
+.fx { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; opacity: .9; }
+.sndbtn { display: flex; gap: 6px; align-items: center; height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--muted); font: 500 13px var(--body); cursor: pointer; }
+.sndbtn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
+.sndbtn .w { opacity: .25; }
+.sndbtn.on { color: var(--fire); border-color: color-mix(in srgb, var(--fire) 50%, var(--line)); }
+.sndbtn.on .w { opacity: 1; animation: sndw 1.2s ease-in-out infinite; }
+@keyframes sndw { 50% { opacity: .35; } }
 .rv-t td { vertical-align: top; }
 .rv-t th[scope="row"] { min-width: 200px; font-weight: 600; }
 .rv-t small { display: block; font-weight: 400; color: var(--muted); margin-top: 2px; }
