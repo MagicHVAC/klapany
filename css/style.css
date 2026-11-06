@@ -396,3 +396,14 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 @media (prefers-reduced-motion: reduce) { .stsvg animateMotion { display: none; } .stsvg .stflame { animation: none; } }
 .bstep .ref b { display: inline; font: 600 13px var(--body); color: inherit; margin: 0; }
 .bstep .refs { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.dhint { font-size: 11.5px; color: var(--muted); }
+.dpbtns { margin: 10px 0; display: flex; gap: 8px; flex-wrap: wrap; }
+.dpf { margin: 8px 0; } .dpf p { font-size: 14px; color: var(--muted); margin: 6px 0; }
+.stsvg .dpz { fill: color-mix(in srgb, var(--line) 30%, transparent); stroke: var(--muted); stroke-width: 1.2; }
+.stsvg .dpsmoke { fill: #8f98aa; opacity: .6; }
+.stsvg .dpys { stroke: #c3cad6; stroke-dasharray: 5 3; }
+.stsvg .dpdoor { fill: var(--nz); opacity: .8; }
+.stsvg .dpduct { fill: color-mix(in srgb, var(--muted) 35%, transparent); stroke: var(--muted); }
+.stsvg .dpgrille { fill: var(--fp); }
+.stsvg .dpdim { stroke: var(--air); stroke-width: 1.4; }
