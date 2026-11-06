@@ -28,7 +28,7 @@ function repSum(items) {
   return '<div class="rep-sum">' + items.map(function (x) { return '<div><span>' + x[0] + '</span><b>' + x[1] + '</b>' + (x[2] ? '<small>' + x[2] + '</small>' : '') + '</div>'; }).join('') + '</div>';
 }
 function repNote(o) { return (o.warn && o.warn.length) ? '<div class="rep-note"><b>Замечания</b><ul>' + o.warn.map(function (w) { return '<li>' + w + '</li>'; }).join('') + '</ul></div>' : ''; }
-var REP_M = 'МР ВНИИПО к СП 7.13130.2013 (2013), СП 7.13130.2013 с Изм. № 1–3; порядок расчёта — как в «КВМ-Дым» 5.2';
+var REP_M = 'МР ВНИИПО к СП 7.13130.2013 (2013), СП 7.13130.2013 с Изм. № 1–3';
 
 /* ---------- вытяжная ---------- */
 function repSmk(p, o) {
@@ -133,7 +133,7 @@ function repLift(p, o) {
   h += repSec(++n, 'Вентилятор (95), (96)');
   h += repF('Воздуховоды', 'P<sub>dl</sub> = (λ·l/D<sub>э</sub> + Σξ)·0,5·ρ<sub>a</sub>·v²', 'v = ' + rf(o.duct.v, 2) + ' м/с; λ = ' + rf(o.duct.f, 4), rf(o.duct.P, 2) + ' Па') +
     repF('Подача', 'L<sub>v</sub> = 3600·G<sub>l</sub>/ρ<sub>a</sub>', '3600 · ' + rf(o.Gl, 3) + ' / ' + rf(o.roa, 3), rf(o.Lv, 0) + ' м³/ч') +
-    repF('Статическое давление', p.method === 1 ? 'P<sub>sv</sub> = P<sub>l</sub> + g·h<sub>lN</sub>·(ρ<sub>a</sub> − ρ<sub>l</sub>) + g·h<sub>0l</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>dl</sub>' : 'P<sub>sv</sub> = P<sub>l</sub> + g·h<sub>0l</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>dl</sub> (как в «КВМ-Дым»)', '', rf(o.Psv, 0) + ' Па');
+    repF('Статическое давление', p.method === 1 ? 'P<sub>sv</sub> = P<sub>l</sub> + g·h<sub>lN</sub>·(ρ<sub>a</sub> − ρ<sub>l</sub>) + g·h<sub>0l</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>dl</sub>' : 'P<sub>sv</sub> = P<sub>l</sub> + g·h<sub>0l</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>dl</sub>', '', rf(o.Psv, 0) + ' Па');
   return repSup('<div class="rep">' + h + repNote(o) + '</div>');
 }
 
@@ -147,7 +147,7 @@ var REP_CSS = '@page Section1{size:21cm 29.7cm;margin:2cm 1cm 2cm 2cm}div.Sectio
   '.rep-x{font-family:Arial}.rep-f{margin:4pt 0}.rep-fn{font-size:10.5pt;color:#333}.rep-fx{font-size:12pt;margin-left:12pt}.rep-p{font-size:10.5pt}.rep-note{border:0.5pt solid #000;padding:4pt 8pt;margin-top:10pt;font-size:10.5pt}';
 function repDoc(html, file) {
   var doc = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>Расчёт ПДВ</title><style>' + REP_CSS + '</style></head><body><div class="Section1">' +
-    html.replace(/<div class="rep-scroll">|<\/div><!--s-->/g, '') + '<p style="font-size:9pt;color:#555;margin-top:14pt">Решение принимает ГИП. Порядок расчёта сверен с отчётами «КВМ-Дым» 5.2.</p></div></body></html>';
+    html.replace(/<div class="rep-scroll">|<\/div><!--s-->/g, '') + '<p style="font-size:9pt;color:#555;margin-top:14pt">Решение принимает ГИП.</p></div></body></html>';
   var blob = new Blob(['﻿', doc], { type: 'application/msword' }), a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = file + '.doc'; document.body.appendChild(a); a.click();
   setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);

@@ -363,7 +363,7 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .stf[hidden] { display: none; }
 .stpick .stf > label { margin: 0; display: flex; align-items: flex-end; line-height: 1.25; overflow: hidden; }
 .stpick select { height: 42px; }
-.stpick input[type=number] { width: 100%; height: 42px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; box-sizing: border-box; }
+.trpick input[type=text], .stpick input[type=number] { width: 100%; height: 42px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; box-sizing: border-box; }
 .stpick .stchk { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; margin: 2px 0 0; }
 .stres { margin-bottom: 14px; }
 .stres .bstep .refs { margin-top: 4px; }

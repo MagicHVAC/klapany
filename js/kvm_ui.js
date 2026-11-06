@@ -1,5 +1,5 @@
 /* Раздел «Расчёт ПДВ» — расчёт системы целиком (дымоудаление, лестничная клетка, лифтовая шахта) по схеме, совместимой с «КВМ-Дым».
-   Открытие проектов .smkprj / .isrprj (INI в cp1251), форма исходных данных, поэтажная сеть, отчёт с формулами, Word.
+   1.21.3: открытие проектов КВМ убрано по указанию инженера (его отчёты — только эталон сверки). Форма исходных данных, поэтажная сеть, отчёт с формулами, Word.
    Ядра: kvm_smk.js (вытяжная), kvm_sup.js (приточная). Общие помощники — vn_core.js (vnC, vnTable, vnDoc), dpu.js (dpuFmt). */
 var KV = { mode: 'smk', p: null, o: null, file: '' };
 try { KV.mode = localStorage.getItem('klapany-kv-mode') || 'smk'; } catch (x) {}
@@ -35,7 +35,7 @@ var KV_F = {
       ['Fo', 'Fo — площадь очага, м²', '', 'зал'], ['eta', 'η — полнота сгорания', '', 'зал'], ['r', 'r — коэффициент теплопотерь на излучение', '', 'зал']]],
     ['Коридор', [['cL', 'lc — длина, м'], ['cA', 'Ac — площадь, м²'], ['cH', 'hк — высота потолка, м'], ['dA', 'Ad — площадь двери выхода, м²'], ['dH', 'Hd — высота двери, м']]],
     ['Наружный воздух', [['tOut', 'tн — летом (расчёт дыма), °C'], ['tComp', 'tн — зимой (компенсация), °C'], ['wind', 'Скорость ветра, м/с']]],
-    ['Клапаны и выброс', [['Skl', 'Sкл — сопротивление газопроницанию закрытого клапана, м³/кг', '', '11000 — как в «КВМ-Дым»; по МР прил. 3 — 29300…38300'], ['eps', 'ε — шероховатость, м', '', 'металл 0,0001'],
+    ['Клапаны и выброс', [['Skl', 'Sкл — сопротивление газопроницанию закрытого клапана, м³/кг', '', '11000 — по умолчанию; по МР прил. 3 — 29300…38300'], ['eps', 'ε — шероховатость, м', '', 'металл 0,0001'],
       ['endExhaust', 'Выброс', [[false, 'на кровлю'], [true, 'на фасад — + сопротивление и 0,5ρv²']]], ['ductRes', 'Сопротивление воздуховодов до выброса, Па'], ['vOut', 'Скорость выброса на фасад, м/с']]],
     ['Дымоприёмное устройство', [['dpuH', 'Нижняя точка ДПУ от пола, м'], ['dpuW', 'ДПУ: a, мм'], ['dpuB', 'ДПУ: b, мм'],
       ['dpuType', 'Расположение', [[0, 'горизонтально, дальше 2D от стены — γ = 1'], [1, 'горизонтально, ближе 2D к стене — γ = 0,5'], [2, 'вертикально — γ = 0,5']]]]]
@@ -98,17 +98,16 @@ function kvSegs() {
       }).join('') + '<td><button type="button" class="eibtn kvdel" data-seg="' + i + '" title="Удалить участок">×</button></td></tr>';
     }).join('') + '</tbody></table></div>' +
     '<div class="dpbtns"><button type="button" class="eibtn" id="kv-add">+ участок (копия последнего с клапаном)</button>' +
-    '<span class="tnote">ζкл пусто — по типоразмеру из отчётов «КВМ-Дым» (800×300 — 0,53; 800×400 — 0,35; 1350×450 — 0,26; 1500×800 — 0,19), иначе — по паспорту клапана. Проходное сечение — (a − 50)·(b − 50).</span></div>';
+    '<span class="tnote">ζкл пусто — по типоразмеру клапана (800×300 — 0,53; 800×400 — 0,35; 1350×450 — 0,26; 1500×800 — 0,19), иначе — по паспорту клапана. Проходное сечение — (a − 50)·(b − 50).</span></div>';
 }
 
 PAGES.pdv = (function (old) {
   return function () {
     if (!KV.p) KV.p = kvDef(KV.mode);
-    return '<h1>Расчёт противодымной вентиляции</h1><p class="lead">Система целиком по методике ВНИИПО к СП 7.13130 — так, как считает «КВМ-Дым»: открой свой проект .smkprj или .isrprj, поправь данные, получи отчёт с формулами и Word. Сверено на 23 отчётах «КВМ-Дым» 5.2 — расходы и давления вентиляторов совпадают.</p>' +
+    return '<h1>Расчёт противодымной вентиляции</h1><p class="lead">Система целиком по методике ВНИИПО к СП 7.13130: введи данные системы — получишь подачу и давление вентилятора, отчёт с формулами и Word.</p>' +
       '<div class="vntabs" role="tablist">' + [['smk', 'Дымоудаление', 'коридор, зал'], ['stair', 'Лестничная клетка', 'подпор, п. 4.1'], ['lift', 'Лифтовая шахта', 'подпор, п. 4.2']].map(function (t) {
         return '<button type="button" data-kvm="' + t[0] + '"' + (t[0] === KV.mode ? ' class="on"' : '') + '>' + t[1] + '<small>' + t[2] + '</small></button>'; }).join('') + '</div>' +
-      '<div class="dpbtns"><label class="eibtn on kvopen">Открыть проект КВМ<input type="file" id="kv-file" accept=".smkprj,.isrprj" hidden></label>' +
-      '<button type="button" class="eibtn" id="kv-new">Новый (пример)</button><button type="button" class="eibtn" id="kv-doc">Скачать отчёт в Word</button><span class="tnote" id="kv-fname">' + (KV.file ? 'Открыт: ' + esc(KV.file) : '') + '</span></div>' +
+      '<div class="dpbtns"><button type="button" class="eibtn" id="kv-new">Новый (пример)</button><button type="button" class="eibtn" id="kv-doc">Скачать отчёт в Word</button></div>' +
       '<div id="kv-form">' + kvForm() + '</div><div class="barres stres" id="kv-res"></div><div id="kv-rep"></div>' +
       '<details class="issue"><summary>Отдельные расчёты по формулам МР (прежние вкладки)</summary><div>' + old().replace(/^<h1>[\s\S]*?<\/p>/, '') + '</div></details>';
   };
@@ -138,25 +137,6 @@ function kvCalc() {
 /* ---------- отчёт: вёрстка — kvm_rep.js ---------- */
 function kvReport(p, o) { return KV.mode === 'smk' ? repSmk(p, o) : KV.mode === 'stair' ? repStair(p, o) : repLift(p, o); }
 
-/* ---------- открытие проекта КВМ ---------- */
-function kvOpen(file) {
-  var r = new FileReader();
-  r.onload = function () {
-    var text;
-    try { text = new TextDecoder('windows-1251').decode(new Uint8Array(r.result)); } catch (e) { text = String.fromCharCode.apply(null, new Uint8Array(r.result)); }
-    var d = smkIni(text), v = ((d.Project || {}).Variant || '').trim();
-    if (/\.smkprj$/i.test(file.name) || d.Room) { KV.mode = 'smk'; KV.p = smkFromIni(d); }
-    else if (v === 'SW-OG') { KV.mode = 'stair'; KV.p = supStairFromIni(d); KV.p.air = kvAir(d); }
-    else if (v === 'LIFT') { KV.mode = 'lift'; KV.p = supLiftFromIni(d); KV.p.air = kvAir(d); }
-    else { alert('Этот проект (вариант «' + v + '») сайт пока не открывает: есть дымоудаление, лестничная клетка и лифтовая шахта. Тамбур-шлюзы и зоны безопасности — следующим шагом.'); return; }
-    KV.file = file.name; try { localStorage.setItem('klapany-kv-mode', KV.mode); } catch (x) {}
-    show('pdv');
-  };
-  r.readAsArrayBuffer(file);
-}
-function kvAir(d) { var A = d.Air || {}, n = smkNum; return { ta: n(A.AirTempO), tr: n(A.AirTempI), va: n(A.WindSpeed), kww: n(A.KWW), kw0: n(A.KW0) }; }
-
-document.addEventListener('change', function (e) { if (e.target.id === 'kv-file' && e.target.files[0]) kvOpen(e.target.files[0]); });
 function kvInput(e) {
   var t = e.target;
   if (t.dataset && t.dataset.kv) {

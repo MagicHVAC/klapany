@@ -142,7 +142,7 @@ function supLift(d) {
   o.gH = g * o.hl * (o.roa - rol);
   o.PsvMR = o.Pl + o.gH + g * p.h0 * (o.roa - o.ror) + o.duct.P;
   o.Psv = p.method === 1 ? o.PsvMR : o.PsvMR - o.gH;
-  if (p.method !== 1) o.warn.push('Давление вентилятора — как в «КВМ-Дым» (без g·hlN·(ρa − ρl) = ' + o.gH.toFixed(1).replace('.', ',') + ' Па). По формуле (96) МР ВНИИПО — ' + o.PsvMR.toFixed(0).replace('.', ',') + ' Па.');
+  if (p.method !== 1) o.warn.push('Давление вентилятора — без слагаемого g·hlN·(ρa − ρl) = ' + o.gH.toFixed(1).replace('.', ',') + ' Па. По формуле (96) МР ВНИИПО — ' + o.PsvMR.toFixed(0).replace('.', ',') + ' Па.');
   return o;
 }
 function supCalcIni(text) {
