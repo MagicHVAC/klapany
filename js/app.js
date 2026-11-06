@@ -274,6 +274,7 @@ function show(name, arg) {
   soShow();
   stairPick();
   dpuCalc();
+  fareaCalc();
 }
 function route() {
   var h = location.hash.slice(1) || 'home', s = sectionOf(h);

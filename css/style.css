@@ -417,3 +417,11 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .shit b { color: var(--text); }
 .shit mark, .sgrp mark { background: color-mix(in srgb, var(--fp) 35%, transparent); color: var(--text); border-radius: 3px; padding: 0 1px; }
 .sflash { animation: fl 1.6s ease-out; }
+
+.faplay { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; font-size: 13.5px; color: var(--muted); }
+.faplay input[type=range] { flex: 1 1 180px; accent-color: var(--fire); }
+.stsvg .faroom { fill: color-mix(in srgb, var(--line) 30%, transparent); stroke: var(--text); stroke-width: 2; }
+.stsvg .faf { opacity: .85; }
+.stsvg .fat { fill: color-mix(in srgb, var(--air) 35%, transparent); }
+.stsvg .fatr { fill: none; stroke: color-mix(in srgb, var(--air) 35%, transparent); }
+.stsvg .fa0 { fill: #fff; }
