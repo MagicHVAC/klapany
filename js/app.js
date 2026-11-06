@@ -279,6 +279,7 @@ function show(name, arg) {
   stairPick();
   dpuCalc();
   if (window.vnCalcAll) vnCalcAll();
+  if (window.kvCalc) kvCalc();
   fareaCalc();
   auCalc();
   if (window.dbnMark) dbnMark();
