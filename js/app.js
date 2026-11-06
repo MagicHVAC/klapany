@@ -271,6 +271,7 @@ function show(name, arg) {
   roomCalc();
   bldCalc();
   soShow();
+  stairPick();
 }
 function route() {
   var h = location.hash.slice(1) || 'home', s = sectionOf(h);

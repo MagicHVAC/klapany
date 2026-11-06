@@ -357,3 +357,42 @@ html.rv .pick.in:hover { transform: translateY(-2px) !important; }
 .stc li .refs { margin-top: 3px; }
 .stc .ref { white-space: normal; }
 h3.sth { margin: 18px 0 8px; font-size: 16px; }
+
+.stpick { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px 12px; align-items: end; }
+.stf { display: grid; gap: 5px; min-width: 0; }
+.stpick label { margin: 0; }
+.stpick input[type=number] { width: 100%; height: 42px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; box-sizing: border-box; }
+.stpick .stchk { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; margin: 2px 0 0; }
+.stres { margin-bottom: 14px; }
+.stres .bstep .refs { margin-top: 4px; }
+.eibtn.rec { box-shadow: inset 0 0 0 2px var(--fp); }
+.stanim { background: var(--surface); border: 1px solid var(--line); border-radius: 13px; padding: 10px 14px 12px; margin-top: 8px; }
+.stsvg { width: 100%; max-width: 560px; display: block; margin: 0 auto; }
+.stsvg .stb { fill: color-mix(in srgb, var(--line) 35%, transparent); stroke: var(--muted); stroke-width: 1.5; }
+.stsvg .stfire-room { fill: color-mix(in srgb, var(--fire) 14%, transparent); }
+.stsvg .stl { stroke: var(--muted); stroke-width: 1.5; }
+.stsvg .stc-box { fill: color-mix(in srgb, var(--air) 8%, transparent); stroke: var(--text); stroke-width: 2; }
+.stsvg .stm { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 3 2; }
+.stsvg .std { fill: var(--nz); }
+.stsvg .stgap { fill: color-mix(in srgb, var(--line) 50%, transparent); }
+.stsvg .stair-zone { fill: color-mix(in srgb, var(--air) 6%, transparent); stroke: var(--air); stroke-dasharray: 4 3; }
+.stsvg .strail { stroke: var(--air); stroke-width: 2; }
+.stsvg .sttam { fill: color-mix(in srgb, var(--line) 60%, transparent); stroke: var(--muted); }
+.stsvg .sttam.on { fill: color-mix(in srgb, var(--air) 22%, transparent); stroke: var(--air); }
+.stsvg .stduct { fill: color-mix(in srgb, var(--air) 30%, transparent); stroke: var(--air); }
+.stsvg .stfan { fill: var(--air); }
+.stsvg .stex { fill: color-mix(in srgb, var(--muted) 30%, transparent); stroke: var(--muted); }
+.stsvg .stwin { fill: var(--air); }
+.stsvg .stsky { fill: var(--air); }
+.stsvg .stflame { fill: var(--fire); transform-origin: 62px 168px; animation: stfl 0.9s ease-in-out infinite alternate; }
+@keyframes stfl { from { transform: scale(1, 0.88); } to { transform: scale(1.05, 1.08); } }
+.stsvg .stt { fill: var(--muted); font: 500 9.5px var(--body); }
+.stsvg .stt.fire { fill: var(--fire); }
+.stsvg .stt.air { fill: var(--air); }
+.stsvg .sts { fill: #a3acbd; opacity: .75; }
+.stsvg .sta { fill: var(--air); }
+.stcap { margin: 8px 0 4px; font-size: 14.5px; }
+.stcap b { color: var(--fp); }
+@media (prefers-reduced-motion: reduce) { .stsvg animateMotion { display: none; } .stsvg .stflame { animation: none; } }
+.bstep .ref b { display: inline; font: 600 13px var(--body); color: inherit; margin: 0; }
+.bstep .refs { display: flex; flex-wrap: wrap; gap: 4px; }
