@@ -1,9 +1,10 @@
 /* Разделы, маршруты, поиск, режимы анимации */
 var ROUTES = [
   ['home', 'Главная'], ['how', 'Как работает'], ['no', 'НО'], ['nz', 'НЗ и ДД'], ['rooms', 'Помещения'], ['prod', 'Производство'],
-  ['fire', 'Огнезащита'], ['smoke', 'Противодым'], ['load', 'Пожарная нагрузка'], ['build', 'Здание'], ['cat', 'Категории'], ['evac', 'Эвакуация'], ['alarm', 'Сигнализация'], ['aupt', 'АУПТ'], ['auto', 'Автоматика'], ['norms', 'Нормы']
+  ['fire', 'Огнезащита'], ['smoke', 'Противодым'], ['load', 'Пожарная нагрузка'], ['build', 'Здание'], ['cat', 'Категории'], ['evac', 'Эвакуация'], ['alarm', 'Сигнализация'], ['aupt', 'АУПТ'], ['auto', 'Автоматика'], ['norms', 'Нормы'], ['dbn', 'ДБН']
 ];
 var ICON = {
+  dbn: 'M4 5h16v14H4zM4 12h16M9 5v14',
   aupt: 'M12 3v6M8 9h8M10 9l-1 3M14 9l1 3M6 15l-1 2M10 15l-.5 2.5M14 15l.5 2.5M18 15l1 2M4 21h16',
   rooms: 'M3 4h18v16H3zM3 11h9M12 4v16M16 11v9', load: 'M4 20h16M6 20V10M10 20V6M14 20v-8M18 20V4',
   home: 'M4 11 12 4l8 7v9h-5v-6H9v6H4z', how: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 3v18M7 7l10 10', no: 'M3 12h18M12 5v14', nz: 'M3 12h7m4 0h7M10 7v10m4-10v10', prod: 'M3 20V10l6 4V10l6 4V5h6v15z',
@@ -277,6 +278,7 @@ function show(name, arg) {
   dpuCalc();
   fareaCalc();
   auCalc();
+  if (window.dbnMark) dbnMark();
 }
 function route() {
   var h = location.hash.slice(1) || 'home', s = sectionOf(h);
@@ -349,6 +351,11 @@ function init() {
   setMode('n');
   setAuto(!calm);
   route();
-  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    /* новая версия встала — один раз перезагрузить страницу, чтобы не висела старая */
+    var had = !!navigator.serviceWorker.controller, done = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () { if (had && !done) { done = true; location.reload(); } });
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (r) { r.update(); }).catch(function () {});
+  }
 }
 document.addEventListener('DOMContentLoaded', init);

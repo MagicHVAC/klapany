@@ -447,3 +447,13 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .stsvg .dpgrille.bad { fill: var(--fire); }
 .stsvg .dpys.wrn { stroke: var(--nz); }
 .stsvg .dpdoor.wrn { fill: var(--nz); }
+
+.dbnb { margin-top: 8px; border-radius: 9px; padding: 5px 9px; font-size: 13px; border: 1px solid var(--line); background: var(--bg); }
+.dbnb summary { color: var(--text); font-size: 13px; }
+.dbnb summary b { display: inline-block; min-width: 1.2em; text-align: center; }
+.dbnb p { margin: 6px 0; color: var(--muted); font-size: 13.5px; }
+.dbn-same { border-color: var(--no); } .dbn-same summary b, .mini.dbn-same h4 { color: var(--no); }
+.dbn-strict { border-color: var(--fire); } .dbn-strict summary b, .mini.dbn-strict h4 { color: var(--fire); }
+.dbn-soft { border-color: var(--nz); } .dbn-soft summary b, .mini.dbn-soft h4 { color: var(--nz); }
+.dbn-diff { border-color: var(--dd); } .dbn-diff summary b, .mini.dbn-diff h4 { color: var(--dd); }
+.dbn-none { border-color: var(--muted); }
