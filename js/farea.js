@@ -103,7 +103,10 @@ function fareaCalc() {
   if (!$('#fa-m')) { cancelAnimationFrame(FA.raf); FA.raf = 0; return; }
   var o = $('#fa-o').value; $('#fa-x').parentNode.hidden = $('#fa-y').parentNode.hidden = o !== 'xy';
   $('#fa-ts').parentNode.hidden = $('#fa-s').value === 'no';
-  var r = faInp(), err = [];
+  var r = faInp(), err = [], mk = fcNums([['fa-v', '', 0, null, true], ['fa-a', '', 0, null, true], ['fa-b', '', 0, null, true], ['fa-t', '', 0, 600, true], ['fa-ts', '', 0], ['fa-x', '', 0, r.A], ['fa-y', '', 0, r.B]], []);
+  if (r.s !== 'no' && r.ts > r.t) mk.push(['fa-ts', 'warnf', 'Позже расчётного времени — стволы ещё не поданы']);
+  fcApply('fa-', mk);
+  if (mk.some(function (m) { return m[1] === 'bad'; })) err.push('Исправь поля, подсвеченные красным.');
   if (!(r.v > 0)) err.push('Задай линейную скорость больше 0.');
   if (!(r.A > 0 && r.B > 0)) err.push('Задай размеры помещения.');
   if (!(r.t > 0)) err.push('Задай время развития больше 0.');
@@ -176,7 +179,7 @@ function faDoc() {
     '<p>Форма площади пожара: ' + st.form + '. ' + (st.rect ? 'S = b · (Lлев + Lправ) = ' + faF(Math.min(r.A, r.B)) + ' · (' + faF(st.l, 2) + ' + ' + faF(st.r, 2) + ')' : 'S — площадь круга радиусом L в пределах помещения') + ' = <b>' + faF(st.S) + ' м²</b>.</p>' +
     '<p>Площадь тушения при глубине ' + r.h + ' м: ' + faF(st.St) + ' м².</p>' +
     '<table><tr><th>t, мин</th><th>L, м</th><th>S, м²</th><th>Форма</th></tr>' + steps.map(function (q) { var s = faState(r, q); return '<tr><td>' + q + '</td><td>' + faF(s.L, 2) + '</td><td>' + faF(s.S) + '</td><td>' + s.form + '</td></tr>'; }).join('') + '</table>' +
-    '<p style="font-size:10pt;color:#555">Сформировано: справочник «Клапаны» v' + APP.ver + ', ' + new Date().toLocaleDateString('ru-RU') + '. Допущения модели: нагрузка равномерная, скорость одинаковая во всех точках. Решение принимает разработчик расчёта.</p></body></html>';
+    '<p style="font-size:10pt;color:#555">Сформировано: «Справочник инженера ОВиК» v' + APP.ver + ', ' + new Date().toLocaleDateString('ru-RU') + '. Допущения модели: нагрузка равномерная, скорость одинаковая во всех точках. Решение принимает разработчик расчёта.</p></body></html>';
   var blob = new Blob(['﻿', html], { type: 'application/msword' }), a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = 'Расчёт_площади_пожара.doc'; document.body.appendChild(a); a.click();
   setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);

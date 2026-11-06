@@ -30,6 +30,7 @@ function dpuBlock() {
     dpuF('dp-hd', 'Низ ДПУ от пола, м', '4.2', 'any') +
     dpuF('dp-y', 'Низ дымового слоя от пола, м — из расчёта', '2.5', 'any') +
     dpuF('dp-door', 'Верх дверей эвакуационных выходов, м', '2.1', 'any') +
+    dpuF('dp-vv', 'Скорость в сечении клапана, м/с — по каталогу', '8', 'any', 'пример, замени по каталогу клапана') +
     '</div><div class="barres stres" id="dp-res"></div>' +
     '<div class="stanim" id="dp-anim"></div>' +
     '<div class="dpbtns"><button type="button" class="eibtn on" id="dp-doc">Скачать расчёт в Word</button></div>' +
@@ -45,32 +46,63 @@ function dpuFmt(v, n) { if (!isFinite(v)) return '—'; var k = Math.pow(10, n =
 function dpuCompute() {
   var r = { k: $('#dp-k').value, A: dpuNum('dp-a'), L: dpuNum('dp-l'), lim: +$('#dp-cf').value, gm: $('#dp-gm').value, G0: dpuNum('dp-g'),
     ts: dpuNum('dp-ts'), tr: dpuNum('dp-tr'), ro0: dpuNum('dp-ro'), sh: $('#dp-sh').value, a: dpuNum('dp-w') / 1000, b: dpuNum('dp-h') / 1000,
-    or: $('#dp-or').value, wd: dpuNum('dp-wd'), hd: dpuNum('dp-hd'), y: dpuNum('dp-y'), door: dpuNum('dp-door'), err: [], warn: [] };
+    or: $('#dp-or').value, wd: dpuNum('dp-wd'), hd: dpuNum('dp-hd'), y: dpuNum('dp-y'), door: dpuNum('dp-door'), vv: dpuNum('dp-vv'), err: [], warn: [], marks: [] };
+  fcNums([['dp-a', '', 0, null, true], ['dp-l', '', 0, null, true], ['dp-g', '', 0, null, true], ['dp-ts', '', -50], ['dp-tr', '', -50], ['dp-w', '', 0, null, true], ['dp-h', '', 0, null, true],
+    ['dp-wd', '', 0], ['dp-hd', '', 0, null, true], ['dp-y', '', 0], ['dp-door', '', 0], ['dp-vv', '', 0, null, true]], r.marks);
+  if (r.marks.some(function (m) { return m[1] === 'bad' && m[0] !== 'dp-vv'; })) r.err.push('Исправь поля, подсвеченные красным.');
   r.Ts = r.ts + 273.15; r.Tr = r.tr + 273.15;
   r.D = r.sh === 'round' ? r.a : 2 * r.a * r.b / (r.a + r.b);
   r.gamma = (r.or === 'h' && r.wd >= 2 * r.D) ? 1 : 0.5;
   r.d = r.hd - r.y;
   r.ro = isFinite(r.ro0) && r.ro0 > 0 ? r.ro0 : 353 / r.Ts; r.roAuto = !(isFinite(r.ro0) && r.ro0 > 0);
   r.G = r.gm === 'l' ? r.G0 * r.ro / 3600 : r.G0;
-  if (!(r.Ts > r.Tr)) r.err.push('Tsm должна быть выше Tr — иначе формула Е.1 не работает.');
-  if (!(r.d > 0)) r.err.push('Низ ДПУ должен быть выше нижней границы дымового слоя: d = ' + dpuFmt(r.d) + ' м.');
-  else if (r.d < 2 * r.D) r.err.push('Не выполнено d ≥ 2D: d = ' + dpuFmt(r.d) + ' м, 2D = ' + dpuFmt(2 * r.D) + ' м. Уменьши сечение ДПУ или подними его выше дымового слоя.');
-  if (isFinite(r.door) && r.hd < r.door) r.err.push('ДПУ ниже верха дверей эвакуационных выходов — нельзя (пп. 7.8, 7.9).');
+  if (!(r.Ts > r.Tr)) { r.err.push('Tsm должна быть выше Tr — иначе формула Е.1 не работает.'); r.marks.push(['dp-ts', 'bad', 'Должна быть выше Tr']); }
+  if (!(r.d > 0)) { r.err.push('Низ ДПУ должен быть выше нижней границы дымового слоя: d = ' + dpuFmt(r.d) + ' м.'); r.marks.push(['dp-y', 'bad', 'Выше низа ДПУ — так нельзя']); }
+  else if (r.d < 2 * r.D) { r.err.push('Не выполнено d ≥ 2D: d = ' + dpuFmt(r.d) + ' м, 2D = ' + dpuFmt(2 * r.D) + ' м. Уменьши сечение ДПУ или подними его выше дымового слоя.'); r.marks.push(['dp-w', 'bad', 'Сечение велико: 2D > d (прил. Е)']); r.marks.push(['dp-hd', 'warnf', 'Или подними ДПУ: нужно d ≥ 2D']); }
+  if (isFinite(r.door) && r.hd < r.door) { r.err.push('ДПУ ниже верха дверей эвакуационных выходов — нельзя (пп. 7.8, 7.9).'); r.marks.push(['dp-hd', 'bad', 'Ниже верха дверей — нельзя, пп. 7.8, 7.9']); }
+  if (isFinite(r.door) && r.y < r.door) { r.warn.push('Низ дымового слоя ' + dpuFmt(r.y) + ' м ниже верха дверей эвакуационных выходов ' + dpuFmt(r.door) + ' м: дым будет уходить через дверные проёмы, а люди окажутся в дыму. Проверь расчёт высоты дымового слоя — это вывод справочника, в прил. Е такого ограничения нет.'); r.marks.push(['dp-y', 'warnf', 'Ниже верха дверей ' + dpuFmt(r.door) + ' м — проверь расчёт']); }
+  if (r.or === 'h' && isFinite(r.wd) && r.wd < 2 * r.D) r.marks.push(['dp-wd', 'warnf', 'Меньше 2D = ' + dpuFmt(2 * r.D) + ' м: γ = 0,5']);
   r.Vmax = 4.16 * r.gamma * Math.pow(Math.max(r.d, 0), 2.5) * Math.sqrt(Math.max(r.Ts - r.Tr, 0) / r.Tr);
   r.Nmin = r.Vmax > 0 ? Math.ceil(r.G / (r.ro * r.Vmax) - 1e-9) : NaN;
   r.Lmin = 0.9 * Math.sqrt(r.Vmax);
   if (r.k === 'room') {
     r.Ngeo = Math.ceil(r.A / 500 - 1e-9); r.geoTxt = 'п. 7.9: не больше 500 м² на 1 ДПУ — ' + dpuFmt(r.A, 1) + ' / 500';
+    if (r.A > 3000) r.marks.push(['dp-a', 'warnf', 'Больше 3000 м² — делить на дымовые зоны']);
     if (r.A > 3000) r.warn.push('Площадь больше 3000 м²: помещение делят на дымовые зоны до 3000 м² каждая, расчёт — на зону (п. 7.9). Условное деление при механической вытяжке — только если Tsm выше Tr на 20 °C и больше.');
   } else {
     r.Ngeo = Math.ceil(r.L / r.lim - 1e-9); r.geoTxt = 'п. 7.8: не больше ' + r.lim + ' м коридора на 1 ДПУ — ' + dpuFmt(r.L, 1) + ' / ' + r.lim;
+    if (r.L > 60) r.marks.push(['dp-l', 'warnf', 'Больше 60 м — расход на каждый участок до 60 м']);
     if (r.L > 60) r.warn.push('Коридор длиннее 60 м: расход считают для каждого коридора длиной не больше 60 м (п. 7.4 а).');
   }
   r.N = Math.max(r.Nmin || 0, r.Ngeo || 0);
   r.Vone = r.N ? r.G / r.ro / r.N : NaN;
   if (r.k === 'corr' && r.N > 1 && r.L / r.N < r.Lmin) r.warn.push('На длине ' + dpuFmt(r.L, 1) + ' м при ' + r.N + ' ДПУ шаг ' + dpuFmt(r.L / r.N) + ' м меньше Lmin = ' + dpuFmt(r.Lmin) + ' м. Проверь расстановку или уменьши расход на ДПУ.');
+  r.sizes = dpuSizes(r);
   if (r.ts - r.tr < 20 && r.k === 'room' && r.A > 3000) r.warn.push('Tsm − Tr меньше 20 °C — условно делить на зоны нельзя, только конструктивно (п. 7.9).');
   return r;
+}
+/* Подбор размеров клапана (ДПУ): нужное живое сечение A = V1 / v; ограничения прил. Е: 2D ≤ d, для γ = 1 ещё 2D ≤ расстояние до стены.
+   Размеры перебираются кратно 50 мм от 200 до 2000, стороны не больше 1:4 — это шаг подбора справочника, не каталог: сверить с каталогом. */
+function dpuSizes(r) {
+  var o = { Dmax: r.d / 2, Dg: r.or === 'h' ? r.wd / 2 : NaN, list: [], need: NaN };
+  if (!(r.Vone > 0) || !(r.vv > 0) || !(r.d > 0)) return o;
+  o.need = r.Vone / r.vv;
+  var lim = Math.min(o.Dmax, isFinite(o.Dg) ? o.Dg : Infinity), cand = [];
+  for (var a = 200; a <= 2000; a += 50) for (var b = 200; b <= a; b += 50) {
+    if (a / b > 4) continue;
+    var A = a * b / 1e6, D = 2 * a * b / (a + b) / 1000;
+    if (A < o.need || D > o.Dmax) continue;
+    cand.push({ a: a, b: b, A: A, D: D, g1: D <= lim + 1e-9, v: r.Vone / A });
+  }
+  cand.sort(function (x, y) { return (y.g1 - x.g1) || (x.A - y.A) || (x.a / x.b - y.a / y.b); });
+  var seen = {};
+  o.list = cand.filter(function (c) { var k = c.a + 'x' + c.b; if (seen[k] || o.list.length > 5) return false; seen[k] = 1; return true; }).slice(0, 5);
+  if (!o.list.length) {
+    /* сколько ДПУ нужно, чтобы клапан с D ≤ d/2 пропустил расход при скорости v */
+    var Dm = o.Dmax, Am = Dm * Dm; /* квадрат со стороной D: эквивалентный диаметр = D */
+    o.needN = Math.ceil(r.G / r.ro / (Am * r.vv) - 1e-9);
+  }
+  return o;
 }
 function dpuCalc() {
   if (!$('#dp-k')) return;
@@ -81,49 +113,91 @@ function dpuCalc() {
   $('#dp-g').previousSibling.textContent = $('#dp-gm').value === 'l' ? 'Расход дыма при Tsm, м³/ч — из расчёта' : 'Gsm, кг/с — из расчёта';
   var r = dpuCompute(), c = function (k, v, s, cl) { return '<div class="bstep' + (cl ? ' ' + cl : '') + '"><span>' + k + '</span><b>' + v + '</b>' + (s ? '<small>' + s + '</small>' : '') + '</div>'; };
   var h = '';
-  if (r.err.length) h += r.err.map(function (e) { return c('Ошибка исходных данных', 'Пересмотри', e, 'warn'); }).join('');
+  if (r.err.length) h += r.err.map(function (e) { return c('Ошибка исходных данных', 'Пересмотри', e, 'warn'); }).join('') + (r.d > 0 && r.d < 2 * r.D ? c('Подойдёт клапан', 'D ≤ ' + dpuFmt(r.d / 2, 2) + ' м', 'По d ≥ 2D эквивалентный диаметр не больше d/2. Например, ' + Math.floor(r.d / 2 * 20) * 50 + '×' + Math.floor(r.d / 2 * 20) * 50 + ' мм — сверь с каталогом; расход тогда проверь по числу ДПУ.', 'final') : '');
   else {
     h += c('Принять ДПУ', r.N + ' шт.', 'Большее из Nmin = ' + r.Nmin + ' (прил. Е) и ' + r.Ngeo + ' (' + (r.k === 'room' ? 'п. 7.9' : 'п. 7.8') + ').', 'final');
     h += c('Vmax на 1 ДПУ, Е.1', dpuFmt(r.Vmax) + ' м³/с', 'γ = ' + dpuFmt(r.gamma, 1) + ', d = ' + dpuFmt(r.d) + ' м, D = ' + dpuFmt(r.D, 3) + ' м. Это ' + dpuFmt(r.Vmax * 3600, 0) + ' м³/ч.');
     h += c('Шаг между ДПУ, Е.2', 'не меньше ' + dpuFmt(r.Lmin) + ' м', 'Lmin = 0,9 · Vmax^1/2.');
     h += c('Фактически через 1 ДПУ', dpuFmt(r.Vone) + ' м³/с', 'Gsm / ρsm / N = ' + dpuFmt(r.G, 2) + ' / ' + dpuFmt(r.ro, 3) + ' / ' + r.N + (r.roAuto ? '; ρ = 353/Tsm' : '') + '.');
+    var z = r.sizes;
+    if (z.list.length) h += c('Размер клапана, мм', z.list[0].a + ' × ' + z.list[0].b, 'Живое сечение не меньше ' + dpuFmt(z.need, 3) + ' м² при ' + dpuFmt(r.vv, 1) + ' м/с. Варианты: ' + z.list.map(function (q) { return q.a + '×' + q.b + ' (v ' + dpuFmt(q.v, 1) + ' м/с' + (q.g1 ? '' : ', γ = 0,5') + ')'; }).join('; ') + '. Ограничение прил. Е: D ≤ d/2 = ' + dpuFmt(z.Dmax, 2) + ' м. Кратно 50 мм — сверь с каталогом производителя.', 'final');
+    else if (isFinite(z.need)) h += c('Размер клапана', 'Не подобрать', 'Нужно сечение ' + dpuFmt(z.need, 3) + ' м², а по d ≥ 2D клапан не больше D = ' + dpuFmt(z.Dmax, 2) + ' м. Увеличь число ДПУ' + (z.needN ? ' примерно до ' + z.needN : '') + ', подними ДПУ или прими большую скорость по каталогу.', 'warn');
   }
   h += r.warn.map(function (w) { return c('Внимание', 'Проверь', w, 'warn'); }).join('');
   $('#dp-res').innerHTML = h;
+  fcApply('dp-', r.marks);
   $('#dp-anim').innerHTML = dpuSvg(r);
   DPU_LAST = r;
 }
 var DPU_LAST = null;
 
+/* Схема по введённым значениям: разрез (вертикаль — в масштабе) и план. Подписи — фактические числа; нарушения — красным. */
+function dpuDim(x, y1, y2, txt, cls, side) {
+  var a = Math.min(y1, y2), b = Math.max(y1, y2), tx = side === 'l' ? x - 4 : x + 4;
+  return '<line class="dpdim ' + (cls || '') + '" x1="' + x + '" y1="' + a + '" x2="' + x + '" y2="' + b + '"/>' +
+    '<line class="dpdim ' + (cls || '') + '" x1="' + (x - 3) + '" y1="' + a + '" x2="' + (x + 3) + '" y2="' + a + '"/><line class="dpdim ' + (cls || '') + '" x1="' + (x - 3) + '" y1="' + b + '" x2="' + (x + 3) + '" y2="' + b + '"/>' +
+    '<text class="stt dpl ' + (cls || '') + '" x="' + tx + '" y="' + ((a + b) / 2 + 3) + '" text-anchor="' + (side === 'l' ? 'end' : 'start') + '">' + txt + '</text>';
+}
 function dpuSvg(r) {
-  var n = r.err.length ? 0 : r.N, show = Math.min(n, 8), W = 360, g = '', top = 30, floor = 150;
-  var Hh = Math.max(r.hd + 0.6, r.door + 0.5, r.y + 1, 3), sc = (floor - top) / Hh, Y = function (m) { return floor - m * sc; };
-  g += '<rect class="dpz" x="20" y="' + top + '" width="320" height="' + (floor - top) + '"/>';
-  var ys = Y(Math.max(Math.min(r.y, Hh), 0));
-  g += '<rect class="dpsmoke" x="20" y="' + top + '" width="320" height="' + Math.max(ys - top, 0) + '"><animate attributeName="opacity" values=".55;.8;.55" dur="4s" repeatCount="indefinite"/></rect>';
-  g += '<line class="dpys" x1="20" y1="' + ys + '" x2="340" y2="' + ys + '"/><text class="stt" x="336" y="' + (ys + 11) + '" text-anchor="end">низ дымового слоя ' + dpuFmt(r.y, 2) + ' м</text>';
-  g += '<line class="stl" x1="10" y1="' + floor + '" x2="350" y2="' + floor + '"/><line class="stl" x1="10" y1="' + top + '" x2="350" y2="' + top + '"/>';
-  var yd = Y(r.door); g += '<rect class="dpdoor" x="24" y="' + yd + '" width="14" height="' + (floor - yd) + '"/><text class="stt" x="42" y="' + (yd + 9) + '">дверь</text>';
-  g += '<path class="stflame" style="transform-origin:180px ' + floor + 'px" d="M174 ' + floor + ' C166 ' + (floor - 10) + ' 170 ' + (floor - 18) + ' 176 ' + (floor - 26) + ' C176 ' + (floor - 18) + ' 182 ' + (floor - 18) + ' 184 ' + (floor - 24) + ' C190 ' + (floor - 16) + ' 188 ' + (floor - 6) + ' 182 ' + floor + ' Z"/>';
-  var yh = Y(r.hd), fl = '';
-  for (var i = 0; i < show; i++) {
-    var x = 20 + 320 * (i + 0.5) / show;
-    g += '<rect class="dpduct" x="' + (x - 9) + '" y="' + (top - 8) + '" width="18" height="' + Math.max(yh - top + 8, 4) + '"/><rect class="dpgrille" x="' + (x - 11) + '" y="' + (yh - 3) + '" width="22" height="4"/>';
-    fl += '<circle class="sts" r="3.5"><animateMotion dur="3.2s" begin="-' + (i * 0.37).toFixed(2) + 's" repeatCount="indefinite" path="M180 ' + (floor - 26) + ' C180 ' + (ys + 10) + ' ' + x + ' ' + (ys + 5) + ' ' + x + ' ' + (yh + 2) + ' L' + x + ' ' + (top - 10) + '"/></circle>' +
-      '<circle class="sts" r="2.5"><animateMotion dur="3.2s" begin="-' + (i * 0.37 + 1.6).toFixed(2) + 's" repeatCount="indefinite" path="M180 ' + (floor - 26) + ' C175 ' + (ys + 15) + ' ' + (x + 6) + ' ' + (ys + 3) + ' ' + x + ' ' + (yh + 2) + ' L' + x + ' ' + (top - 10) + '"/></circle>';
+  var f = dpuFmt, n = r.N > 0 && isFinite(r.N) ? r.N : 0, show = Math.min(n, 6), W = 360, g = '';
+  var vert = r.or === 'v', a = r.a || 0, b = r.sh === 'round' ? a : (r.b || 0);
+  var top = 46, floor = 186, Hh = Math.max((r.hd || 0) + (vert ? b : 0) + 0.7, (r.door || 0) + 0.5, (r.y || 0) + 0.6, 3);
+  var sv = (floor - top) / Hh, Y = function (m) { return floor - Math.max(0, m) * sv; };
+  var Lw = r.k === 'corr' ? r.L : Math.sqrt(r.A), x0 = 104, x1 = 340, sh = (x1 - x0) / (Lw > 0 ? Lw : 1), X = function (m) { return x0 + m * sh; };
+  var ceil = Y(Hh - 0.15), ys = Y(r.y), yh = Y(r.hd), yd = Y(r.door);
+  var badD = !(r.d >= 2 * r.D), badDoor = r.hd < r.door, warnY = r.y < r.door, badWall = !vert && r.wd < 2 * r.D;
+  g += '<rect class="dpz" x="' + x0 + '" y="' + ceil + '" width="' + (x1 - x0) + '" height="' + (floor - ceil) + '"/>';
+  g += '<rect class="dpsmoke" x="' + x0 + '" y="' + ceil + '" width="' + (x1 - x0) + '" height="' + Math.max(ys - ceil, 0) + '"><animate attributeName="opacity" values=".5;.75;.5" dur="4s" repeatCount="indefinite"/></rect>';
+  g += '<line class="dpys' + (warnY ? ' wrn' : '') + '" x1="' + x0 + '" y1="' + ys + '" x2="' + x1 + '" y2="' + ys + '"/>';
+  g += '<line class="stl" x1="' + (x0 - 6) + '" y1="' + floor + '" x2="' + (x1 + 6) + '" y2="' + floor + '"/>';
+  g += '<rect class="dpdoor' + (warnY ? ' wrn' : '') + '" x="' + (x0 + 3) + '" y="' + yd + '" width="12" height="' + (floor - yd) + '"/>';
+  g += '<text class="stt dpl' + (warnY ? ' wrn' : '') + '" x="' + (x0 + 18) + '" y="' + (yd + 8) + '">дверь, верх ' + f(r.door) + ' м</text>';
+  g += '<path class="stflame" style="transform-origin:' + ((x0 + x1) / 2) + 'px ' + floor + 'px" d="M' + ((x0 + x1) / 2 - 6) + ' ' + floor + ' c-8 -10 -4 -18 2 -26 c0 8 6 8 8 2 c6 8 4 18 -2 24 z"/>';
+  /* клапаны */
+  var gx = [], fl = '';
+  for (var i = 0; i < show; i++) gx.push(r.k === 'corr' ? X(Lw * (i + 0.5) / show) : X(Lw * (i + 0.5) / show));
+  gx.forEach(function (x, i) {
+    var cls = (badD || badDoor) ? ' bad' : '';
+    if (!vert) {
+      var gw = Math.max(a * sh, 6);
+      g += '<rect class="dpduct" x="' + (x - gw / 2 - 2) + '" y="' + (top - 10) + '" width="' + (gw + 4) + '" height="' + Math.max(yh - top + 10, 4) + '"/>';
+      g += '<rect class="dpgrille' + cls + '" x="' + (x - gw / 2) + '" y="' + (yh - 3) + '" width="' + gw + '" height="4"/>';
+    } else {
+      var gh = Math.max(b * sv, 4), sx = x + 6;
+      g += '<rect class="dpduct" x="' + sx + '" y="' + (top - 10) + '" width="12" height="' + (floor - top + 10) + '"/>';
+      g += '<rect class="dpgrille' + cls + '" x="' + (sx - 3) + '" y="' + (yh - gh) + '" width="4" height="' + gh + '"/>';
+    }
+    var tx = vert ? x + 2 : x, ty = vert ? yh - b * sv / 2 : yh + 2;
+    fl += '<circle class="sts" r="3.2"><animateMotion dur="3.4s" begin="-' + (i * 0.5).toFixed(2) + 's" repeatCount="indefinite" path="M' + ((x0 + x1) / 2) + ' ' + (floor - 26) + ' C' + ((x0 + x1) / 2) + ' ' + (ys + 8) + ' ' + tx + ' ' + (ys + 4) + ' ' + tx + ' ' + ty + (vert ? ' L' + (x + 12) + ' ' + ty + ' L' + (x + 12) + ' ' + (top - 10) : ' L' + x + ' ' + (top - 10)) + '"/></circle>';
+  });
+  if (gx.length) {
+    var x = gx[0];
+    g += dpuDim(x0 - 18, floor, yh, 'низ ДПУ ' + f(r.hd) + ' м', badDoor ? 'bad' : '', 'l');
+    g += dpuDim(x0 - 34, floor, ys, '', warnY ? 'wrn' : '', 'l');
+    g += '<text class="stt dpl' + (warnY ? ' wrn' : '') + '" x="' + (x1 - 2) + '" y="' + (ys - 4) + '" text-anchor="end">низ дымового слоя ' + f(r.y) + ' м</text>';
+    var dx = gx.length > 1 ? (gx[0] + gx[1]) / 2 : x + 24;
+    g += dpuDim(dx, ys, yh, 'd = ' + f(r.d) + ' м ' + (badD ? '< ' : '≥ ') + '2D = ' + f(2 * r.D) + ' м', badD ? 'bad' : 'ok');
+    g += '<text class="stt dpl" x="' + x + '" y="' + (vert ? yh - b * sv - 4 : top - 13) + '" text-anchor="middle">' + (r.sh === 'round' ? 'Ø ' + f(a * 1000, 0) : f(a * 1000, 0) + '×' + f(b * 1000, 0)) + ' мм, D = ' + f(r.D, 2) + ' м</text>';
+    if (!vert) {
+      var xw = X(0), yw = yh + 12;
+      g += '<line class="dpdim ' + (badWall ? 'wrn' : '') + '" x1="' + x0 + '" y1="' + yw + '" x2="' + Math.max(x0 + 8, Math.min(x, x0 + r.wd * sh)) + '" y2="' + yw + '"/>' +
+        '<text class="stt dpl ' + (badWall ? 'wrn' : '') + '" x="' + (x0 + 4) + '" y="' + (yw + 10) + '">до стены ' + f(r.wd) + ' м ' + (badWall ? '< 2D → γ = 0,5' : '≥ 2D → γ = 1') + '</text>';
+    }
   }
-  if (show && r.d > 0) { var x0 = 20 + 320 * 0.5 / show + 16; g += '<line class="dpdim" x1="' + x0 + '" y1="' + yh + '" x2="' + x0 + '" y2="' + ys + '"/><text class="stt air" x="' + (x0 + 4) + '" y="' + ((yh + ys) / 2 + 3) + '">d = ' + dpuFmt(r.d) + ' м</text>'; }
-  g += '<text class="stt" x="20" y="18">' + (n ? 'Разрез: ' + n + ' ДПУ' + (n > show ? ', показано ' + show : '') : 'Исправь исходные данные') + '</text>';
+  g += '<text class="stt" x="' + x0 + '" y="12">' + (n ? 'Разрез: ' + n + ' ДПУ' + (n > show ? ', показано ' + show : '') + (vert ? ' · вертикально, γ = 0,5' : '') : 'Исправь исходные данные') + '</text>';
   /* план */
-  var pTop = 175, pH = r.k === 'corr' ? 22 : 50, p = '<rect class="dpz" x="20" y="' + pTop + '" width="320" height="' + pH + '"/>';
+  var pTop = floor + 26, pH = r.k === 'corr' ? 24 : Math.min(110, (x1 - x0)), p = '<rect class="dpz" x="' + x0 + '" y="' + pTop + '" width="' + (x1 - x0) + '" height="' + pH + '"/>', step = NaN;
   if (n) {
-    var cols = r.k === 'corr' ? n : Math.ceil(Math.sqrt(n * 320 / pH / 3)), rows = r.k === 'corr' ? 1 : Math.ceil(n / cols), k = 0;
-    for (var rr = 0; rr < rows; rr++) for (var cc = 0; cc < cols && k < Math.min(n, 40); cc++, k++)
-      p += '<rect class="dpgrille" x="' + (20 + 320 * (cc + 0.5) / cols - 5) + '" y="' + (pTop + pH * (rr + 0.5) / rows - 3) + '" width="10" height="6"/>';
-    p += '<text class="stt" x="20" y="' + (pTop + pH + 13) + '">План: ' + (r.k === 'corr' ? 'коридор ' + dpuFmt(r.L, 1) + ' м' : dpuFmt(r.A, 0) + ' м²') + ', шаг не меньше ' + dpuFmt(r.Lmin) + ' м — расставь по плану</text>';
+    var cols = r.k === 'corr' ? n : Math.ceil(Math.sqrt(n)), rows = r.k === 'corr' ? 1 : Math.ceil(n / cols), k = 0;
+    step = r.k === 'corr' ? r.L / n : Math.sqrt(r.A) / cols;
+    for (var rr = 0; rr < rows; rr++) for (var cc = 0; cc < cols && k < Math.min(n, 64); cc++, k++)
+      p += '<rect class="dpgrille' + (step < r.Lmin ? ' bad' : '') + '" x="' + (x0 + (x1 - x0) * (cc + 0.5) / cols - 5) + '" y="' + (pTop + pH * (rr + 0.5) / rows - 3) + '" width="10" height="6"/>';
+    if (cols > 1) { var px1 = x0 + (x1 - x0) * 0.5 / cols, px2 = x0 + (x1 - x0) * 1.5 / cols, py = pTop + pH * 0.5 / rows - 9;
+      p += '<line class="dpdim ' + (step < r.Lmin ? 'bad' : 'ok') + '" x1="' + px1 + '" y1="' + py + '" x2="' + px2 + '" y2="' + py + '"/><text class="stt dpl ' + (step < r.Lmin ? 'bad' : 'ok') + '" x="' + ((px1 + px2) / 2) + '" y="' + (py - 3) + '" text-anchor="middle">шаг ' + f(step) + ' м ' + (step < r.Lmin ? '<' : '≥') + ' Lmin ' + f(r.Lmin) + ' м</text>'; }
+    p += '<text class="stt" x="' + x0 + '" y="' + (pTop + pH + 13) + '">План: ' + (r.k === 'corr' ? 'коридор ' + f(r.L, 1) + ' м, ' + DPU_CORR.filter(function (c) { return +c[0] === r.lim; })[0][1] : f(r.A, 0) + ' м², условно квадрат ' + f(Math.sqrt(r.A), 1) + ' × ' + f(Math.sqrt(r.A), 1) + ' м') + '</text>';
   }
-  return '<svg class="stsvg" viewBox="0 0 ' + W + ' ' + (pTop + pH + 20) + '" role="img" aria-label="Схема размещения дымоприёмных устройств">' + g + fl + p + '</svg>' +
-    '<p class="tnote">Схема поясняет принцип, это не чертёж. Серые точки — дым, он поднимается и уходит в ДПУ.</p>';
+  return '<svg class="stsvg" viewBox="0 0 ' + W + ' ' + (pTop + pH + 20) + '" role="img" aria-label="Схема размещения дымоприёмных устройств по введённым значениям">' + g + fl + p + '</svg>' +
+    '<p class="tnote">Схема строится по введённым значениям: высоты — в масштабе, по горизонтали сжато. Красное — нарушение, жёлтое — проверь. Это не чертёж.</p>';
 }
 
 /* Выгрузка в Word: HTML-документ с расширением .doc — Word открывает его как документ */
@@ -153,7 +227,7 @@ function dpuDoc() {
     '<p>Объект защиты: ' + (r.k === 'room' ? 'помещение (дымовая зона)' : 'коридор') + '.</p><h2 style="font-size:12pt">Исходные данные</h2><table>' + src + '</table>' +
     '<p>Массовый расход и средняя температура дымового слоя приняты по расчёту по п. 7.4 СП 7.13130.' + (r.roAuto ? ' Плотность продуктов горения принята по уравнению состояния ρ = 353/T<sub>sm</sub>.' : '') + '</p>' +
     '<h2 style="font-size:12pt">Расчёт</h2>' + calc + warn +
-    '<p style="font-size:10pt;color:#555">Сформировано: справочник «Клапаны» v' + APP.ver + ', ' + new Date().toLocaleDateString('ru-RU') + '. Решение принимает ГИП.</p></body></html>';
+    '<p style="font-size:10pt;color:#555">Сформировано: «Справочник инженера ОВиК» v' + APP.ver + ', ' + new Date().toLocaleDateString('ru-RU') + '. Решение принимает ГИП.</p></body></html>';
   var blob = new Blob(['﻿', html], { type: 'application/msword' }), a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = 'Расчёт_ДПУ.doc'; document.body.appendChild(a); a.click();
   setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);

@@ -434,3 +434,16 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .stsvg .auh.on { fill: var(--air); }
 .stsvg .auh.dict { fill: var(--fp); }
 .stsvg .ausp { fill: color-mix(in srgb, var(--air) 40%, transparent); }
+.stf.bad input, .stf.bad select { border-color: var(--fire); box-shadow: 0 0 0 1px var(--fire); }
+.stf.warnf input, .stf.warnf select { border-color: var(--nz); }
+.stf .ferr { font-size: 11.5px; line-height: 1.3; color: var(--fire); font-weight: 600; }
+.stf.warnf .ferr { color: var(--nz); }
+.stf.bad .dhint, .stf.warnf .dhint { display: none; }
+.stsvg .dpl { font-size: 9px; fill: var(--text); }
+.stsvg .dpl.bad, .stsvg .dpdim.bad { fill: var(--fire); stroke: var(--fire); }
+.stsvg text.dpl.bad, .stsvg text.dpl.wrn, .stsvg text.dpl.ok { stroke: none; }
+.stsvg .dpl.wrn, .stsvg .dpdim.wrn { fill: var(--nz); stroke: var(--nz); }
+.stsvg .dpl.ok { fill: var(--no); } .stsvg .dpdim.ok { stroke: var(--no); }
+.stsvg .dpgrille.bad { fill: var(--fire); }
+.stsvg .dpys.wrn { stroke: var(--nz); }
+.stsvg .dpdoor.wrn { fill: var(--nz); }

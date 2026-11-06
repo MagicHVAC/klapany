@@ -1,6 +1,6 @@
 {
-  "name": "Справочник противопожарных клапанов",
-  "short_name": "Клапаны",
+  "name": "Справочник инженера ОВиК",
+  "short_name": "Справочник ОВиК",
   "lang": "ru",
   "start_url": "./index.html",
   "display": "standalone",

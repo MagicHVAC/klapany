@@ -46,13 +46,18 @@ function auFm(v, n) { if (!isFinite(v)) return '—'; var k = Math.pow(10, n ===
 function auVel(Q, p) { var d = (p[2] - 2 * p[3]) / 1000; return Q / 1000 / (Math.PI * d * d / 4); }
 
 function auCompute() {
-  var g = $('#au-g').value, w = $('#au-w').value, row = AU_T61.filter(function (r) { return r[0] === g; })[0], R = { g: g, w: w, err: [], warn: [], nodes: [] };
+  var g = $('#au-g').value, w = $('#au-w').value, row = AU_T61.filter(function (r) { return r[0] === g; })[0], R = { g: g, w: w, err: [], warn: [], nodes: [], marks: [] };
+  fcNums([['au-h', '', 0, null, true], ['au-sf', '', 0, null, true], ['au-k', '', 0, null, true], ['au-p1', '', 0, null, true], ['au-pmin', '', 0], ['au-li', '', 0, null, true], ['au-lp', '', 0, null, true],
+    ['au-m', '', 1], ['au-la', '', 0, null, true], ['au-lg', '', 0], ['au-lv', '', 0], ['au-puu', '', 0], ['au-hz', '', -50], ['au-pin', '', 0]], R.marks);
+  if (R.marks.some(function (m) { return m[1] === 'bad'; })) R.err.push('Исправь поля, подсвеченные красным.');
   R.h = auN('au-h'); R.Sf = auN('au-sf');
   var foam = w === 'f';
   R.i = foam ? row[2] : row[1]; R.Qn = foam ? row[4] : row[3]; R.Smin = row[5]; R.t = row[6]; R.lmax = row[7];
+  if (R.i === 'т62' || R.i === null) R.marks.push([R.i === 'т62' ? 'au-g' : 'au-w', 'bad', R.i === 'т62' ? 'Группы 5–7 — по табл. 6.2, здесь не считаются' : 'Для этой группы такое ОТВ табл. 6.1 не нормирует']);
   if (R.i === 'т62') R.err.push('Группы 5–7 — параметры по табл. 6.2 (склады), здесь не реализовано.');
   else if (R.i === null) R.err.push(foam ? 'Для группы 1 раствор пенообразователя табл. 6.1 не нормирует.' : 'Для группы 4.2 табл. 6.1 даёт только раствор пенообразователя.');
   if (w === 'ws' && typeof R.i === 'number') { R.i = R.i / 1.5; R.Qn = R.Qn / 1.5; }
+  if (R.h > 10) R.marks.push(['au-h', 'bad', 'Больше 10 м — табл. 6.2–6.3']);
   if (R.h > 10) R.err.push('Высота больше 10 м — параметры по табл. 6.2–6.3, от 20 до 30 м — дренчерные или АУП-ПП (прим. 3 к табл. 6.1).');
   if (g === '7' && foam === false) R.warn.push('Группа 7 — продолжительность для пены 25 мин (прим. 7).');
   R.Kred = (isFinite(R.Sf) && R.Sf < R.Smin) ? R.Sf / R.Smin : 1;
@@ -60,6 +65,8 @@ function auCompute() {
   R.K = auN('au-k'); R.li = auN('au-li'); R.lp = auN('au-lp'); R.m = Math.round(auN('au-m')); R.la = auN('au-la');
   R.pr = AU_PIPES[+$('#au-dr').value]; R.pm = AU_PIPES[+$('#au-dm').value]; R.pf = AU_PIPES[+$('#au-df').value];
   R.lg = auN('au-lg'); R.lv = auN('au-lv'); R.puu = auN('au-puu'); R.H = auN('au-hz'); R.pin = auN('au-pin'); R.pmin = auN('au-pmin');
+  if (R.li > R.lmax) R.marks.push(['au-li', 'bad', 'Больше ' + auFm(R.lmax, 1) + ' м по табл. 6.1']);
+  if (R.lp > R.lmax) R.marks.push(['au-lp', 'bad', 'Больше ' + auFm(R.lmax, 1) + ' м по табл. 6.1']);
   if (R.li > R.lmax || R.lp > R.lmax) R.err.push('Шаг оросителей больше допустимого ' + auFm(R.lmax, 1) + ' м по табл. 6.1.');
   if (!(R.K > 0 && R.li > 0 && R.lp > 0 && R.m >= 1 && R.la > 0)) R.err.push('Заполни K, шаги, число оросителей в ветви и участок до питающего.');
   if (R.err.length) return R;
@@ -69,7 +76,7 @@ function auCompute() {
   var pm = $('#au-pm').value;
   if (pm === 'td') { R.P1 = auN('au-p1'); R.q1 = 10 * R.K * Math.sqrt(R.P1); R.pMode = 'по эпюрам или паспорту'; }
   else { var c = { f13: 1.3, f14: 1.4, f15: 1.5 }[pm]; R.c = c; R.q1 = c * R.i * 12; R.P1 = Math.pow(R.q1 / (10 * R.K), 2); R.pMode = 'по формуле Б.1 с коэффициентом ' + String(c).replace('.', ','); }
-  if (isFinite(R.pmin) && R.P1 < R.pmin) { R.warn.push('Давление по Б.1 ' + auFm(R.P1) + ' МПа ниже минимального по ТД — принято ' + auFm(R.pmin) + ' МПа.'); R.P1 = R.pmin; R.q1 = 10 * R.K * Math.sqrt(R.P1); }
+  if (isFinite(R.pmin) && R.P1 < R.pmin) { R.marks.push(['au-pmin', 'warnf', 'Расчётное P1 ниже — принято это значение']); R.warn.push('Давление по Б.1 ' + auFm(R.P1) + ' МПа ниже минимального по ТД — принято ' + auFm(R.pmin) + ' МПа.'); R.P1 = R.pmin; R.q1 = 10 * R.K * Math.sqrt(R.P1); }
   /* ветвь рядка I: (Б.4), (Б.6), (Б.9), (Б.10) */
   var P = R.P1, Q = 0, Kr = R.pr[4], vmax = 0;
   for (var k = 1; k <= R.m; k++) {
@@ -102,9 +109,11 @@ function auCompute() {
   R.Z = R.H / 100;
   R.Ptr = R.Pend + R.Pg + R.Pv + R.Pm + R.puu + R.Z; R.Pn = R.Ptr - R.pin;
   R.W = R.Qpump * R.t * 60 / 1000;
+  [['au-dr', R.pr], ['au-dm', R.pm], ['au-df', R.pf]].forEach(function (x) { var Qx = x[0] === 'au-dr' ? R.Qbr : x[0] === 'au-dm' ? R.Qc : R.Qpump, vx = auVel(Qx, x[1]); if (vx > 10) R.marks.push([x[0], 'bad', 'Скорость ' + auFm(vx, 1) + ' м/с > 10 — увеличь DN']); });
   if (vmax > 10) R.warn.push('Скорость воды ' + auFm(vmax, 1) + ' м/с больше 10 м/с — увеличь диаметр (Б.1.2.6).');
   var b4 = AU_B4.filter(function (r) { return r[0] === R.pr[1]; })[0];
-  if (b4) { var lim = R.P1 >= 0.5 ? b4[1] : b4[2]; if (typeof lim === 'number' && R.m > lim) R.warn.push('По табл. Б.4 на DN ' + R.pr[1] + ' ориентировочно до ' + lim + ' оросителей в ветви, у тебя ' + R.m + '. Проверь диаметр рядка.'); }
+  if (b4) { var lim = R.P1 >= 0.5 ? b4[1] : b4[2]; if (typeof lim === 'number' && R.m > lim) R.marks.push(['au-dr', 'warnf', 'По табл. Б.4 — до ' + lim + ' оросителей в ветви']);
+    if (typeof lim === 'number' && R.m > lim) R.warn.push('По табл. Б.4 на DN ' + R.pr[1] + ' ориентировочно до ' + lim + ' оросителей в ветви, у тебя ' + R.m + '. Проверь диаметр рядка.'); }
   return R;
 }
 function auCalc() {
@@ -132,6 +141,7 @@ function auCalc() {
   }
   h += R.warn.map(function (w) { return c('Внимание', 'Проверь', w, 'warn'); }).join('');
   $('#au-res').innerHTML = h;
+  fcApply('au-', R.marks);
   $('#au-tab').innerHTML = R.err.length ? '' : '<table class="vei"><thead><tr><th>Узел, участок</th><th>P, МПа</th><th>q, л/с</th><th>Q, л/с</th><th>L, м</th><th>ΔP, МПа</th><th>v, м/с</th></tr></thead><tbody>' +
     R.nodes.map(function (n) { return '<tr><td>' + n.n + '</td><td>' + auFm(n.P, 4) + '</td><td>' + auFm(n.q, 3) + '</td><td>' + auFm(n.Q, 3) + '</td><td>' + auFm(n.L, 2) + '</td><td>' + auFm(n.dP, 4) + '</td><td>' + auFm(n.v, 2) + '</td></tr>'; }).join('') +
     '<tr><td>Питающий до насоса: горизонталь + вертикаль</td><td>' + auFm(R.Pend, 4) + '</td><td></td><td>' + auFm(R.Qpump, 3) + '</td><td>' + auFm(R.lg + R.lv, 1) + '</td><td>' + auFm(R.Pg + R.Pv, 4) + '</td><td>' + auFm(R.vf, 2) + '</td></tr>' +
@@ -187,7 +197,7 @@ function auDoc() {
     '<p>Требуемое давление насоса (Б.30): Pн = Pг + Pв + ΣPм + Pуу + Pд + Z − Pвх, где Pд + потери сети диктующей зоны = ' + f(R.Pend, 4) + ' МПа; Pг = ' + f(R.Pg, 4) + '; Pв = ' + f(R.Pv, 4) + '; ΣPм = 0,2 · (Pг + Pв) = ' + f(R.Pm, 4) + '; Pуу = ' + f(R.puu, 3) + '; Z = H / 100 = ' + f(R.Z, 3) + '; Pвх = ' + f(R.pin, 3) + ' МПа.</p>' +
     '<p><b>Pн = ' + f(R.Pn, 3) + ' МПа (' + f(R.Pn * 102, 1) + ' м вод. ст.), Qнас = ' + f(R.Qpump, 2) + ' л/с.</b> Запас ОТВ: W = Qнас · t = ' + f(R.Qpump, 2) + ' · ' + R.t + ' · 60 / 1000 = ' + f(R.W, 1) + ' м³.</p>' +
     (R.warn.length ? '<p><b>Замечания:</b></p><ul>' + R.warn.map(function (w) { return '<li>' + w + '</li>'; }).join('') + '</ul>' : '') +
-    '<p style="font-size:10pt;color:#555">Сформировано: справочник «Клапаны» v' + APP.ver + ', ' + new Date().toLocaleDateString('ru-RU') + '. Местные потери приняты 20 % от линейных (п. Б.1.3.9, общий случай). Решение принимает разработчик проекта.</p></body></html>';
+    '<p style="font-size:10pt;color:#555">Сформировано: «Справочник инженера ОВиК» v' + APP.ver + ', ' + new Date().toLocaleDateString('ru-RU') + '. Местные потери приняты 20 % от линейных (п. Б.1.3.9, общий случай). Решение принимает разработчик проекта.</p></body></html>';
   var blob = new Blob(['﻿', html], { type: 'application/msword' }), a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = 'Расчёт_АУПТ.doc'; document.body.appendChild(a); a.click();
   setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
