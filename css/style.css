@@ -468,3 +468,16 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .netsvg .stt.dim { fill: color-mix(in srgb, var(--muted) 75%, transparent); }
 @keyframes netflow { to { stroke-dashoffset: -11; } }
 @media (prefers-reduced-motion: reduce) { .netsvg .dpleak { animation: none; } }
+
+/* Раздел «Расчёт ПДВ» (vn_*.js) */
+.vntabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 14px; }
+.vntabs button { border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 10px; padding: 7px 11px; font: 600 13.5px var(--body); cursor: pointer; text-align: left; }
+.vntabs button small { display: block; font-weight: 500; font-size: 11.5px; color: var(--muted); }
+.vntabs button.on { border-color: var(--air); background: color-mix(in srgb, var(--air) 18%, var(--surface)); }
+.vnp[hidden] { display: none; }
+.stsvg .vnshaft { fill: color-mix(in srgb, var(--air) 10%, transparent); stroke: var(--air); }
+.stsvg .vndooropen { fill: var(--fire); }
+.stsvg .vndoorbad { fill: var(--fire); stroke: var(--fire); }
+.stsvg .vnflame { fill: var(--fire); animation: vnflick .6s ease-in-out infinite alternate; transform-origin: 280px 180px; }
+@keyframes vnflick { to { transform: scaleY(1.15); } }
+@media (prefers-reduced-motion: reduce) { .stsvg .vnflame { animation: none; } }

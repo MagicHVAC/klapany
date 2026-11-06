@@ -30,7 +30,7 @@ function netDe(a, b) { return 2 * a * b / (a + b); }
 function netBlock() {
   var F = dpuF, S = dpuS;
   return '<p class="sub">Сеть дымоудаления от этажа пожара до вентилятора: потери давления, тяга, подсосы через стенки воздуховодов класса «В» и через закрытые клапаны других этажей, смешение и температура дыма, подбор вентилятора. Методика — МР ВНИИПО к СП 7.13130, п. 5.1. Расчётный этаж — нижний (МР п. 2.2): там длиннее сеть и больше подсосов.</p>' +
-    '<div class="dpbtns"><button type="button" class="eibtn" id="sn-take">Взять Gsm и Tsm из расчёта ДПУ</button></div>' +
+    '<div class="dpbtns"><button type="button" class="eibtn" id="sn-take">Взять Gsm и Tsm из расчёта дыма</button></div>' +
     '<h3 class="nh">Дым на входе</h3><div class="trpick stpick">' +
     F('sn-g', 'Gsm — расход дыма на этаже пожара, кг/с', '4', 'any', 'из расчёта по п. 7.4 СП 7') +
     F('sn-ts', 'Tsm — температура дыма, °C', '300', 'any', 'из того же расчёта') +
@@ -237,7 +237,8 @@ document.addEventListener('change', function (e) { if (/^sn-/.test(e.target.id))
 document.addEventListener('click', function (e) {
   if (e.target.id === 'sn-doc') netDoc();
   if (e.target.id === 'sn-take') {
-    var d = window.DPU_LAST; if (!d || d.err.length) { alert('Сначала посчитай ДПУ выше без ошибок.'); return; }
+    if (window.vnLastSmoke && vnLastSmoke()) { vnTake({ g: 'sn-g', t: 'sn-ts', tr: 'sn-ta' }); netCalc(); return; }
+    var d = window.DPU_LAST; if (!d || d.err.length) { alert('Сначала посчитай расход дыма (вкладки «Дым из помещения», «Коридор», «Атриум») или ДПУ в разделе «Противодым».'); return; }
     $('#sn-g').value = Math.round(d.G * 1000) / 1000; $('#sn-ts').value = d.ts; $('#sn-ta').value = d.tr; netCalc();
   }
 });

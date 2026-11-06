@@ -1,10 +1,11 @@
 /* Разделы, маршруты, поиск, режимы анимации */
 var ROUTES = [
   ['home', 'Главная'], ['how', 'Как работает'], ['no', 'НО'], ['nz', 'НЗ и ДД'], ['rooms', 'Помещения'], ['prod', 'Производство'],
-  ['fire', 'Огнезащита'], ['smoke', 'Противодым'], ['load', 'Пожарная нагрузка'], ['build', 'Здание'], ['cat', 'Категории'], ['evac', 'Эвакуация'], ['alarm', 'Сигнализация'], ['aupt', 'АУПТ'], ['auto', 'Автоматика'], ['norms', 'Нормы'], ['dbn', 'ДБН']
+  ['fire', 'Огнезащита'], ['smoke', 'Противодым'], ['pdv', 'Расчёт ПДВ'], ['load', 'Пожарная нагрузка'], ['build', 'Здание'], ['cat', 'Категории'], ['evac', 'Эвакуация'], ['alarm', 'Сигнализация'], ['aupt', 'АУПТ'], ['auto', 'Автоматика'], ['norms', 'Нормы'], ['dbn', 'ДБН']
 ];
 var ICON = {
   dbn: 'M4 5h16v14H4zM4 12h16M9 5v14',
+  pdv: 'M4 20V9l4-3 4 3v11M12 13h8v7M15 13V8h2v5M6 12h2M6 16h2',
   aupt: 'M12 3v6M8 9h8M10 9l-1 3M14 9l1 3M6 15l-1 2M10 15l-.5 2.5M14 15l.5 2.5M18 15l1 2M4 21h16',
   rooms: 'M3 4h18v16H3zM3 11h9M12 4v16M16 11v9', load: 'M4 20h16M6 20V10M10 20V6M14 20v-8M18 20V4',
   home: 'M4 11 12 4l8 7v9h-5v-6H9v6H4z', how: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 3v18M7 7l10 10', no: 'M3 12h18M12 5v14', nz: 'M3 12h7m4 0h7M10 7v10m4-10v10', prod: 'M3 20V10l6 4V10l6 4V5h6v15z',
@@ -105,7 +106,7 @@ var PAGES = {
     return '<h1>Противодымная вентиляция</h1><p class="lead">Пределы клапанов и воздуховодов, классы вентиляторов, где их ставить и куда выбрасывать дым.</p>' +
       strip(['smoke', 'supply', 'roof', 'facade', 'comp-nz']) +
       '<h2 id="dpu">Число дымоприёмных устройств</h2>' + dpuBlock() +
-      '<h2 id="net">Сеть дымоудаления и вентилятор</h2>' + netBlock() +
+      '<h2 id="net">Полный расчёт по методике ВНИИПО</h2><p class="sub">Расход дыма, сеть дымоудаления и вентилятор, подпор лестниц, лифтов, тамбур-шлюзов, компенсация — в разделе <a href="#pdv">«Расчёт ПДВ»</a>.</p>' +
       '<h2>Пределы НЗ клапанов</h2><div class="tscroll"><table class="vei"><thead><tr><th>Система</th><th>Где</th><th>Не менее</th><th>СП 7.13130</th></tr></thead><tbody>' +
       VALVE_EI.map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + esc(r[1]) + '</td><td><span class="ei">' + r[2] + '</span></td><td>п. ' + esc(r[3]) + '</td></tr>'; }).join('') +
       '</tbody></table></div>' + mini(VALVE_EI_NOTE) +
@@ -277,7 +278,7 @@ function show(name, arg) {
   soShow();
   stairPick();
   dpuCalc();
-  if (window.netCalc) netCalc();
+  if (window.vnCalcAll) vnCalcAll();
   fareaCalc();
   auCalc();
   if (window.dbnMark) dbnMark();
