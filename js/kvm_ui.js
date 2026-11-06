@@ -23,7 +23,7 @@ function kvDefLift() {
     Fdl: 1.8, Fdr: 1.8, hdl: 2, nc: 1, m: 1, xil: 0, xid: 2.44, Fk: 2.5, Fls: 4.25, Sdl: 0, Sdr: 0, muGap: 0.65,
     Pplus: 20, h0: 3, duct: { a: 800, b: 800, rect: true, len: 2.33, eps: 0.1, xi: 2 }, air: { ta: -13, tr: 18, va: 6.2, kww: 0.8, kw0: -0.6 } };
 }
-function kvDef(m) { return m === 'stair' ? kvDefStair() : m === 'lift' ? kvDefLift() : kvDefSmk(); }
+function kvDef(m) { return m === 'stair' ? kvDefStair() : m === 'lift' ? kvDefLift() : m === 'tamb' && window.tbDef ? tbDef() : kvDefSmk(); }
 
 /* ---------- схема полей: [путь, подпись, тип, подсказка] ---------- */
 var KV_F = {
@@ -112,6 +112,7 @@ function kvTypForm() {
 
 function kvForm() {
   var p = KV.p, h = '';
+  if (!KV_F.tamb && window.TB_F) KV_F.tamb = TB_F;
   KV_F[KV.mode].forEach(function (g) {
     h += '<h3 class="nh">' + g[0] + '</h3><div class="trpick stpick">';
     g[1].forEach(function (f) {
@@ -146,7 +147,7 @@ PAGES.pdv = (function (old) {
   return function () {
     if (!KV.p) KV.p = kvDef(KV.mode);
     return '<h1>Расчёт противодымной вентиляции</h1><p class="lead">Система целиком по методике ВНИИПО к СП 7.13130: введи данные системы — получишь подачу и давление вентилятора, отчёт с формулами и Word.</p>' +
-      '<div class="vntabs" role="tablist">' + [['smk', 'Дымоудаление', 'коридор, зал'], ['stair', 'Лестничная клетка', 'подпор, п. 4.1'], ['lift', 'Лифтовая шахта', 'подпор, п. 4.2']].map(function (t) {
+      '<div class="vntabs" role="tablist">' + [['smk', 'Дымоудаление', 'коридор, зал'], ['stair', 'Лестничная клетка', 'подпор, п. 4.1'], ['lift', 'Лифтовая шахта', 'подпор, п. 4.2'], ['tamb', 'Тамбур-шлюз', 'подпор, зона безопасности']].map(function (t) {
         return '<button type="button" data-kvm="' + t[0] + '"' + (t[0] === KV.mode ? ' class="on"' : '') + '>' + t[1] + '<small>' + t[2] + '</small></button>'; }).join('') + '</div>' +
       '<div class="dpbtns"><button type="button" class="eibtn" id="kv-new">Новый (пример)</button><button type="button" class="eibtn" id="kv-doc">Скачать отчёт в Word</button></div>' +
       '<div id="kv-form">' + kvForm() + '</div><div class="barres stres" id="kv-res"></div><div id="kv-rep"></div>' +
@@ -157,14 +158,19 @@ PAGES.pdv = (function (old) {
 function kvCalc() {
   if (!$('#kv-form')) return;
   var p = KV.p, o;
-  try { o = KV.mode === 'smk' ? smkCalc(p) : KV.mode === 'stair' ? supStair(p) : supLift(p); } catch (e) { o = { err: ['Ошибка расчёта: ' + e.message], warn: [] }; }
+  try { o = KV.mode === 'smk' ? smkCalc(p) : KV.mode === 'stair' ? supStair(p) : KV.mode === 'tamb' ? tbCalc(p) : supLift(p); } catch (e) { o = { err: ['Ошибка расчёта: ' + e.message], warn: [] }; }
   if (KV.mode === 'smk' && window.compCalc && isFinite(o.Lv)) { try { compCalc(p, o); } catch (x) { o.warn.push('Компенсация: ошибка расчёта — ' + x.message); } }
   KV.o = o;
   var h = '';
   if (o.err && o.err.length) h += o.err.map(function (e) { return vnC('Ошибка', 'Проверь данные', e, 'warn'); }).join('');
   if (isFinite(o.Lv)) {
     h += vnC('Вентилятор: подача', kf(o.Lv, 0) + ' м³/ч', KV.mode === 'smk' ? 'Lv = GШ/ρN·3600 = ' + kf(o.GN, 4) + ' / ' + kf(o.roN, 4) + ' · 3600; t перед вентилятором ' + kf(o.tFan, 0) + ' °C' : 'Lv = 3600·G/ρa = 3600 · ' + kf(o.Gs || o.Gl, 2) + ' / ' + kf(o.roa, 2), 'final');
-    h += vnC('Вентилятор: давление', kf(o.Psv, KV.mode === 'smk' ? 2 : 0) + ' Па', KV.mode === 'smk' ? 'Psv = |PШN| + ΔPШ' + (o.Pvf ? ' + Pd + 0,5ρN·vf²' : '') : 'статическое, по (94)/(96)', 'final');
+    h += vnC('Вентилятор: давление', kf(o.Psv, KV.mode === 'smk' ? 2 : 0) + ' Па', KV.mode === 'smk' ? 'Psv = |PШN| + ΔPШ' + (o.Pvf ? ' + Pd + 0,5ρN·vf²' : '') : KV.mode === 'tamb' ? 'Psv = Pш верх + PN + g(h0s + hN)(ρa − ρsf) + ΔPвв + ΔPtop' : 'статическое, по (94)/(96)', 'final');
+    if (KV.mode === 'tamb') {
+      h += vnC('В помещение', kf(o.Gsf, 2) + ' кг/с', (p.openDoor ? 'открытая дверь: vd·ρ·Fd' : 'закрытые двери: по Sdsf, Sdsl') + '; Psf = ' + kf(o.Psf, 1) + ' Па');
+      h += vnC('Открытый клапан', kf(o.vkl, 1) + ' м/с', 'ΔPкл = ' + kf(o.dPkl, 1) + ' Па; утечки выше ' + kf(o.Gs - o.Gsf, 3) + ' кг/с');
+      if (p.heat) h += vnC('Воздухонагреватель', kf(o.Q, 1) + ' кВт', 'нагрев от ' + kf(p.air.ta, 0) + ' до ' + kf(p.tsf, 0) + ' °C');
+    }
     if (KV.mode === 'smk') {
       h += vnC('Удалять дыма', kf(o.G, 2) + ' кг/с', kf(o.L, 0) + ' м³/ч при Tsm = ' + kf(o.Tsm, 0) + ' K; подсосы в сети +' + kf(o.Ga, 3) + ' кг/с');
       h += vnC('ДПУ', o.Nmin + ' шт.', 'V1max = ' + kf(o.V1, 2) + ' м³/с, Lmin = ' + kf(o.Lmin, 3) + ' м (СП 7 прил. Е)');
@@ -179,7 +185,7 @@ function kvCalc() {
 }
 
 /* ---------- отчёт: вёрстка — kvm_rep.js ---------- */
-function kvReport(p, o) { return KV.mode === 'smk' ? repSmk(p, o) : KV.mode === 'stair' ? repStair(p, o) : repLift(p, o); }
+function kvReport(p, o) { return KV.mode === 'smk' ? repSmk(p, o) : KV.mode === 'stair' ? repStair(p, o) : KV.mode === 'tamb' ? repTamb(p, o) : repLift(p, o); }
 
 function kvInput(e) {
   var t = e.target;

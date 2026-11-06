@@ -122,7 +122,7 @@ function p3sup(p, o, lift) {
 
 function pdv3d(mode, p, o) {
   if (!o || !isFinite(o.Lv) || !o.rows) return '';
-  return mode === 'smk' ? p3smk(p, o) : p3sup(p, o, mode === 'lift');
+  return mode === 'smk' ? p3smk(p, o) : mode === 'tamb' && window.p3tamb ? p3tamb(p, o) : p3sup(p, o, mode === 'lift');
 }
 /* PNG для отчёта: SVG → canvas → data:image/png */
 function pdv3dPng(svg, cb) {
