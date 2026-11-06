@@ -36,6 +36,8 @@
     h += '</header><div class="vbt">' + ((r.b && r.b.length) ? r.b.map(function (b) { return '<span>' + esc(b) + '</span>'; }).join('') : '<span class="all">любые здания</span>') + '</div><div class="vnums">';
     var ki = r.ki || 0, ko = r.ko || 0;
     if (ki || ko || r.m === 'krat' || r.m === 'krat_people') { h += num('Приток', ki ? f(ki) : '—', ki ? '1/ч' : '', 'in') + num('Вытяжка', ko ? f(ko) : '—', ko ? '1/ч' : '', 'out'); }
+    if (r.kx) h += num('Кратность, не менее', f(r.kx), '1/ч', 'in'); /* 1.23.5: СП 251 табл. 9.1 — кратность обмена без деления на приток/вытяжку */
+    if (r.kr1) h += num('Приток в районах IА, IВ, IГ', f(r.kr1), '1/ч', 'in'); /* 1.23.5: СП 252 табл. 11.1 — разные районы */
     if (r.np) h += num('На чел., пост.', f(r.np), 'м³/ч', 'pp');
     if (r.nt) h += num('На чел., врем.', f(r.nt), 'м³/ч', 'pp');
     if (r.sp) h += num('На 1 м²', f(r.sp), 'м³/ч', 'pp');
@@ -56,8 +58,10 @@
       if (r.ki) out.push('приток ' + f(r.ki) + ' × ' + f(V, 1) + ' = <b>' + f(r.ki * V, 0) + '</b>');
       if (r.ko) out.push('вытяжка ' + f(r.ko) + ' × ' + f(V, 1) + ' = <b>' + f(r.ko * V, 0) + '</b>');
     }
+    if (V && r.kx) out.push('кратность ' + f(r.kx) + ' × ' + f(V, 1) + ' = <b>' + f(r.kx * V, 0) + '</b>');
     if (N && r.np) out.push('на людей ' + f(r.np) + ' × ' + f(N) + ' = <b>' + f(r.np * N, 0) + '</b>');
     if (A && r.sp) out.push('по площади ' + f(r.sp) + ' × ' + f(A) + ' = <b>' + f(r.sp * A, 0) + '</b>');
+    if (r.m === 'krat_people' && V && N && r.kx && r.np) out.push('принять большее: <b>' + f(Math.max(r.kx * V, r.np * N), 0) + '</b>');
     if (r.m === 'krat_people' && V && N && r.ki && r.np) out.push('принять большее: <b>' + f(Math.max(r.ki * V, r.np * N), 0) + '</b>');
     return out.length ? '<p class="vcalc">м³/ч: ' + out.join(' · ') + '</p>' : '';
   }
