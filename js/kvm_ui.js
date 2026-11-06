@@ -132,6 +132,7 @@ function kvCalc() {
   h += (o.warn || []).map(function (w) { return vnC('Внимание', 'Проверь', w, 'warn'); }).join('');
   $('#kv-res').innerHTML = h;
   $('#kv-rep').innerHTML = isFinite(o.Lv) ? kvReport(p, o) : '';
+  if (isFinite(o.Lv) && window.pdv3d) { try { $('#kv-rep').insertAdjacentHTML('afterbegin', '<div class="rep-3d">' + pdv3d(KV.mode, p, o) + '</div>'); } catch (x) {} }
 }
 
 /* ---------- отчёт: вёрстка — kvm_rep.js ---------- */
@@ -160,6 +161,8 @@ document.addEventListener('click', function (e) {
   var del = e.target.closest && e.target.closest('.kvdel');
   if (del) { if (KV.p.segs.length > 1) KV.p.segs.splice(+del.dataset.seg, 1); $('#kv-form').innerHTML = kvForm(); kvCalc(); return; }
   if (e.target.id === 'kv-doc' && KV.o && isFinite(KV.o.Lv)) {
-    repDoc(kvReport(KV.p, KV.o), String(KV.p.system || 'ПДВ').replace(/[^0-9A-Za-zА-Яа-яЁё., -]/g, '_') + '_расчёт');
+    var nm = String(KV.p.system || 'ПДВ').replace(/[^0-9A-Za-zА-Яа-яЁё., -]/g, '_') + '_расчёт';
+    var doc = function (png) { repDoc(kvReport(KV.p, KV.o).replace('<h3 class="rep-h">1.', (png ? '<p style="text-align:center"><img src="' + png + '" width="620"></p>' : '') + '<h3 class="rep-h">1.'), nm); };
+    if (window.pdv3d && window.pdv3dPng) { try { pdv3dPng(pdv3d(KV.mode, KV.p, KV.o), doc); } catch (x) { doc(''); } } else doc('');
   }
 });

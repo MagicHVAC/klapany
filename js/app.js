@@ -302,6 +302,16 @@ function reveal() {
   document.documentElement.classList.add('rv');
   ROOT.querySelectorAll('.card,.fig,.mini,.pick,.how,.norm,.issue').forEach(function (el, i) { el.style.setProperty('--d', (i % 6) * 60 + 'ms'); IO.observe(el); });
 }
+/* 1.21.4: блоки, дорисованные после показа страницы (правила под расстояниями и т. п.), тоже проявлять —
+   иначе они прозрачные, но занимают место: «пустота» на странице */
+if (IO && window.MutationObserver) new MutationObserver(function (ms) {
+  var sel = '.card,.fig,.mini,.pick,.how,.norm,.issue';
+  ms.forEach(function (m) { [].forEach.call(m.addedNodes, function (n) {
+    if (n.nodeType !== 1) return;
+    var list = [].slice.call(n.querySelectorAll(sel)); if (n.matches(sel)) list.push(n);
+    list.forEach(function (el) { if (!el.classList.contains('in')) IO.observe(el); });
+  }); });
+}).observe(document.getElementById('view'), { childList: true, subtree: true });
 
 /* Режимы: автопоказ или ручной выбор */
 var AUTOPLAY = true, TIMER = null, CYCLE = ['n', 'f', 'a'], STEP = 0;
