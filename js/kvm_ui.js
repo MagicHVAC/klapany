@@ -151,9 +151,9 @@ PAGES.pdv = (function (old) {
     return '<h1>Расчёт противодымной вентиляции</h1><p class="lead">Система целиком по методике ВНИИПО к СП 7.13130: введи данные системы — получишь подачу и давление вентилятора, отчёт с формулами и Word.</p>' +
       '<div class="vntabs" role="tablist">' + [['smk', 'Дымоудаление', 'коридор, зал'], ['stair', 'Лестничная клетка', 'подпор, п. 4.1'], ['lift', 'Лифтовая шахта', 'подпор, п. 4.2'], ['tamb', 'Тамбур-шлюз', 'подпор, зона безопасности']].map(function (t) {
         return '<button type="button" data-kvm="' + t[0] + '"' + (t[0] === KV.mode ? ' class="on"' : '') + '>' + t[1] + '<small>' + t[2] + '</small></button>'; }).join('') + '</div>' +
-      '<div class="dpbtns"><button type="button" class="eibtn" id="kv-new">Новый (пример)</button><button type="button" class="eibtn" id="kv-doc">Скачать отчёт в Word</button></div>' +
+      '<div class="dpbtns"><button type="button" class="eibtn" id="kv-new">Новый (пример)</button><button type="button" class="eibtn" id="kv-doc">Скачать отчёт в Word</button>' + (window.kvfBtns ? kvfBtns() : '') + '</div>' +
       (window.kvpBlock ? '<div id="kvp">' + kvpBlock() + '</div>' : '') +
-      '<div id="kv-form">' + kvForm() + '</div><div class="barres stres" id="kv-res"></div><div id="kv-rep"></div>' +
+      '<div id="kv-form">' + kvForm() + '</div>' + kvDlBtns() + '<div class="barres stres" id="kv-res"></div><div id="kv-rep"></div>' + kvDlBtns() +
       '<details class="issue"><summary>Отдельные расчёты по формулам МР (прежние вкладки)</summary><div>' + old().replace(/^<h1>[\s\S]*?<\/p>/, '') + '</div></details>';
   };
 })(PAGES.pdv);
@@ -166,6 +166,19 @@ function kvRun(mode, p) {
   if (mode === 'smk' && window.compCalc && isFinite(o.Lv)) { try { compCalc(p, o); } catch (x) { o.warn.push('Компенсация: ошибка расчёта — ' + x.message); } }
   return o;
 }
+/* 1.23.3: кнопки скачивания рядом с результатом и в конце отчёта (инженер: «где скачать расчёт?») */
+/* картинки для Word: схема системы (pdvScheme, kvm_scheme.js) и объёмная схема (pdv3d) — по очереди, PNG */
+function kvImgs(mode, p, o, cb) {
+  var list = [], out = [];
+  if (window.pdvScheme) { try { var s2 = pdvScheme(mode, p, o); if (s2) list.push({ title: 'Схема системы ' + esc(p.system || ''), svg: s2, note: 'Схема по расчёту: участки, расходы и давления — из таблиц расчёта.' }); } catch (x) {} }
+  if (window.pdv3d) { try { var s3 = pdv3d(mode, p, o); if (s3) list.push({ title: 'Объёмная схема ' + esc(p.system || ''), svg: s3 }); } catch (x) {} }
+  var next = function (i) {
+    if (i >= list.length || !window.pdv3dPng) { cb(out); return; }
+    pdv3dPng(list[i].svg, function (png) { out.push({ title: list[i].title, png: png, note: list[i].note }); next(i + 1); });
+  };
+  next(0);
+}
+function kvDlBtns() { return '<div class="dpbtns kvdl"><button type="button" class="eibtn on kv-doc">Скачать расчёт в Word</button>' + (window.kvpBlock ? '<button type="button" class="eibtn kvp-save">В проект «все системы»</button>' : '') + (window.kvfBtns ? kvfBtns() : '') + '</div>'; }
 function kvCalc() {
   if (!$('#kv-form')) return;
   var p = KV.p, o = kvRun(KV.mode, p);
@@ -223,9 +236,8 @@ document.addEventListener('click', function (e) {
   if (e.target.id === 'kv-add') { KV.p.segMode = 'table'; var L = KV.p.segs, last = L[L.length - 1], prev = L[L.length - 2] || last; L.splice(L.length - 1, 0, JSON.parse(JSON.stringify(prev))); $('#kv-form').innerHTML = kvForm(); if (window.hintsAttach) hintsAttach(); kvCalc(); return; }
   var del = e.target.closest && e.target.closest('.kvdel');
   if (del) { KV.p.segMode = 'table'; if (KV.p.segs.length > 1) KV.p.segs.splice(+del.dataset.seg, 1); $('#kv-form').innerHTML = kvForm(); kvCalc(); return; }
-  if (e.target.id === 'kv-doc' && KV.o && isFinite(KV.o.Lv)) {
+  if ((e.target.id === 'kv-doc' || (e.target.classList && e.target.classList.contains('kv-doc'))) && KV.o && isFinite(KV.o.Lv)) {
     var nm = String(KV.p.system || 'ПДВ').replace(/[^0-9A-Za-zА-Яа-яЁё., -]/g, '_') + '_расчёт';
-    var doc = function (png) { repDoc(kvReport(KV.p, KV.o).replace('<h3 class="rep-h">1.', (png ? '<p style="text-align:center"><img src="' + png + '" width="620"></p>' : '') + '<h3 class="rep-h">1.'), nm); };
-    if (window.pdv3d && window.pdv3dPng) { try { pdv3dPng(pdv3d(KV.mode, KV.p, KV.o), doc); } catch (x) { doc(''); } } else doc('');
+    kvImgs(KV.mode, KV.p, KV.o, function (imgs) { repDoc(repPages(kvReport(KV.p, KV.o), imgs), nm); });
   }
 });

@@ -20,9 +20,11 @@ function repIn(rows) {
 function repF(name, f, sub, res) {
   return '<div class="rep-f"><div class="rep-fn">' + name + '</div><div class="rep-fx">' + f + (sub ? ' = ' + sub : '') + (res ? ' = <b>' + res + '</b>' : '') + '</div></div>';
 }
+/* 1.23.3: без переноса и вправо — только числа; длинный текст переносится (иначе таблица уходила за край листа Word) */
+function repIsNum(x) { return /^[\s\d,.+\-−—×⌀*()%]*$/.test(String(x == null ? '' : x).replace(/<[^>]+>/g, '')); }
 function repT(head, rows, cls) {
   return '<div class="rep-scroll"><table class="rep-t ' + (cls || '') + '"><thead><tr>' + head.map(function (h) { return '<th>' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
-    rows.map(function (r) { return '<tr>' + r.map(function (x, i) { return '<td' + (i ? ' class="n"' : '') + '>' + x + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+    rows.map(function (r) { return '<tr>' + r.map(function (x, i) { return '<td' + (i && repIsNum(x) ? ' class="n"' : '') + '>' + x + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
 }
 function repSum(items) {
   return '<div class="rep-sum">' + items.map(function (x) { return '<div><span>' + x[0] + '</span><b>' + x[1] + '</b>' + (x[2] ? '<small>' + x[2] + '</small>' : '') + '</div>'; }).join('') + '</div>';
@@ -72,6 +74,7 @@ function repSmk(p, o) {
   h += repT(['Участок', 'P<sub>Ш</sub>, Па', 'Подсос клапана, кг/с', 'Подсос стенок, кг/с', 'G<sub>Ш</sub>, кг/с', 'T, K', 'ρ, кг/м³', 'v, м/с', 'λ', 'ΔP<sub>Ш</sub>, Па'], o.rows.map(function (r) {
     return [r.i + (r.open ? ' (пожар)' : r.last ? ' (верх)' : ''), rf(r.P, 2), rf(r.gKl, 5), rf(r.gH + r.gV, 5), rf(r.G, 4), rf(r.T, 1), rf(r.ro, 3), rf(r.ver.v, 2), rf(r.ver.lam, 4), rf(r.ver.dp, 2)];
   }), 'rep-net');
+  if (window.kmszRep) h += kmszRep(p);
   h += repSec(++n, 'Вентилятор');
   h += repF('Подача', 'L<sub>v</sub> = G<sub>Ш</sub>/ρ<sub>N</sub>·3600', rf(o.GN, 4) + ' / ' + rf(o.roN, 4) + ' · 3600', rf(o.Lv, 0) + ' м³/ч') +
     (o.netOut ? kmsRep(o.netOut, 'Сеть от вентилятора до выброса') : '') + repF('Статическое давление', 'P<sub>sv</sub> = |P<sub>ШN</sub>| + ΔP<sub>Ш</sub>' + (o.dPout ? ' + ΔP<sub>выбр</sub>' : '') + (o.Pvf ? ' + 0,5·ρ<sub>N</sub>·v<sub>f</sub>²' : ''), rf(Math.abs(o.PN), 2) + ' + ' + rf(o.PshN - Math.abs(o.PN), 2) + (o.dPout ? ' + ' + rf(o.dPout, 2) : '') + (o.Pvf ? ' + ' + rf(o.Pvf, 2) : ''), rf(o.Psv, 2) + ' Па') +
@@ -145,14 +148,24 @@ var REP_CSS = '@page Section1{size:21cm 29.7cm;margin:2cm 1cm 2cm 2cm}div.Sectio
   'table{border-collapse:collapse;width:100%}td,th{border:0.5pt solid #000;padding:2pt 4pt;font-size:10.5pt;vertical-align:top}th{background:#eee;font-weight:bold}' +
   '.rep-hd td:first-child{width:22%;font-weight:bold}.rep-h{font-size:13pt;margin:14pt 0 6pt}.n{text-align:right;white-space:nowrap}.c{text-align:center}' +
   '.rep-sum{margin:8pt 0}.rep-sum div{border:0.5pt solid #000;padding:3pt 6pt;margin:0 0 3pt}.rep-sum span{display:block;font-size:9.5pt}.rep-sum b{font-size:13pt}.rep-sum small{font-size:9.5pt;margin-left:6pt}' +
+  '.rep-net td,.rep-net th{font-size:8pt;padding:1pt 2pt}' +
   '.rep-x{font-family:Arial}.rep-f{margin:4pt 0}.rep-fn{font-size:10.5pt;color:#333}.rep-fx{font-size:12pt;margin-left:12pt}.rep-p{font-size:10.5pt}.rep-note{border:0.5pt solid #000;padding:4pt 8pt;margin-top:10pt;font-size:10.5pt}';
 /* 1.22.5: Word не понимает плитки сводки (div/span) — склеивал «Подача вентилятора15569 м³/ч». Для Word сводка — таблица */
 function repSumWord(html) {
-  return html.replace(/<div class="rep-sum">([\s\S]*?)<\/div>(?=<h3|<div class="rep-f|<table)/g, function (m, inner) {
+  /* 1.23.3: плитки без вложенных div — берём ровно их; прежняя «ленивая» выборка до <h3/<table съедала вставленную схему и исходные данные */
+  return html.replace(/<div class="rep-sum">((?:<div><span>[\s\S]*?<\/span><b>[\s\S]*?<\/b>(?:<small>[\s\S]*?<\/small>)?<\/div>)*)<\/div>/g, function (m, inner) {
     var rows = inner.replace(/<div><span>([\s\S]*?)<\/span><b>([\s\S]*?)<\/b>(?:<small>([\s\S]*?)<\/small>)?<\/div>/g, function (x, a, v, n) {
       return '<tr><td style="width:40%">' + a + '</td><td style="width:28%;white-space:nowrap"><b>' + v + '</b></td><td>' + (n || '') + '</td></tr>'; });
     return '<table class="rep-t" style="margin:8pt 0"><tbody>' + rows + '</tbody></table>';
   });
+}
+/* 1.23.3: листы Word — сводка; каждая схема на своём листе крупно; затем расчёт с формулами (инженер: «на одном листе схема, на другом 3D, и расчёт») */
+var REP_PB = '<br clear="all" style="page-break-before:always">';
+function repPages(rep, imgs) {
+  var pics = (imgs || []).filter(function (x) { return x && x.png; }).map(function (x) {
+    return REP_PB + '<h3 class="rep-h" style="text-align:center">' + x.title + '</h3><p style="text-align:center"><img src="' + x.png + '" width="680" style="width:18cm"></p>' + (x.note ? '<p class="rep-p" style="text-align:center">' + x.note + '</p>' : '');
+  }).join('');
+  return rep.replace('<h3 class="rep-h">1.', pics + REP_PB + '<h3 class="rep-h">1.');
 }
 function repDoc(html, file) {
   html = repSumWord(html);

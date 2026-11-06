@@ -541,3 +541,9 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .kmsadd { display: inline-flex; flex-direction: column; margin-left: auto; } .kmsadd input { width: 90px; }
 .kvp > div { padding-top: 6px; } .kvpt tr.on td { background: rgba(80,160,255,.12); } .kvpt td:last-child { white-space: nowrap; }
 .kmsbad { color: #e0a100; }
+/* 1.23.3: окно сборки Σζ, кнопки скачивания у результата */
+.kmszb { margin-top: 6px; font-size: 12px; min-height: 28px; }
+.kmsdlg { max-width: min(980px, 96vw); width: 96vw; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); color: var(--text); padding: 16px; }
+.kmsdlg::backdrop { background: rgba(0,0,0,.55); }
+.kmszsum { margin-left: auto; font-size: 16px; }
+.kvdl { margin: 12px 0; } .kms .dpbtns { align-items: flex-end; }

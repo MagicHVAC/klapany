@@ -53,16 +53,14 @@ function kvpDoc() {
     }
     var r = rows[i++]; if (r.sub) return next();
     var rep = repSumWord(kvReport(r.p, r.o, r.mode)), brk = '<br clear="all" style="page-break-before:always">';
-    var svg = window.pdv3d ? pdv3d(r.mode, r.p, r.o) : '';
-    if (svg && window.pdv3dPng) pdv3dPng(svg, function (png) { parts.push(brk + rep.replace('<h3 class="rep-h">1.', (png ? '<p style="text-align:center"><img src="' + png + '" width="620"></p>' : '') + '<h3 class="rep-h">1.')); next(); });
-    else { parts.push(brk + rep); next(); }
+    kvImgs(r.mode, r.p, r.o, function (imgs) { parts.push(brk + repPages(rep, imgs)); next(); });
   };
   next();
 }
 
 document.addEventListener('click', function (e) {
   var t = e.target, op = t.closest && t.closest('[data-kvp-open]'), dl = t.closest && t.closest('[data-kvp-del]');
-  if (t.id === 'kvp-save' && KV.p) {
+  if ((t.id === 'kvp-save' || (t.classList && t.classList.contains('kvp-save'))) && KV.p) {
     var s = KV.pid && kvpFind(KV.pid);
     if (!s) { KV.pid = 'S' + Date.now().toString(36); KVP.push({ id: KV.pid, mode: KV.mode, p: JSON.parse(JSON.stringify(KV.p)) }); }
     else { s.p = JSON.parse(JSON.stringify(KV.p)); s.mode = KV.mode; }
