@@ -74,7 +74,7 @@ function repSmk(p, o) {
   }), 'rep-net');
   h += repSec(++n, 'Вентилятор');
   h += repF('Подача', 'L<sub>v</sub> = G<sub>Ш</sub>/ρ<sub>N</sub>·3600', rf(o.GN, 4) + ' / ' + rf(o.roN, 4) + ' · 3600', rf(o.Lv, 0) + ' м³/ч') +
-    repF('Статическое давление', p.endExhaust ? 'P<sub>sv</sub> = |P<sub>ШN</sub>| + ΔP<sub>Ш</sub> + P<sub>d</sub> + 0,5·ρ<sub>N</sub>·v<sub>f</sub>²' : 'P<sub>sv</sub> = |P<sub>ШN</sub>| + ΔP<sub>Ш</sub>', rf(Math.abs(o.PN), 2) + ' + ' + rf(o.PshN - Math.abs(o.PN), 2) + (p.endExhaust ? ' + ' + rf(p.ductRes, 0) + ' + ' + rf(o.Pvf, 2) : ''), rf(o.Psv, 2) + ' Па') +
+    (o.netOut ? kmsRep(o.netOut, 'Сеть от вентилятора до выброса') : '') + repF('Статическое давление', 'P<sub>sv</sub> = |P<sub>ШN</sub>| + ΔP<sub>Ш</sub>' + (o.dPout ? ' + ΔP<sub>выбр</sub>' : '') + (o.Pvf ? ' + 0,5·ρ<sub>N</sub>·v<sub>f</sub>²' : ''), rf(Math.abs(o.PN), 2) + ' + ' + rf(o.PshN - Math.abs(o.PN), 2) + (o.dPout ? ' + ' + rf(o.dPout, 2) : '') + (o.Pvf ? ' + ' + rf(o.Pvf, 2) : ''), rf(o.Psv, 2) + ' Па') +
     repF('Температура перед вентилятором', 't = T<sub>N</sub> − 273', '', rf(o.tFan, 0) + ' °C');
   h += repSec(++n, 'Дымоприёмные устройства (СП 7.13130, прил. Е)');
   h += repF('Наибольший расход через 1 ДПУ (Е.1)', 'V<sub>1max</sub> = 4,16·γ·d<sup>5/2</sup>·[(T<sub>sm</sub> − T<sub>r</sub>)/T<sub>r</sub>]<sup>1/2</sup>', 'D<sub>э</sub> = ' + rf(o.dpuD, 3) + ' м; γ = ' + rf(o.gamma, 1) + '; d = ' + rf(o.d, 2) + ' м', rf(o.V1, 2) + ' м³/с') +
@@ -89,7 +89,7 @@ function repSmk(p, o) {
 
 /* ---------- подпор: лестница ---------- */
 function repAirRows(a) { return [['Наружный воздух (зима)', 'ta', rf(a.ta, 0), '°C'], ['Воздух в здании', 'tr', rf(a.tr, 0), '°C'], ['Скорость ветра', 'va', rf(a.va, 1), 'м/с'], ['Коэфф. ветрового напора', 'Kww / Kw0', rf(a.kww, 1) + ' / ' + rf(a.kw0, 1), '']]; }
-function repDuct(d, o) { return (d.rect ? rf(d.a, 0) + ' × ' + rf(d.b, 0) + ' мм' : '⌀ ' + rf(d.a, 0) + ' мм') + ', l = ' + rf(d.len, 1) + ' м, Σξ = ' + rf(d.xi, 1); }
+function repDuct(d, o, p) { if (p && p.net && p.net.secs) return 'по участкам — ' + p.net.secs.length + ' шт., см. расчёт сети'; return (d.rect ? rf(d.a, 0) + ' × ' + rf(d.b, 0) + ' мм' : '⌀ ' + rf(d.a, 0) + ' мм') + ', l = ' + rf(d.len, 1) + ' м, Σξ = ' + rf(d.xi, 1); }
 function repStair(p, o) {
   var n = 0, h = repHead('Расчёт подпора воздуха в лестничную клетку', p, REP_M);
   h += repSum([['Подача вентилятора', rf(o.Lv, 0) + ' м³/ч', 'наружный воздух ' + rf(p.air.ta, 0) + ' °C'], ['Давление вентилятора', rf(o.Psv, 0) + ' Па', 'статическое'], ['Перепад на дверях', 'до ' + rf(o.dpmax, 0) + ' Па', o.dpmax > 150 ? 'больше 150 — рассечка' : 'не больше 150 Па'], ['Расход в клетке', rf(o.Gs, 2) + ' кг/с', 'вверху']]);
@@ -97,7 +97,7 @@ function repStair(p, o) {
   h += repIn([['Условия', '', [p.windows ? 'окна на каждом этаже' : 'без окон', p.outerExit ? 'обособленный наружный выход' : 'без наружного выхода', p.noFloor1 ? 'с 1-м этажом не сообщается' : 'с 1-м этажом — одинарная дверь', p.floorTamb ? 'поэтажно — через тамбур-шлюзы' : 'поэтажно — одинарные двери'].join('; '), ''],
     ['Этажей; высота 1-го / вышележащих', 'N', p.N + '; ' + rf(p.h1, 2) + ' / ' + rf(p.hf, 2), 'м']].concat(repAirRows(p.air)).concat([['Удаляется дыма с этажа пожара', 'Gsm', rf(p.Gsm, 2), 'кг/с'], ['Проекция маршей и площадок; КМС маршей', 'Fs; ξs', rf(p.Fs, 1) + '; ' + rf(p.xis, 0), 'м²'],
     ['Наружный выход: дверь, высота, дверей, ξd, ξr', '', rf(p.Fda, 2) + ' м², ' + rf(p.hda, 2) + ' м, ' + p.nd + ', ' + rf(p.xid, 2) + ', ' + rf(p.xir, 2), ''], ['Двери на этажах: площадь, высота', 'Fd, hd', rf(p.Fd, 2) + ' м², ' + rf(p.hd, 2) + ' м', ''],
-    ['Окно на этаже; воздухопроницаемость', 'Fw', rf(p.Fw, 2) + ' м²; ' + rf(p.winVal, 2), ''], ['Избыточное давление', 'P+', rf(p.Pplus, 0), 'Па'], ['Воздуховод до оголовка', '', repDuct(p.duct), ''], ['Воздухозабор ниже оголовка на', 'h0s', rf(p.h0, 1), 'м']]));
+    ['Окно на этаже; воздухопроницаемость', 'Fw', rf(p.Fw, 2) + ' м²; ' + rf(p.winVal, 2), ''], ['Избыточное давление', 'P+', rf(p.Pplus, 0), 'Па'], ['Воздуховод до оголовка', '', repDuct(p.duct, null, p), ''], ['Воздухозабор ниже оголовка на', 'h0s', rf(p.h0, 1), 'м']]));
   h += repSec(++n, 'Расчёт');
   h += repF('Плотности', 'ρ = 353/T; t<sub>s</sub> = (t<sub>a</sub> + t<sub>r</sub>)/2', 'ρ<sub>a</sub> = ' + rf(o.roa, 3) + '; ρ<sub>r</sub> = ' + rf(o.ror, 3) + '; ρ<sub>s</sub> = ' + rf(o.ros, 3), 'кг/м³') +
     repF('Ветровое давление', 'P<sub>w</sub> = 0,25·(K<sub>ww</sub> − K<sub>w0</sub>)·ρ<sub>a</sub>·v<sub>a</sub>²', '', rf(o.Pw, 2) + ' Па') +
@@ -109,7 +109,7 @@ function repStair(p, o) {
     return [r.i, rf(r.h, 2), rf(r.P, 2), rf(r.dPd, 2), rf(r.v, 3), rf(r.dPs, 2), rf(r.dG, 4), rf(r.dGw || 0, 4), rf(r.Gw || 0, 2), rf(r.G, 3)];
   }));
   h += repSec(++n, 'Вентилятор (93), (94)');
-  h += repF('Воздуховоды до оголовка', 'P<sub>вв</sub> = λ·l/D<sub>э</sub>·P<sub>d</sub> + Σξ·P<sub>d</sub>', 'v = ' + rf(o.duct.v, 2) + ' м/с; P<sub>d</sub> = ' + rf(o.duct.Pd, 2) + ' Па; λ = ' + rf(o.duct.f, 4), rf(o.duct.P, 2) + ' Па') +
+  h += (o.net ? kmsRep(o.net, 'Сеть от воздухозабора до клетки') : repF('Воздуховоды до оголовка', 'P<sub>вв</sub> = λ·l/D<sub>э</sub>·P<sub>d</sub> + Σξ·P<sub>d</sub>', 'v = ' + rf(o.duct.v, 2) + ' м/с; P<sub>d</sub> = ' + rf(o.duct.Pd, 2) + ' Па; λ = ' + rf(o.duct.f, 4), rf(o.duct.P, 2) + ' Па')) +
     repF('Подача', 'L<sub>v</sub> = 3600·G<sub>s</sub>/ρ<sub>a</sub>', '3600 · ' + rf(o.Gs, 3) + ' / ' + rf(o.roa, 3), rf(o.Lv, 0) + ' м³/ч') +
     repF('Статическое давление', 'P<sub>sv</sub> = P<sub>s</sub> + g·h<sub>sN</sub>·(ρ<sub>a</sub> − ρ<sub>s</sub>) + g·h<sub>0s</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>вв</sub>', rf(o.Ps, 2) + ' + 9,81 · ' + rf(o.hsN, 2) + ' · ' + rf(o.roa - o.ros, 3) + ' + 9,81 · ' + rf(p.h0, 1) + ' · ' + rf(o.roa - o.ror, 3) + ' + ' + rf(o.duct.P, 2), rf(o.Psv, 0) + ' Па');
   return repSup('<div class="rep">' + h + repNote(o) + '</div>');
@@ -123,7 +123,7 @@ function repLift(p, o) {
   h += repIn([['Условия', '', [p.outer ? 'у наружной стены' : 'центральное ядро', p.hall1 ? 'холл на 1-м этаже' : 'без холла на 1-м', p.hallUp ? 'холлы на этажах' : 'без холлов', p.method === 1 ? 'приток только сверху' : 'по расходу в открытом проёме по МР'].join('; '), ''],
     ['Этажей надземных / подземных', 'N', p.N + ' / ' + p.NUG, ''], ['Отметка 2-го этажа; высота этажей', '', rf(p.h2, 2) + '; ' + rf(p.hf, 2), 'м']].concat(repAirRows(p.air)).concat([
     ['Двери шахты: площадь, высота, кабин', 'Fdl, hdl, n', rf(p.Fdl, 2) + ' м², ' + rf(p.hdl, 2) + ' м, ' + p.nc, ''], ['Двери холла: площадь, количество, ξd', 'Fdr, m', rf(p.Fdr, 2) + ' м², ' + p.m + ', ' + rf(p.xid, 2), ''],
-    ['Сечения кабины / шахты', 'Fk / Fls', rf(p.Fk, 2) + ' / ' + rf(p.Fls, 2), 'м²'], ['Избыточное давление', 'P+', rf(p.Pplus, 0), 'Па'], ['Воздуховод', '', repDuct(p.duct), ''], ['Воздухозабор ниже оголовка на', 'h0l', rf(p.h0, 1), 'м']]));
+    ['Сечения кабины / шахты', 'Fk / Fls', rf(p.Fk, 2) + ' / ' + rf(p.Fls, 2), 'м²'], ['Избыточное давление', 'P+', rf(p.Pplus, 0), 'Па'], ['Воздуховод', '', repDuct(p.duct, null, p), ''], ['Воздухозабор ниже оголовка на', 'h0l', rf(p.h0, 1), 'м']]));
   h += repSec(++n, 'Расчёт');
   h += repF('Плотности', 'ρ = 353/T; t<sub>l</sub> = (t<sub>a</sub> + t<sub>r</sub>)/2', 'ρ<sub>a</sub> = ' + rf(o.roa, 3) + '; ρ<sub>r</sub> = ' + rf(o.ror, 3) + '; ρ<sub>l</sub> = ' + rf(o.rol, 3), 'кг/м³') +
     repF('Сопротивления закрытых дверей (46)', 'S<sub>lr</sub> = S<sub>dl</sub>/(n·F<sub>dl</sub>)² + S<sub>dr</sub>/(m·F<sub>dr</sub>)²', 'S<sub>dl</sub> = ' + rf(o.Sdl, 1) + '; S<sub>dr</sub> = ' + rf(o.Sdr, 1), rf(o.Slr, 2) + ' кг⁻¹·м⁻¹') +
@@ -132,7 +132,7 @@ function repLift(p, o) {
     (o.dPcs ? repF('Потери в зазоре кабина–шахта', 'ΔP<sub>cs</sub> = 0,5·ρ<sub>l</sub>·v<sub>cs</sub>²', 'v<sub>cs</sub> = ' + rf(o.vcs, 2) + ' м/с', rf(o.dPcs, 2) + ' Па; P<sub>l</sub> = ' + rf(o.Pl, 2) + ' Па') : repF('Давление в шахте', 'P<sub>l</sub> = P<sub>w</sub> + P<sup>+</sup> − g·(h<sub>2</sub> + 0,5h<sub>dl</sub>)·(ρ<sub>l</sub> − ρ<sub>r</sub>)', '', rf(o.Pl, 2) + ' Па'));
   h += repT(['Этаж', 'h<sub>э</sub>, м', 'ΔP<sub>d</sub>, Па', 'ΔG, кг/с'], o.rows.slice().reverse().map(function (r) { return [r.i + (r.i === 1 ? ' (двери открыты)' : ''), rf(r.h, 2), isFinite(r.dPd) ? rf(r.dPd, 2) : '—', r.i === 1 ? rf(o.G1, 3) : rf(r.dG, 4)]; }));
   h += repSec(++n, 'Вентилятор (95), (96)');
-  h += repF('Воздуховоды', 'P<sub>dl</sub> = (λ·l/D<sub>э</sub> + Σξ)·0,5·ρ<sub>a</sub>·v²', 'v = ' + rf(o.duct.v, 2) + ' м/с; λ = ' + rf(o.duct.f, 4), rf(o.duct.P, 2) + ' Па') +
+  h += (o.net ? kmsRep(o.net, 'Сеть от воздухозабора до шахты') : repF('Воздуховоды', 'P<sub>dl</sub> = (λ·l/D<sub>э</sub> + Σξ)·0,5·ρ<sub>a</sub>·v²', 'v = ' + rf(o.duct.v, 2) + ' м/с; λ = ' + rf(o.duct.f, 4), rf(o.duct.P, 2) + ' Па')) +
     repF('Подача', 'L<sub>v</sub> = 3600·G<sub>l</sub>/ρ<sub>a</sub>', '3600 · ' + rf(o.Gl, 3) + ' / ' + rf(o.roa, 3), rf(o.Lv, 0) + ' м³/ч') +
     repF('Статическое давление', p.method === 1 ? 'P<sub>sv</sub> = P<sub>l</sub> + g·h<sub>lN</sub>·(ρ<sub>a</sub> − ρ<sub>l</sub>) + g·h<sub>0l</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>dl</sub>' : 'P<sub>sv</sub> = P<sub>l</sub> + g·h<sub>0l</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>dl</sub>', '', rf(o.Psv, 0) + ' Па');
   return repSup('<div class="rep">' + h + repNote(o) + '</div>');
@@ -148,7 +148,7 @@ var REP_CSS = '@page Section1{size:21cm 29.7cm;margin:2cm 1cm 2cm 2cm}div.Sectio
   '.rep-x{font-family:Arial}.rep-f{margin:4pt 0}.rep-fn{font-size:10.5pt;color:#333}.rep-fx{font-size:12pt;margin-left:12pt}.rep-p{font-size:10.5pt}.rep-note{border:0.5pt solid #000;padding:4pt 8pt;margin-top:10pt;font-size:10.5pt}';
 /* 1.22.5: Word не понимает плитки сводки (div/span) — склеивал «Подача вентилятора15569 м³/ч». Для Word сводка — таблица */
 function repSumWord(html) {
-  return html.replace(/<div class="rep-sum">([\s\S]*?)<\/div>(?=<h3|<div class="rep-f|<table)/, function (m, inner) {
+  return html.replace(/<div class="rep-sum">([\s\S]*?)<\/div>(?=<h3|<div class="rep-f|<table)/g, function (m, inner) {
     var rows = inner.replace(/<div><span>([\s\S]*?)<\/span><b>([\s\S]*?)<\/b>(?:<small>([\s\S]*?)<\/small>)?<\/div>/g, function (x, a, v, n) {
       return '<tr><td style="width:40%">' + a + '</td><td style="width:28%;white-space:nowrap"><b>' + v + '</b></td><td>' + (n || '') + '</td></tr>'; });
     return '<table class="rep-t" style="margin:8pt 0"><tbody>' + rows + '</tbody></table>';

@@ -13,6 +13,11 @@ function supDuct(G, ro, t, d) {
   var v = G / ro / F, Pd = ro * v * v / 2, Re = v * De / supNu(t), f = smkLam(Re, d.eps / 1000, De);
   return { F: F, De: De, v: v, Pd: Pd, f: f, dPf: Pd * f / De, P: Pd * f / De * d.len + d.xi * Pd };
 }
+/* 1.23.0: сеть по участкам с элементами КМС (kvm_kms.js) — если задана; иначе прежний «один воздуховод + Σξ» */
+function supNet(G, ro, t, p, o) {
+  if (p.net && p.net.secs && window.kmsNet) { var r = kmsNet(G, ro, supNu(t), p.net, 'Сеть'); o.err = o.err.concat(r.err); o.net = r; return r; }
+  return supDuct(G, ro, t, p.duct);
+}
 function supIni(text) { return smkIni(text); }
 var supN = smkNum;
 function supBase(d) {
@@ -85,7 +90,7 @@ function supStair(d) {
   rows[rows.length - 1].v = vN; rows[rows.length - 1].dPs = dPN;
   o.rows = rows; o.Gs = G; o.Ps = P + dPN; o.dpmax = dpmax;
   o.hsN = p.N * p.hf;
-  o.duct = supDuct(G, o.roa, o.ta, p.duct);
+  o.duct = supNet(G, o.roa, o.ta, p, o);
   o.Lv = 3600 * G / o.roa;
   o.Psv = o.Ps + g * o.hsN * (o.roa - ros) + g * p.h0 * (o.roa - o.ror) + o.duct.P;
   if (dpmax > 150) o.warn.push('Перепад на закрытых дверях до ' + dpmax.toFixed(0).replace('.', ',') + ' Па — больше 150 Па (СП 7 п. 7.16 б): рассечка или распределённая подача.');
@@ -136,7 +141,7 @@ function supLift(d) {
   }
   o.rows = rows; o.leak = sum; o.Gl = o.G1 + sum;
   o.hl = p.h2 + (p.N - 1) * p.hf - base;
-  o.duct = supDuct(o.Gl, o.roa, o.ta, p.duct);
+  o.duct = supNet(o.Gl, o.roa, o.ta, p, o);
   o.Lv = 3600 * o.Gl / o.roa;
   /* так в отчётах «КВМ-Дым»: без слагаемого g·hlN·(ρa − ρl) из формулы (96) МР — его показываем отдельно */
   o.gH = g * o.hl * (o.roa - rol);

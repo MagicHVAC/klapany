@@ -9,9 +9,6 @@ function compDef() {
 }
 var KV_COMP = ['Компенсирующая подача: сеть (ДП)', [
   ['comp.on', 'Считать сеть компенсации', [[true, 'да — механическая подача'], [false, 'нет']]],
-  ['comp.inZ', 'ζ воздухозабора (решётка + клапан наружного воздуха)', '', 'к скорости в магистрали'],
-  ['comp.mA', 'Магистраль a, мм'], ['comp.mB', 'Магистраль b, мм'], ['comp.mL', 'Магистраль L, м'], ['comp.mZ', 'Магистраль Σζ (отводы, тройники)'],
-  ['comp.sA', 'Шахта a, мм'], ['comp.sB', 'Шахта b, мм'], ['comp.sL', 'Шахта L до этажа пожара, м', '', 'до самого удалённого этажа'], ['comp.sZ', 'Шахта Σζ'],
   ['comp.vA', 'НЗ клапан a, мм'], ['comp.vB', 'НЗ клапан b, мм'], ['comp.vZ', 'ζ открытого НЗ клапана', '', 'по паспорту; сечение (a − 50)·(b − 50)'],
   ['comp.gF', 'Решётка в помещении: живое сечение, м²'], ['comp.gZ', 'ζ решётки', '', 'по паспорту'],
   ['comp.nCl', 'Закрытых НЗ клапанов на шахте, шт.', '', 'остальные этажи — утечки']]];
@@ -22,9 +19,14 @@ function compCalc(p, o) {
   var r = { ro: ro, Ga: o.GaMax, Fkl: Fkl, gLeak: 0 }, G = o.GaMax;
   for (var i = 0; i < 4; i++) {
     r.G = G;
-    r.mag = supDuct(G, ro, t, { a: c.mA, b: c.mB, rect: true, len: c.mL, eps: 0.1, xi: c.mZ });
-    r.sh = supDuct(G, ro, t, { a: c.sA, b: c.sB, rect: true, len: c.sL, eps: 0.1, xi: c.sZ });
-    r.dPin = c.inZ * r.mag.Pd;
+    if (p.compNet && p.compNet.secs && window.kmsNet) { /* 1.23.0: участки с КМС (kvm_kms.js) вместо «магистраль + шахта + ζ входа» */
+      r.net = kmsNet(G, ro, supNu(t), p.compNet, 'Компенсация');
+      r.mag = { P: r.net.P, Pd: r.net.Pd, v: r.net.v, f: r.net.f, dPf: 0 }; r.sh = { P: 0, v: r.net.v, f: r.net.f, dPf: 0 }; r.dPin = 0;
+    } else {
+      r.mag = supDuct(G, ro, t, { a: c.mA, b: c.mB, rect: true, len: c.mL, eps: 0.1, xi: c.mZ });
+      r.sh = supDuct(G, ro, t, { a: c.sA, b: c.sB, rect: true, len: c.sL, eps: 0.1, xi: c.sZ });
+      r.dPin = c.inZ * r.mag.Pd;
+    }
     r.vkl = o.GaMax / ro / Fkl; r.dPkl = c.vZ * ro * r.vkl * r.vkl / 2;
     r.vg = c.gF > 0 ? o.GaMax / ro / c.gF : 0; r.dPg = c.gZ * ro * r.vg * r.vg / 2;
     r.Pcl = r.dPkl + r.dPg; /* давление в шахте у этажа пожара относительно помещений */
@@ -32,6 +34,7 @@ function compCalc(p, o) {
     G = o.GaMax + r.gLeak;
   }
   r.Psv = r.dPin + r.mag.P + r.sh.P + r.dPkl + r.dPg;
+  if (r.net) o.err = o.err.concat(r.net.err);
   r.Lv = 3600 * r.G / ro; r.La = 3600 * o.GaMax / ro;
   o.comp = r;
   if (r.sh.v > 15) o.warn.push('Компенсация: скорость в шахте ' + r.sh.v.toFixed(1).replace('.', ',') + ' м/с — проверь сечение и шум.');
@@ -47,8 +50,10 @@ function repComp(p, o) {
     repF('Решётка в помещении', 'ΔP<sub>р</sub> = ζ<sub>р</sub>·ρ<sub>a</sub>·V<sub>р</sub>²/2', 'V<sub>р</sub> = ' + f(r.vg, 2) + ' м/с; ' + f(c.gZ, 2) + ' · ' + f(r.ro, 3) + ' · ' + f(r.vg, 2) + '² / 2', f(r.dPg, 2) + ' Па') +
     repF('Утечки через закрытые НЗ клапаны', 'ΔG = n·F<sub>кл</sub>·(P/S<sub>кл</sub>)<sup>1/2</sup>, P = ΔP<sub>кл</sub> + ΔP<sub>р</sub>', f(c.nCl, 0) + ' · ' + f(r.Fkl, 4) + ' · (' + f(r.Pcl, 2) + ' / ' + f(p.Skl, 0) + ')<sup>1/2</sup>', f(r.gLeak, 4) + ' кг/с') +
     repF('Расход вентилятора', 'G<sub>v</sub> = G<sub>a</sub> + ΔG; L<sub>v</sub> = 3600·G<sub>v</sub>/ρ<sub>a</sub>', f(r.Ga, 3) + ' + ' + f(r.gLeak, 4), f(r.G, 3) + ' кг/с; ' + f(r.Lv, 0) + ' м³/ч') +
+    (r.net ? kmsRep(r.net, 'Сеть компенсирующей подачи от воздухозабора до клапана') +
+      repF('Давление вентилятора', 'P<sub>v</sub> = ΔP<sub>сети</sub> + ΔP<sub>кл</sub> + ΔP<sub>р</sub>', f(r.mag.P, 2) + ' + ' + f(r.dPkl, 2) + ' + ' + f(r.dPg, 2), f(r.Psv, 2) + ' Па') :
     repF('Воздухозабор', 'ΔP<sub>вх</sub> = ζ<sub>вх</sub>·P<sub>d маг</sub>', f(c.inZ, 2) + ' · ' + f(r.mag.Pd, 2), f(r.dPin, 2) + ' Па') +
     repF('Магистраль', 'ΔP = R·L + Σζ·P<sub>d</sub>', d(r.mag, c.mA, c.mB, c.mL, c.mZ), f(r.mag.P, 2) + ' Па') +
     repF('Шахта', 'ΔP = R·L + Σζ·P<sub>d</sub>', d(r.sh, c.sA, c.sB, c.sL, c.sZ), f(r.sh.P, 2) + ' Па') +
-    repF('Давление вентилятора', 'P<sub>v</sub> = ΔP<sub>вх</sub> + ΔP<sub>маг</sub> + ΔP<sub>ш</sub> + ΔP<sub>кл</sub> + ΔP<sub>р</sub>', f(r.dPin, 2) + ' + ' + f(r.mag.P, 2) + ' + ' + f(r.sh.P, 2) + ' + ' + f(r.dPkl, 2) + ' + ' + f(r.dPg, 2), f(r.Psv, 2) + ' Па');
+    repF('Давление вентилятора', 'P<sub>v</sub> = ΔP<sub>вх</sub> + ΔP<sub>маг</sub> + ΔP<sub>ш</sub> + ΔP<sub>кл</sub> + ΔP<sub>р</sub>', f(r.dPin, 2) + ' + ' + f(r.mag.P, 2) + ' + ' + f(r.sh.P, 2) + ' + ' + f(r.dPkl, 2) + ' + ' + f(r.dPg, 2), f(r.Psv, 2) + ' Па'));
 }

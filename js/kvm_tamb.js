@@ -49,9 +49,14 @@ function tbCalc(p) {
   o.Gs = top.G; o.vsh = top.v;
   o.lamTop = lam(o.vsh, 0.0001); o.dPtop = o.lamTop * p.Htop / De * ra * o.vsh * o.vsh / 2;
   o.hN = top.hk - fl[0].hk + top.dh;
-  var Fd = Math.PI * Math.pow(p.duct.D / 1000, 2) / 4; o.vvv = o.Gs / (ra * Fd);
-  o.lamVV = smkLam(o.vvv * (p.duct.D / 1000) / supNu(A.ta), 0.0001, p.duct.D / 1000);
-  o.dPvv = (o.lamVV * p.duct.len / (p.duct.D / 1000) + p.duct.xi) * ra * o.vvv * o.vvv / 2;
+  if (p.net && p.net.secs && window.kmsNet) { /* 1.23.0: сеть по участкам с КМС */
+    o.net = kmsNet(o.Gs, ra, supNu(A.ta), p.net, 'Сеть'); o.err = o.err.concat(o.net.err);
+    o.vvv = o.net.v; o.lamVV = o.net.f; o.dPvv = o.net.P;
+  } else {
+    var Fd = Math.PI * Math.pow(p.duct.D / 1000, 2) / 4; o.vvv = o.Gs / (ra * Fd);
+    o.lamVV = smkLam(o.vvv * (p.duct.D / 1000) / supNu(A.ta), 0.0001, p.duct.D / 1000);
+    o.dPvv = (o.lamVV * p.duct.len / (p.duct.D / 1000) + p.duct.xi) * ra * o.vvv * o.vvv / 2;
+  }
   o.dro = ra - rsf; o.PN = g * o.hN * o.dro - o.Pw0;
   o.Lv = 3600 * o.Gs / ra;
   o.Psv = top.P + o.PN + g * (p.h0 + o.hN) * o.dro + o.dPvv + o.dPtop;

@@ -50,8 +50,7 @@ var KV_F = {
       ['xid', 'ξd — КМС дверного проёма'], ['xir', 'ξr — КМС тамбура выхода', '', 'прямой 0, прямоугольный 0,99, z-образный 2,9–4'], ['Fd', 'Fd — дверь на этаже, м²'], ['hd', 'hd — её высота, м'],
       ['gasProof', 'Двери на этажах', [[false, 'обычные: 5300/ρs'], [true, 'дымогазонепроницаемые: 60000/ρs']]], ['Sd', 'Sd по паспорту, м³/кг (0 — по МР)'], ['Fw', 'Окно на этаже, м²'],
       ['winVar', 'Воздухопроницаемость окон задана', [[1, 'ΔQ100, м³/(ч·м²)'], [0, 'ΔG10, кг/(ч·м²)'], [2, 'R10'], [3, 'R100']]], ['winVal', 'Значение воздухопроницаемости']]],
-    ['Вентилятор', [['Pplus', 'P+ — избыточное давление, Па'], ['h0', 'h0s — от воздухозабора до оголовка, м'], ['duct.rect', 'Воздуховод', [[false, 'круглый'], [true, 'прямоугольный']]],
-      ['duct.a', 'D или A, мм'], ['duct.b', 'B, мм'], ['duct.len', 'Длина, м'], ['duct.xi', 'Σξ'], ['duct.eps', 'ε, мм']]]
+    ['Вентилятор', [['Pplus', 'P+ — избыточное давление, Па'], ['h0', 'h0s — от воздухозабора до оголовка, м']]]
   ],
   lift: [
     ['Объект', [['name', 'Проект', 't'], ['system', 'Система', 't']]],
@@ -61,8 +60,7 @@ var KV_F = {
     ['Воздух', [['air.ta', 'ta — наружный (зима), °C'], ['air.tr', 'tr — в здании, °C'], ['air.va', 'va — ветер, м/с'], ['air.kww', 'Kww — наветренный'], ['air.kw0', 'Kw0 — заветренный']]],
     ['Шахта', [['Fdl', 'Fdl — двери шахты, м²'], ['hdl', 'hdl — их высота, м'], ['nc', 'n — кабин'], ['Fdr', 'Fdr — дверь холла, м²'], ['m', 'm — дверей холла'], ['xid', 'ξd — КМС двери холла'],
       ['Fk', 'Fk — сечение кабины, м²'], ['Fls', 'Fls — сечение шахты, м²'], ['xil', 'ξl (0 — по (45): 4,3 + Fk/Fls)'], ['muGap', 'μ зазора кабина–шахта'], ['Sdl', 'Sdl по паспорту (0 — 2600/ρl)'], ['Sdr', 'Sdr по паспорту (0 — 5300/ρl)']]],
-    ['Вентилятор', [['Pplus', 'P+ — избыточное давление, Па'], ['h0', 'h0l — от воздухозабора до оголовка, м'], ['duct.rect', 'Воздуховод', [[true, 'прямоугольный'], [false, 'круглый']]],
-      ['duct.a', 'D или A, мм'], ['duct.b', 'B, мм'], ['duct.len', 'Длина, м'], ['duct.xi', 'Σξ'], ['duct.eps', 'ε, мм']]]
+    ['Вентилятор', [['Pplus', 'P+ — избыточное давление, Па'], ['h0', 'h0l — от воздухозабора до оголовка, м']]]
   ]
 };
 function kvGet(p, k) { return k.split('.').reduce(function (a, x) { return a == null ? a : a[x]; }, p); }
@@ -113,7 +111,9 @@ function kvTypForm() {
 function kvForm() {
   var p = KV.p, h = '';
   if (!KV_F.tamb && window.TB_F) KV_F.tamb = TB_F;
-  KV_F[KV.mode].forEach(function (g) {
+  if (window.kmsEnsure) kmsEnsure(KV.mode, p);
+  KV_F[KV.mode].forEach(function (g, gi) {
+    if (gi === 1 && window.kmsClimForm) h += kmsClimForm(KV.mode, p);
     h += '<h3 class="nh">' + g[0] + '</h3><div class="trpick stpick">';
     g[1].forEach(function (f) {
       var id = 'kv-' + f[0].replace('.', '_'), v = f[0] === 'doorsTxt' ? kvDoorsTxt(p.doors) : kvGet(p, f[0]);
@@ -124,7 +124,9 @@ function kvForm() {
     });
     h += '</div>';
   });
-  if (KV.mode === 'smk') h += kvTypForm() + kvCompForm();
+  if (KV.mode === 'smk') h += kvTypForm();
+  if (window.kmsForm) h += kmsForm(KV.mode, p);
+  if (KV.mode === 'smk') { h += kvCompForm(); if (window.kmsBox && p.compNet && (!p.comp || p.comp.on)) h += kmsBox('compNet', 'Сеть компенсирующей подачи (ДП)', p.compNet); }
   return h;
 }
 var KV_SEGC = [['vw', 'Клапан a, мм'], ['vh', 'b, мм'], ['zkl', 'ζкл'], ['nodeZ', 'ζ узла'], ['hA', 'Гориз. a, м'], ['hB', 'b, м'], ['hL', 'L, м'], ['hZ', 'Σζ'], ['vA', 'Верт. a, м'], ['vB', 'b, м'], ['vL', 'L, м'], ['vZ', 'Σζ']];
@@ -150,17 +152,25 @@ PAGES.pdv = (function (old) {
       '<div class="vntabs" role="tablist">' + [['smk', 'Дымоудаление', 'коридор, зал'], ['stair', 'Лестничная клетка', 'подпор, п. 4.1'], ['lift', 'Лифтовая шахта', 'подпор, п. 4.2'], ['tamb', 'Тамбур-шлюз', 'подпор, зона безопасности']].map(function (t) {
         return '<button type="button" data-kvm="' + t[0] + '"' + (t[0] === KV.mode ? ' class="on"' : '') + '>' + t[1] + '<small>' + t[2] + '</small></button>'; }).join('') + '</div>' +
       '<div class="dpbtns"><button type="button" class="eibtn" id="kv-new">Новый (пример)</button><button type="button" class="eibtn" id="kv-doc">Скачать отчёт в Word</button></div>' +
+      (window.kvpBlock ? '<div id="kvp">' + kvpBlock() + '</div>' : '') +
       '<div id="kv-form">' + kvForm() + '</div><div class="barres stres" id="kv-res"></div><div id="kv-rep"></div>' +
       '<details class="issue"><summary>Отдельные расчёты по формулам МР (прежние вкладки)</summary><div>' + old().replace(/^<h1>[\s\S]*?<\/p>/, '') + '</div></details>';
   };
 })(PAGES.pdv);
 
+/* 1.23.0: расчёт любой системы по виду — для формы и для проекта «все системы» (kvm_proj.js) */
+function kvRun(mode, p) {
+  var o;
+  if (window.kmsEnsure) kmsEnsure(mode, p);
+  try { o = mode === 'smk' ? smkCalc(p) : mode === 'stair' ? supStair(p) : mode === 'tamb' ? tbCalc(p) : supLift(p); } catch (e) { o = { err: ['Ошибка расчёта: ' + e.message], warn: [] }; }
+  if (mode === 'smk' && window.compCalc && isFinite(o.Lv)) { try { compCalc(p, o); } catch (x) { o.warn.push('Компенсация: ошибка расчёта — ' + x.message); } }
+  return o;
+}
 function kvCalc() {
   if (!$('#kv-form')) return;
-  var p = KV.p, o;
-  try { o = KV.mode === 'smk' ? smkCalc(p) : KV.mode === 'stair' ? supStair(p) : KV.mode === 'tamb' ? tbCalc(p) : supLift(p); } catch (e) { o = { err: ['Ошибка расчёта: ' + e.message], warn: [] }; }
-  if (KV.mode === 'smk' && window.compCalc && isFinite(o.Lv)) { try { compCalc(p, o); } catch (x) { o.warn.push('Компенсация: ошибка расчёта — ' + x.message); } }
+  var p = KV.p, o = kvRun(KV.mode, p);
   KV.o = o;
+  if (window.kvpAuto) kvpAuto();
   var h = '';
   if (o.err && o.err.length) h += o.err.map(function (e) { return vnC('Ошибка', 'Проверь данные', e, 'warn'); }).join('');
   if (isFinite(o.Lv)) {
@@ -185,7 +195,7 @@ function kvCalc() {
 }
 
 /* ---------- отчёт: вёрстка — kvm_rep.js ---------- */
-function kvReport(p, o) { return KV.mode === 'smk' ? repSmk(p, o) : KV.mode === 'stair' ? repStair(p, o) : KV.mode === 'tamb' ? repTamb(p, o) : repLift(p, o); }
+function kvReport(p, o, mode) { mode = mode || KV.mode; return mode === 'smk' ? repSmk(p, o) : mode === 'stair' ? repStair(p, o) : mode === 'tamb' ? repTamb(p, o) : repLift(p, o); }
 
 function kvInput(e) {
   var t = e.target;
@@ -207,8 +217,8 @@ document.addEventListener('input', kvInput);
 document.addEventListener('change', function (e) { if (e.target.tagName === 'SELECT') kvInput(e); });
 document.addEventListener('click', function (e) {
   var m = e.target.closest && e.target.closest('[data-kvm]');
-  if (m) { KV.mode = m.dataset.kvm; KV.p = kvDef(KV.mode); KV.file = ''; try { localStorage.setItem('klapany-kv-mode', KV.mode); } catch (x) {} show('pdv'); return; }
-  if (e.target.id === 'kv-new') { KV.p = kvDef(KV.mode); KV.file = ''; show('pdv'); return; }
+  if (m) { KV.mode = m.dataset.kvm; KV.p = kvDef(KV.mode); KV.file = ''; KV.pid = null; try { localStorage.setItem('klapany-kv-mode', KV.mode); } catch (x) {} show('pdv'); return; }
+  if (e.target.id === 'kv-new') { KV.p = kvDef(KV.mode); KV.file = ''; KV.pid = null; show('pdv'); return; }
   if (e.target.id === 'kv-retyp') { KV.p.segMode = 'typ'; KV.p.segs = kvBuildSegs(KV.p.typ); $('#kv-form').innerHTML = kvForm(); if (window.hintsAttach) hintsAttach(); kvCalc(); return; }
   if (e.target.id === 'kv-add') { KV.p.segMode = 'table'; var L = KV.p.segs, last = L[L.length - 1], prev = L[L.length - 2] || last; L.splice(L.length - 1, 0, JSON.parse(JSON.stringify(prev))); $('#kv-form').innerHTML = kvForm(); if (window.hintsAttach) hintsAttach(); kvCalc(); return; }
   var del = e.target.closest && e.target.closest('.kvdel');

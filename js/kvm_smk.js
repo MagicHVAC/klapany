@@ -135,7 +135,12 @@ function smkNet(p, o) {
   o.Lv = o.GN / o.roN * 3600; o.PshN = Math.abs(o.PN) + dPv; o.tFan = o.TN - 273;
   /* выброс на фасад: + сопротивление воздуховодов до выброса + 0,5·ρN·vf² (МР (90); так в отчётах «КВМ-Дым») */
   o.Pvf = p.endExhaust ? 0.5 * o.roN * p.vOut * p.vOut : 0;
-  o.Psv = o.PshN + (p.endExhaust ? p.ductRes + o.Pvf : 0);
+  /* 1.23.0: сеть за вентилятором по участкам с КМС (kvm_kms.js) — вместо числа «сопротивление до выброса»; считается и при выбросе на кровлю */
+  o.dPout = p.endExhaust ? p.ductRes : 0;
+  if (p.netOut && p.netOut.secs && p.netOut.secs.length && window.kmsNet) {
+    o.netOut = kmsNet(o.GN, o.roN, smkNu(o.TN), p.netOut, 'Выброс'); o.err = o.err.concat(o.netOut.err); o.dPout = o.netOut.P;
+  }
+  o.Psv = o.PshN + o.dPout + o.Pvf;
   o.vmax = Math.max.apply(null, [vkl].concat(rows.map(function (r) { return Math.max(r.ver.v || 0, (r.hor && r.hor.v) || 0); })));
 }
 

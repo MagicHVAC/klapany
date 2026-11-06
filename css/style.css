@@ -528,3 +528,16 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 @media (max-width: 640px) { .rep { padding: 16px 12px; font-size: 14px; } }
 .rep .rep-x { font-family: Arial, sans-serif; }
 .rep-3d svg { width: 100%; height: auto; display: block; margin: 8px 0; }
+/* 1.23.0: сеть по участкам с КМС, проект «все системы» */
+.kms { display: grid; gap: 10px; margin-bottom: 8px; }
+.kmss { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--card, transparent); }
+.kmsh { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.kmsh .kmsn { flex: 1; min-width: 0; height: 32px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; font-weight: 600; }
+.kmst select, .kmst input { height: 30px; padding: 0 6px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); color: var(--text); font: inherit; font-size: 13px; }
+.kmst input[type=number] { width: 70px; } .kmst select { max-width: 240px; } .kmst input[type=text] { width: 140px; margin-left: 4px; }
+.kmst td:first-child { white-space: normal; } .kmst td.kmssrc { color: var(--muted); font-size: 12px; white-space: normal; min-width: 160px; }
+.kmst input.kmsneed { border-color: #e0a100; box-shadow: 0 0 0 2px rgba(224,161,0,.25); }
+.kmsx { min-width: 32px; padding: 0 8px; }
+.kmsadd { display: inline-flex; flex-direction: column; margin-left: auto; } .kmsadd input { width: 90px; }
+.kvp > div { padding-top: 6px; } .kvpt tr.on td { background: rgba(80,160,255,.12); } .kvpt td:last-child { white-space: nowrap; }
+.kmsbad { color: #e0a100; }
