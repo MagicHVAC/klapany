@@ -226,7 +226,7 @@ function dpuDoc() {
     '<p>Фактический расход через 1 ДПУ: ' + f(r.G, 3) + ' / ' + f(r.ro, 3) + ' / ' + r.N + ' = ' + f(r.Vone, 3) + ' м³/с ≤ V<sub>max</sub>.</p>';
   var warn = r.warn.length ? '<p><b>Замечания:</b></p><ul>' + r.warn.map(function (w) { return '<li>' + w + '</li>'; }).join('') + '</ul>' : '';
   var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>Расчёт ДПУ</title>' +
-    '<style>body{font-family:"Times New Roman";font-size:12pt}h1{font-size:14pt}table{border-collapse:collapse}td{border:1px solid #000;padding:3pt 6pt}</style></head><body>' +
+    '<style>body{font-family:\'GOST type B\',\'GOST Type BU\',ISOCPEUR,Arial,sans-serif;font-size:12pt}h1{font-size:14pt}table{border-collapse:collapse}td{border:1px solid #000;padding:3pt 6pt}</style></head><body>' +
     '<h1>Расчёт количества дымоприёмных устройств системы вытяжной противодымной вентиляции</h1>' +
     '<p>Основание: СП 7.13130.2013 с Изм. № 3 (приказ МЧС России от 27.03.2025 № 251), приложение Е, пп. 7.4, ' + (r.k === 'room' ? '7.9' : '7.8') + '.</p>' +
     '<p>Объект защиты: ' + (r.k === 'room' ? 'помещение (дымовая зона)' : 'коридор') + '.</p><h2 style="font-size:12pt">Исходные данные</h2><table>' + src + '</table>' +

@@ -212,7 +212,7 @@ function netDoc() {
     row('Закрытые клапаны на этаже', r.nv + ' шт. ' + f(r.av * 1000, 0) + ' × ' + f(r.bv * 1000, 0) + ' мм') + row('k, мм', f(r.k * 1000, 2)) + row('q, Вт/м', f(r.q, 1)) +
     row('До выброса, мм', f(r.ad * 1000, 0) + ' × ' + f(r.bd * 1000, 0) + ', l = ' + f(r.ld, 1) + ' м, Σζ = ' + f(r.zd, 2)) + row('Выброс', r.out === 'fac' ? 'на фасад, v = ' + f(r.vf, 1) + ' м/с' : 'на кровлю');
   var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>Расчёт сети дымоудаления</title>' +
-    '<style>body{font-family:"Times New Roman";font-size:12pt}h1{font-size:14pt}table{border-collapse:collapse}td,th{border:1px solid #000;padding:3pt 6pt;font-size:10pt}</style></head><body>' +
+    '<style>body{font-family:\'GOST type B\',\'GOST Type BU\',ISOCPEUR,Arial,sans-serif;font-size:12pt}h1{font-size:14pt}table{border-collapse:collapse}td,th{border:1px solid #000;padding:3pt 6pt;font-size:10pt}</style></head><body>' +
     '<h1>Аэродинамический расчёт сети вытяжной противодымной вентиляции и подбор вентилятора</h1>' +
     '<p>Основание: СП 7.13130.2013 с Изм. № 1–3; «Расчётное определение основных параметров противодымной вентиляции зданий. Методические рекомендации к СП 7.13130.2013» (ФГБУ ВНИИПО МЧС России, 2013), п. 5.1, прил. 2, прил. 3. Расчётный этаж пожара — нижний (МР п. 2.2).</p>' +
     '<h2 style="font-size:12pt">Исходные данные</h2><table>' + src + '</table>' +

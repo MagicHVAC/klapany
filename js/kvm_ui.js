@@ -135,58 +135,8 @@ function kvCalc() {
   $('#kv-rep').innerHTML = isFinite(o.Lv) ? kvReport(p, o) : '';
 }
 
-/* ---------- отчёт с формулами ---------- */
-function kvLine(t, f) { return '<p class="kvl"><span>' + t + '</span><br>' + f + '</p>'; }
-function kvReport(p, o) {
-  if (KV.mode === 'smk') return kvRepSmk(p, o);
-  if (KV.mode === 'stair') return kvRepStair(p, o);
-  return kvRepLift(p, o);
-}
-function kvRepSmk(p, o) {
-  var h = '<h2>Отчёт: вытяжная противодымная вентиляция</h2><p class="sub">' + esc(p.name) + (p.system ? ' · ' + esc(p.system) : '') + ' · ' + (p.variant === 0 ? 'удаление дыма из коридора (холла), смежного с горящим помещением' : 'удаление дыма из зала') + '</p>';
-  if (p.variant === 0) {
-    h += kvLine('Площадь пола и объём горящего помещения', 'Ff = ' + kf(o.Ff, 2) + ' м²; V = ' + kf(o.V, 2) + ' м³; Fw = 6·V<sup>2/3</sup> = ' + kf(o.Fw, 2) + ' м²') +
-      kvLine('Проёмы и проёмность', 'A0 = ΣAi = ' + kf(o.A0, 2) + ' м²; П = Σ(Ai·Hi<sup>1/2</sup>)/V<sup>2/3</sup> = ' + kf(o.Pi, 4) + ' м<sup>1/2</sup>; V0 = 0,263·Qн = ' + kf(o.V0, 2) + ' м³/кг') +
-      kvLine('Пожарная нагрузка', 'g0 = qп/Qнд = ' + kf(p.qp, 0) + '/13,8 = ' + kf(o.g0, 2) + ' кг/м²; gk = Ff·qп/((Fw − A0)·Qнд) = ' + kf(o.gk, 2) + ' кг/м²; gkкр = ' + kf(o.gkr, 2) + ' кг/м² → ' + (o.prv ? 'пожар, регулируемый вентиляцией' : 'пожар, регулируемый нагрузкой')) +
-      kvLine('Температуры', 'T0max = ' + kf(o.T0max, 0) + ' K (' + (o.prv ? '13' : '14') + '); T0 = 0,8·T0max = ' + kf(o.T0, 0) + ' K; Tsm = ' + kf(o.Tsm, 1) + ' K (16), hsm = hк − Hнз = ' + kf(o.hsm, 2) + ' м') +
-      kvLine('Расход продуктов горения (17)', 'GПГ = ksm·Ad·Hd<sup>1/2</sup> = ' + kf(o.ksm, 1) + ' · ' + kf(p.dA, 2) + ' · ' + kf(p.dH, 2) + '<sup>1/2</sup> = ' + kf(o.G, 3) + ' кг/с; LПГ = ' + kf(o.L, 0) + ' м³/ч');
-  } else {
-    h += kvLine('Очаг', 'Qf = η·Qн·1000·ψ·Fo = ' + kf(p.eta, 2) + ' · ' + kf(p.Q, 1) + ' · 1000 · ' + kf(p.psi, 4) + ' · ' + kf(p.Fo, 1) + ' = ' + kf(o.Qf, 0) + ' кВт; безопасное расстояние R = ' + kf(o.Rsafe, 2) + ' м') +
-      kvLine('Высота пламени и колонка', 'Z = 0,166·(r·Qf)<sup>2/5</sup> = ' + kf(o.Zf, 2) + ' м ' + (o.f === 8 ? '> ' : '< ') + 'Hнз = ' + kf(p.hNz, 2) + ' м → формула (' + o.f + '): Gk = ' + kf(o.Gk, 3) + ' кг/с') +
-      kvLine('Температура слоя (4)', 'Tk = ' + kf(o.Tk, 0) + ' K; α = ' + kf(o.alpha, 4) + ' кВт/(м²·К); Tsm = ' + kf(o.Tsm, 1) + ' K; lsm = ' + kf(o.lsm, 2) + ' м; Asm = ' + kf(o.Asm, 1) + ' м²') +
-      kvLine('Расход продуктов горения (12)', 'GПГ = Gk = ' + kf(o.G, 3) + ' кг/с; LПГ = ' + kf(o.L, 0) + ' м³/ч');
-  }
-  h += kvLine('Открытый клапан на этаже пожара', 'Fкл = ' + kf(o.Fkl, 4) + ' м²; Vкл = ' + kf(o.vkl, 2) + ' м/с; ΔPкл = ½·(ζкл + ζ\')·Vкл²·ρ = ½ · (' + kf(o.zkl, 2) + ' + ' + kf(p.segs[0].nodeZ, 2) + ') · ' + kf(o.vkl, 2) + '² · ' + kf(353 / o.Tsm, 3) + ' = ' + kf(o.dPkl, 2) + ' Па');
-  h += vnTable(['Участок', 'PШ, Па', 'Подсос клапана, кг/с', 'Подсос стенок, кг/с', 'GШ, кг/с', 'T, K', 'ρ, кг/м³', 'v верт., м/с', 'λ', 'ΔPШ, Па'], o.rows.map(function (r) {
-    return [r.i + (r.open ? ' — пожар' : r.last ? ' — верх' : ''), kf(r.P, 2), kf(r.gKl, 5), kf(r.gH + r.gV, 5), kf(r.G, 4), kf(r.T, 2), kf(r.ro, 4), kf(r.ver.v, 2), kf(r.ver.lam, 4), kf(r.ver.dp, 2)];
-  }));
-  h += kvLine('Вентилятор', 'GШ = ' + kf(o.GN, 4) + ' кг/с; Lv = GШ/ρN·3600 = ' + kf(o.Lv, 0) + ' м³/ч; Psv = ' + kf(o.PshN, 2) + (o.Pvf ? ' + ' + kf(p.ductRes, 0) + ' + ' + kf(o.Pvf, 2) : '') + ' = ' + kf(o.Psv, 2) + ' Па; t = ' + kf(o.tFan, 0) + ' °C') +
-    kvLine('Дымоприёмные устройства (СП 7 прил. Е)', 'Dэ = ' + kf(o.dpuD, 3) + ' м; γ = ' + kf(o.gamma, 1) + '; d = ' + kf(o.d, 2) + ' м; V1max = 4,16·γ·d<sup>5/2</sup>·[(Tsm − Tr)/Tr]<sup>1/2</sup> = ' + kf(o.V1, 2) + ' м³/с; Nmin = ' + o.Nmin + '; Lmin = 0,9·V1max<sup>1/2</sup> = ' + kf(o.Lmin, 3) + ' м') +
-    kvLine('Компенсирующая подача', 'Ga = GШ/(1,3…1,0) = ' + kf(o.GaMin, 2) + '…' + kf(o.GaMax, 2) + ' кг/с; La = ' + kf(o.LaMin, 0) + '…' + kf(o.LaMax, 0) + ' м³/ч при t = ' + kf(p.tComp, 0) + ' °C');
-  return h;
-}
-function kvRepStair(p, o) {
-  var h = '<h2>Отчёт: подпор в лестничную клетку</h2><p class="sub">' + esc(p.name) + (p.system ? ' · ' + esc(p.system) : '') + '</p>' +
-    kvLine('Плотности', 'ρa = ' + kf(o.roa, 3) + ', ρr = ' + kf(o.ror, 3) + ', ρs = ' + kf(o.ros, 3) + ' кг/м³ (ts = ' + kf(o.ts, 1) + ' °C); Pw = 0,25·(Kww − Kw0)·ρa·va² = ' + kf(o.Pw, 2) + ' Па') +
-    kvLine(p.noFloor1 ? 'Давление у двери 2-го этажа (23)' : 'Давление у двери 1-го этажа (33)', 'Ps = ' + kf(o.P1, 2) + ' Па') +
-    kvLine('Наружный выход ' + (p.noFloor1 ? '(24)' : '(34)'), 'Gsa = ' + kf(o.Gsa, 3) + ' кг/с; Gs(F) = Gsm/q = ' + kf(o.GsF, 3) + ' кг/с; принято Gs = ' + kf(o.Gs0, 3) + ' кг/с; Sd = ' + kf(o.Sd, 1) + ' м³/кг') +
-    vnTable(['Этаж', 'h, м', 'Ps, Па', 'ΔPd, Па', 'vs, м/с', 'ΔPs, Па', 'ΔGsd, кг/с', 'ΔGsw, кг/с', 'Gw, кг/(ч·м²)', 'Gs, кг/с'], o.rows.slice().reverse().map(function (r) {
-      return [r.i, kf(r.h, 2), kf(r.P, 2), kf(r.dPd, 2), kf(r.v, 3), kf(r.dPs, 2), kf(r.dG, 4), kf(r.dGw || 0, 4), kf(r.Gw || 0, 2), kf(r.G, 3)];
-    })) +
-    kvLine('Воздуховоды до оголовка', 'v = ' + kf(o.duct.v, 2) + ' м/с; Pd = ' + kf(o.duct.Pd, 2) + ' Па; λ = ' + kf(o.duct.f, 4) + ' (Кольбрук); Pвв = ' + kf(o.duct.P, 2) + ' Па') +
-    kvLine('Вентилятор (93), (94)', 'Lv = ' + kf(o.Lv, 0) + ' м³/ч; Psv = Ps + g·hsN·(ρa − ρs) + g·h0s·(ρa − ρr) + Pвв = ' + kf(o.Ps, 2) + ' + 9,81·' + kf(o.hsN, 2) + '·' + kf(o.roa - o.ros, 3) + ' + 9,81·' + kf(p.h0, 1) + '·' + kf(o.roa - o.ror, 3) + ' + ' + kf(o.duct.P, 2) + ' = ' + kf(o.Psv, 0) + ' Па; t = ' + kf(p.air.ta, 0) + ' °C');
-  return h;
-}
-function kvRepLift(p, o) {
-  var h = '<h2>Отчёт: подпор в лифтовую шахту</h2><p class="sub">' + esc(p.name) + (p.system ? ' · ' + esc(p.system) : '') + '</p>' +
-    kvLine('Плотности и сопротивления', 'ρa = ' + kf(o.roa, 3) + ', ρr = ' + kf(o.ror, 3) + ', ρl = ' + kf(o.rol, 3) + ' кг/м³; Pw = ' + kf(o.Pw, 2) + ' Па; Sdl = ' + kf(o.Sdl, 1) + ', Sdr = ' + kf(o.Sdr, 1) + ' м³/кг; Slr = ' + kf(o.Slr, 2) + '; ξl = ' + kf(o.xil, 2)) +
-    kvLine('1-й этаж — двери открыты', 'Pl(1) = ' + kf(o.P1, 2) + ' Па; G(1) = ' + kf(o.G1, 3) + ' кг/с') +
-    (o.dPcs ? kvLine('Зазор кабина–шахта', 'vcs = ' + kf(o.vcs, 2) + ' м/с; ΔPcs = ' + kf(o.dPcs, 2) + ' Па; Pl(n) = ' + kf(o.Pl, 2) + ' Па') : kvLine('Давление в шахте', 'Pl = ' + kf(o.Pl, 2) + ' Па')) +
-    vnTable(['Этаж', 'hэ, м', 'ΔPd, Па', 'ΔG, кг/с'], o.rows.slice().reverse().map(function (r) { return [r.i, kf(r.h, 2), isFinite(r.dPd) ? kf(r.dPd, 2) : '—', kf(r.dG, 4)]; })) +
-    kvLine('Воздуховоды', 'v = ' + kf(o.duct.v, 2) + ' м/с; λ = ' + kf(o.duct.f, 4) + '; Pdl = ' + kf(o.duct.P, 2) + ' Па') +
-    kvLine('Вентилятор (95), (96)', 'Gl = ' + kf(o.Gl, 3) + ' кг/с; Lv = ' + kf(o.Lv, 0) + ' м³/ч; Psv = ' + kf(o.Psv, 0) + ' Па' + (p.method !== 1 ? ' (как в «КВМ-Дым»; по (96) МР с g·hlN·(ρa − ρl) — ' + kf(o.PsvMR, 0) + ' Па)' : ''));
-  return h;
-}
+/* ---------- отчёт: вёрстка — kvm_rep.js ---------- */
+function kvReport(p, o) { return KV.mode === 'smk' ? repSmk(p, o) : KV.mode === 'stair' ? repStair(p, o) : repLift(p, o); }
 
 /* ---------- открытие проекта КВМ ---------- */
 function kvOpen(file) {
@@ -230,7 +180,6 @@ document.addEventListener('click', function (e) {
   var del = e.target.closest && e.target.closest('.kvdel');
   if (del) { if (KV.p.segs.length > 1) KV.p.segs.splice(+del.dataset.seg, 1); $('#kv-form').innerHTML = kvForm(); kvCalc(); return; }
   if (e.target.id === 'kv-doc' && KV.o && isFinite(KV.o.Lv)) {
-    var tt = { smk: 'Расчёт системы вытяжной противодымной вентиляции', stair: 'Расчёт подпора воздуха в лестничную клетку', lift: 'Расчёт подпора воздуха в лифтовую шахту' }[KV.mode];
-    vnDoc(tt, kvReport(KV.p, KV.o).replace(/<p class="kvl"><span>/g, '<p><b>').replace(/<\/span><br>/g, '</b><br>'), (KV.p.system || 'ПДВ').replace(/[\\/:*?"<>|]/g, '_') + '_расчёт');
+    repDoc(kvReport(KV.p, KV.o), String(KV.p.system || 'ПДВ').replace(/[^0-9A-Za-zА-Яа-яЁё., -]/g, '_') + '_расчёт');
   }
 });

@@ -495,3 +495,35 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .kvl { margin: 6px 0; font-size: 14px; line-height: 1.5; }
 .kvl span { color: var(--muted); font-size: 13px; }
 #kv-rep h2 { margin-top: 18px; }
+
+/* Отчёт «Расчёта ПДВ» — лист (kvm_rep.js) */
+.rep { background: #fdfdfb; color: #111; border-radius: 6px; padding: 28px 30px 24px; margin: 18px 0; box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  font-family: 'GOST type B', 'GOST Type BU', 'ISOCPEUR', 'Arial Narrow', Arial, sans-serif; font-size: 15px; line-height: 1.45; }
+.rep sub, .rep sup { font-size: 70%; }
+.rep-top { border: 1.5px solid #111; padding: 12px 14px; margin-bottom: 14px; }
+.rep-title { font-size: 21px; font-weight: 700; text-align: center; margin-bottom: 8px; letter-spacing: .2px; }
+.rep-hd { width: 100%; border-collapse: collapse; }
+.rep-hd td { border-top: 1px solid #bbb; padding: 3px 6px; font-size: 14px; color: #111; }
+.rep-hd td:first-child { width: 22%; color: #555; }
+.rep-sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin: 12px 0 6px; }
+.rep-sum div { border: 1px solid #111; border-left: 4px solid #c0392b; padding: 7px 10px; }
+.rep-sum span { display: block; font-size: 12.5px; color: #555; }
+.rep-sum b { display: block; font-size: 20px; color: #111; }
+.rep-sum small { font-size: 12.5px; color: #555; }
+.rep-h { font-size: 17px; margin: 18px 0 8px; padding-bottom: 3px; border-bottom: 1.5px solid #111; color: #111; font-family: inherit; }
+.rep-t { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 13.5px; }
+.rep-t th, .rep-t td { border: 1px solid #555; padding: 3px 6px; color: #111; background: transparent; }
+.rep-t th { background: #ecebe6; font-weight: 700; text-align: center; }
+.rep-t tbody tr:nth-child(even) td { background: #f5f4f0; }
+.rep-t .n { text-align: right; white-space: nowrap; } .rep-t .c { text-align: center; }
+.rep-in td:first-child { width: 40%; } .rep-in td:nth-child(2), .rep-in td:nth-child(4) { white-space: nowrap; }
+.rep-scroll { overflow-x: auto; }
+.rep-f { margin: 7px 0; padding-left: 10px; border-left: 2px solid #d5d3cc; }
+.rep-fn { font-size: 13px; color: #555; }
+.rep-fx { font-size: 15.5px; color: #111; }
+.rep-fx b { color: #b03a2e; white-space: nowrap; }
+.rep-p { font-size: 13.5px; color: #333; margin: 6px 0; }
+.rep-note { border: 1px solid #b03a2e; background: #fbefed; padding: 8px 12px; margin-top: 14px; font-size: 13.5px; color: #111; }
+.rep-note ul { margin: 4px 0 0 18px; padding: 0; }
+@media (max-width: 640px) { .rep { padding: 16px 12px; font-size: 14px; } }
+.rep .rep-x { font-family: Arial, sans-serif; }
