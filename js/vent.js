@@ -39,7 +39,8 @@
     if (r.np) h += num('На чел., пост.', f(r.np), 'м³/ч', 'pp');
     if (r.nt) h += num('На чел., врем.', f(r.nt), 'м³/ч', 'pp');
     if (r.sp) h += num('На 1 м²', f(r.sp), 'м³/ч', 'pp');
-    if (r.t != null) h += num('tв, зима', '≥ ' + f(r.t), '°С', 't');
+    if (r.t != null) h += r.tx != null ? num('tв, холодный период', f(r.t) + '…' + f(r.tx), '°С', 't') : num('tв, зима', '≥ ' + f(r.t), '°С', 't');
+    if (r.ag) h += num('Возраст детей', esc(r.ag), '', 'pp');
     if (r.te != null) h += num('tв, ранний возраст', '≥ ' + f(r.te), '°С', 't');
     h += '</div><p class="vm">Способ: <b>' + esc(METH[r.m] || r.m || '—') + '</b>' + (r.d ? ' · ' + esc(DIR[r.d] || r.d) : '') + '</p>';
     if (r.no) h += '<p class="vno">' + hl(r.no, used) + '</p>';
@@ -90,10 +91,11 @@
 
   /* ---------- вывод ---------- */
   function tabRes(T, q) {
-    var r = VS.run(T.idx, q), rows = r.rows;
+    var r = VS.run(T.idx, q, { assoc: !!store.as }), rows = r.rows;
     if (T.id === 'rooms') {
       var bt = store.bt || '', mt = store.mt || '', tt = !!store.tt;
-      rows = rows.filter(function (x) { var r = x.it.r, b = r.b; return (!bt || !b || !b.length || b.indexOf(bt) >= 0) && (!mt || r.m === mt || (mt === 'krat' && r.m === 'krat_people')) && (!tt || r.t != null); });
+      /* 1.23.5: тип здания — строго; нормы «для любых зданий» — только по галке «и общие нормы» */
+      rows = rows.filter(function (x) { var r = x.it.r, b = r.b; return (!bt || (b && b.indexOf(bt) >= 0) || ((!b || !b.length) && store.gen)) && (!mt || r.m === mt || (mt === 'krat' && r.m === 'krat_people')) && (!tt || r.t != null); });
     }
     if (T.id === 'climate' && store.reg) rows = rows.filter(function (x) { return x.it.r.r === store.reg; });
     return { rows: rows, how: r.how };
@@ -135,6 +137,8 @@
       h += '<label>Тип здания <select id="vbt">' + opt('', 'все', store.bt || '') + Object.keys(BT).sort().map(function (b) { return opt(b, b, store.bt); }).join('') + '</select></label>';
       h += '<label>Способ <select id="vmt">' + opt('', 'любой', store.mt || '') + Object.keys(MT).map(function (m) { return opt(m, METH[m] || m, store.mt); }).join('') + '</select></label>';
       h += '<label class="chk"><input type="checkbox" id="vtt"' + (store.tt ? ' checked' : '') + '> с нормой температуры</label>';
+      h += '<label class="chk" title="Нормы, не привязанные к типу здания (СП 60 и др.) — показывать вместе с выбранным типом"><input type="checkbox" id="vgen"' + (store.gen ? ' checked' : '') + '> и общие нормы для любых зданий</label>';
+      h += '<label class="chk" title="Искать и по словам того же смысла: «туалет» → уборная, санузел, унитаз"><input type="checkbox" id="vas"' + (store.as ? ' checked' : '') + '> по ассоциациям</label>';
     } else if (T.id === 'climate') {
       h += '<label>Регион <select id="vreg">' + opt('', 'все', store.reg || '') + Object.keys(REG).sort().map(function (r) { return opt(r, r, store.reg); }).join('') + '</select></label>';
     }
@@ -156,7 +160,7 @@
   });
   document.addEventListener('change', function (e) {
     var id = e.target.id;
-    if (id === 'vbt') store.bt = e.target.value; else if (id === 'vmt') store.mt = e.target.value; else if (id === 'vtt') store.tt = e.target.checked; else if (id === 'vreg') store.reg = e.target.value; else return;
+    if (id === 'vbt') store.bt = e.target.value; else if (id === 'vmt') store.mt = e.target.value; else if (id === 'vtt') store.tt = e.target.checked; else if (id === 'vgen') store.gen = e.target.checked; else if (id === 'vas') store.as = e.target.checked; else if (id === 'vreg') store.reg = e.target.value; else return;
     save(); shown = 40; render();
   });
   document.addEventListener('input', function (e) {

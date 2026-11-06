@@ -7,7 +7,7 @@
 var VS = (function () {
   /* Смысловые группы. Слово — начало основы (поиск по префиксу). Группу дополнять свободно. */
   var ASSOC = [
-    ['туалет', 'уборн', 'санузел', 'сануз', 'сан узел', 'унитаз', 'писсуар', 'клозет', 'wc', 'биде', 'санитарн', 'сортир'],
+    ['туалет', 'уборн', 'санузел', 'сануз', 'сан узел', 'унитаз', 'писсуар', 'клозет', 'wc', 'биде', 'сортир'], /* 1.23.5: без «санитарн» — цеплял душевые и санитарно-бытовые */
     ['кухн', 'пищеблок', 'варочн', 'горяч цех', 'горячий цех', 'холодн цех', 'заготовочн', 'плит', 'пищев', 'столов', 'буфет', 'кафе', 'ресторан', 'обеденн', 'раздаточн', 'фритюр', 'пароконвект', 'котел пищевар', 'общепит'],
     ['офис', 'кабинет', 'административ', 'рабоч', 'переговорн', 'конференц', 'бухгалтер', 'приемн', 'сотрудник'],
     ['школ', 'класс', 'учебн', 'аудитор', 'лаборантск', 'учащ', 'ученик', 'студент', 'образоват', 'урок', 'колледж', 'вуз'],
@@ -116,9 +116,9 @@ var VS = (function () {
   }
 
   /* Варианты слова запроса: [{v, w (вес), why}] */
-  function variants(w, idx) {
+  function variants(w, idx, opt) {
     var out = [{ v: stem(w), w: 1, why: '' }], seen = {}; seen[stem(w)] = 1;
-    groupsOf(w).forEach(function (gi) {
+    if (opt && opt.assoc) groupsOf(w).forEach(function (gi) {
       GROUPS[gi].forEach(function (p) { if (!seen[p] && p.length >= 2) { seen[p] = 1; out.push({ v: p, w: 0.6, why: 'a' }); } });
     });
     if (w.length >= 5 && !/\d/.test(w)) {
@@ -132,13 +132,14 @@ var VS = (function () {
   }
 
   /* Поиск. Возвращает {rows: [{it, score}], how: {assoc: [...], fuzzy: [...], or: bool, lat: bool}} */
-  function run(idx, q) {
+  /* opt.assoc — искать и по смысловым группам (галка «по ассоциациям»; по умолчанию — только само слово, его формы и опечатки) */
+  function run(idx, q, opt) {
     q = norm(q); var how = { assoc: [], fuzzy: [], or: false, lat: false };
     if (!q) return { rows: idx.items.map(function (it) { return { it: it, score: 0 }; }), how: how };
     var phrases = [], m, re = /"([^"]+)"/g; while ((m = re.exec(q))) phrases.push(m[1]);
     var words = toks(q.replace(/"[^"]*"/g, ' ')).filter(function (w) { return w.length >= 2 || /\d/.test(w); });
     function once(words) {
-      var vs = words.map(function (w) { return variants(w, idx); });
+      var vs = words.map(function (w) { return variants(w, idx, opt); });
       var rows = [], anyRows = [];
       idx.items.forEach(function (it) {
         var total = 0, okAll = true, okAny = false, used = [];
