@@ -114,7 +114,7 @@ var PAGES = {
       '<h2 id="comp">Площадь этажа в пожарном отсеке</h2><p class="sub">Выбери тип здания. Значения — наибольшая площадь этажа, м².</p>' + compBlock() +
       '<h2 id="types">Требования по типам зданий</h2>' + mini(TYPE_RULES) +
       '<h2 id="dist">Противопожарные расстояния</h2>' + distBlock() + mini(DIST_RULES) +
-      '<h2 id="deg">Степени огнестойкости</h2>' + degBlock() +
+      '<h2 id="deg">Степени огнестойкости</h2>' + degBlock() + stairsBlock() +
       '<h2>Заполнение проёмов по типам</h2><div class="tscroll"><table class="vei"><thead><tr><th>Элемент</th><th>1-й тип</th><th>2-й тип</th><th>3-й тип</th></tr></thead><tbody>' +
       FILL.map(function (r) { return '<tr><td>' + esc(r[0]) + '</td>' + r[1].map(function (v) { return '<td><span class="ei">' + v + '</span></td>'; }).join('') + '</tr>'; }).join('') +
       '</tbody></table></div><p class="tnote">Двери шахт лифтов — 2-й тип, EI 30, в зданиях до 28 м — E 30. Занавесы — 1-й тип, EI 60.</p>' + refs([['fz123', 'табл. 24']]) +
@@ -134,7 +134,7 @@ var PAGES = {
   },
   evac: function () {
     return '<h1>Эвакуация</h1><p class="lead">Выходы, размеры путей, лестницы. Для ОВиК важно: что можно прокладывать в коридорах и лестничных клетках и какие лестницы требуют подпора.</p>' +
-      '<h2>Типы лестничных клеток</h2><div class="cats">' + STAIRS.map(function (c) { return '<article class="catc"><b>' + c.k + '</b><h3>' + c.h + '</h3><p>' + esc(c.d) + '</p>' + refs(c.r) + '</article>'; }).join('') + '</div>' +
+      '<h2>Типы лестничных клеток</h2><p class="sub">Подробно по каждому типу — в разделе <a href="#build">«Здание»</a>, блок «Лестничные клетки».</p><div class="cats">' + STAIRS.map(function (c) { return '<article class="catc"><b>' + c.k + '</b><h3>' + c.h + '</h3><p>' + esc(c.d) + '</p>' + refs(c.r) + '</article>'; }).join('') + '</div>' +
       '<h2>Размеры: не меньше</h2><div class="tscroll"><table class="vei"><thead><tr><th>Что</th><th>Норма</th><th>Отступления</th><th>СП 1.13130</th></tr></thead><tbody>' +
       EVAC_DIM.map(function (r) { return '<tr><td>' + r[0] + '</td><td><span class="ei">' + r[1] + '</span></td><td>' + esc(r[2]) + '</td><td>п. ' + r[3] + '</td></tr>'; }).join('') + '</tbody></table></div>' +
       '<p class="tnote">Отклонение геометрии допускается не больше 5 % (п. 4.1.5).</p>' +

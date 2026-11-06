@@ -346,3 +346,14 @@ html.rv .pick.in:hover { transform: translateY(-2px) !important; }
 .stile b { font: 700 19px/1.2 var(--display); color: var(--fp); }
 .stile b u { text-decoration: none; font: 500 12.5px var(--body); color: var(--muted); }
 .stile small { font-size: 11.5px; color: var(--muted); line-height: 1.3; }
+
+.stairs { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.stc { background: var(--surface); border: 1px solid var(--line); border-radius: 13px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.sthead { display: flex; align-items: baseline; gap: 10px; }
+.sthead b { font: 700 26px var(--display); color: var(--fp); }
+.sthead h3 { margin: 0; font-size: 16px; }
+.stc > p { margin: 0; font-size: 14px; color: var(--muted); }
+.stc ul { margin: 4px 0 0; padding-left: 18px; display: grid; gap: 7px; font-size: 14px; }
+.stc li .refs { margin-top: 3px; }
+.stc .ref { white-space: normal; }
+h3.sth { margin: 18px 0 8px; font-size: 16px; }
