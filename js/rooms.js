@@ -46,7 +46,6 @@ function spnGroups(list) {
   });
   return gs.filter(function (g) { return g.rows.length; });
 }
-var SPN_G1 = null, SPN_G2 = null;
 function spnCode(s) { var m = /Ф\d(?:\.\d)?/.exec(s); return m ? m[0] : ''; }
 function opts(list, sel) { return list.map(function (x, i) { return '<option value="' + i + '"' + (i === sel ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join(''); }
 function tile(k, v, n) { var p = String(v).split(' '); return '<div class="stile"><span>' + k + '</span><b>' + p[0] + (p.length > 1 ? ' <u>' + p.slice(1).join(' ') + '</u>' : '') + '</b>' + (n ? '<small>' + n + '</small>' : '') + '</div>'; }
@@ -63,27 +62,56 @@ function spnRes2(r) {
     tile('LCO', fnum(r.CO) + ' кг/кг', 'выделение') + tile('LHCl', fnum(r.HCl) + ' кг/кг', 'выделение') + tile('B', fnum(r.B) + ' Вт/с²', 'Qн·ψуд·v², скорость развития') + tile('Типы', r.tm + ' ' + r.td + ' ' + r.tk, 'K токсичности ' + fnum(r.K)) + '</div>' +
     '<p class="tnote">ИД ' + r.id + (r.src || r.an ? ' · ' + esc((r.src || '') + ' ' + (r.an || '')) : '') + '</p><button type="button" class="eibtn" data-spncp="' + esc(spnCopy2(r)).replace(/"/g, '&quot;') + '">Скопировать для КВМ</button>';
 }
+/* Табл. 3–5: у значения бывает свой источник {v, s} */
+function fv(x) { return x === null || x === undefined ? null : typeof x === 'object' ? fnum(x.v) : fnum(x); }
+function fs(x, n) { return (x && typeof x === 'object' && x.s ? x.s + ' · ' : '') + n; }
+function tv(k, x, u, n) { var v = fv(x); return v === null ? '' : tile(k, v + ' ' + u, fs(x, n)); }
+function spnNote(r) { return '<p class="tnote">ИД ' + r.id + (r.src || r.an ? ' · ' + esc((r.src || '') + ' ' + (r.an || '')) : '') + '</p>'; }
+function cpBtn(txt, label) { return '<button type="button" class="eibtn" data-spncp="' + esc(txt).replace(/"/g, '&quot;') + '">' + label + '</button>'; }
+function spnRes3(r) {
+  var v = r.v;
+  return '<div class="stiles">' + tv('Qн', v[0], 'МДж/кг', 'низшая теплота сгорания') + tv('qкр', v[1], 'кВт/м²', 'критическая плотность лучистого потока') + '</div>' + spnNote(r) +
+    cpBtn(r.n + ' (СИТИС СПН-1 табл. 3, ИД ' + r.id + '): ' + (fv(v[0]) !== null ? 'Qн = ' + fv(v[0]) + ' МДж/кг' : '') + (fv(v[1]) !== null ? '; qкр = ' + fv(v[1]) + ' кВт/м²' : ''), 'Скопировать');
+}
+function spnRes4(r) {
+  var v = r.v;
+  return '<div class="stiles">' + tv('Qн', v[0], 'МДж/кг', 'низшая теплота сгорания') + tv('ρ', v[1], 'кг/м³', 'плотность жидкости') + tv('ψуд', v[2], 'кг/(м²·с)', 'удельная скорость выгорания') +
+    tv('Dm', v[3], 'Нп·м²/кг', 'дымообразующая способность') + tv('LO₂', v[4], 'кг/кг', 'потребление кислорода') + tv('LCO₂', v[5], 'кг/кг', 'выделение') + tv('LCO', v[6], 'кг/кг', 'выделение') + tv('LHCl', v[7], 'кг/кг', 'выделение') + '</div>' + spnNote(r) +
+    cpBtn(r.n + ' (СИТИС СПН-1 табл. 4, ИД ' + r.id + '): Qн = ' + fv(v[0]) + ' МДж/кг; ρ = ' + fv(v[1]) + ' кг/м³; ψуд = ' + fv(v[2]) + ' кг/(м²·с); Dm = ' + fv(v[3]) + ' Нп·м²/кг; LO2 = ' + fv(v[4]) + '; LCO2 = ' + fv(v[5]) + '; LCO = ' + fv(v[6]) + '; LHCl = ' + fv(v[7]) + ' кг/кг', 'Скопировать для КВМ');
+}
+function spnRes5(r) {
+  var v = r.v;
+  return '<div class="stiles">' + tv('λ', v[0], 'Вт/(м·К)', 'теплопроводность при 20 °C') + tv('c', v[1], 'Дж/(кг·К)', 'удельная теплоёмкость при 20 °C') + tv('ρ', v[2], 'кг/м³', 'плотность') + tv('ε', v[3], '', 'степень черноты') + '</div>' + spnNote(r) +
+    cpBtn(r.n + ' (СИТИС СПН-1 табл. 5, ИД ' + r.id + '): λ = ' + fv(v[0]) + ' Вт/(м·К); c = ' + fv(v[1]) + ' Дж/(кг·К); ρ = ' + fv(v[2]) + ' кг/м³; ε = ' + fv(v[3]), 'Скопировать');
+}
+var SPN_CFG = {
+  1: { t: function () { return SPN_T1; }, res: spnRes1, g: 'Здание или раздел', r: 'Помещение' },
+  2: { t: function () { return SPN_T2; }, res: spnRes2, g: 'Здание или источник данных', r: 'Помещение' },
+  3: { t: function () { return SPN_T3; }, res: spnRes3, g: 'Группа материалов', r: 'Материал' },
+  4: { t: function () { return SPN_T4; }, res: spnRes4, g: 'Источник', r: 'Жидкость' },
+  5: { t: function () { return SPN_T5; }, res: spnRes5, g: 'Группа материалов', r: 'Материал' }
+}, SPN_G = {};
 function spnPicker(t) {
-  var G = t === 1 ? SPN_G1 : SPN_G2, d = spnDef(G);
-  return '<div class="trpick calc"><label for="spn' + t + 'g">' + (t === 1 ? 'Здание или раздел' : 'Здание или источник данных') + '</label><select id="spn' + t + 'g">' + opts(G.map(function (g) { return g.n; }), d) + '</select>' +
-    '<label for="spn' + t + 'r">Помещение</label><select id="spn' + t + 'r">' + opts(G[d].rows.map(function (r) { return r.n; }), 0) + '</select>' +
-    '<div id="spn' + t + 'o">' + (t === 1 ? spnRes1 : spnRes2)(G[d].rows[0]) + '</div></div>';
+  var C = SPN_CFG[t], G = SPN_G[t] = SPN_G[t] || spnGroups(C.t()), d = spnDef(G), one = G.length === 1;
+  return '<div class="trpick calc"><label for="spn' + t + 'g"' + (one ? ' hidden' : '') + '>' + C.g + '</label><select id="spn' + t + 'g"' + (one ? ' hidden' : '') + '>' + opts(G.map(function (g) { return g.n; }), d) + '</select>' +
+    '<label for="spn' + t + 'r">' + C.r + '</label><select id="spn' + t + 'r">' + opts(G[d].rows.map(function (r) { return r.n; }), 0) + '</select>' +
+    '<div id="spn' + t + 'o">' + C.res(G[d].rows[0]) + '</div></div>';
 }
 function spnPick(t, fromGroup) {
-  var G = t === 1 ? SPN_G1 : SPN_G2, gs = document.getElementById('spn' + t + 'g'), rs = document.getElementById('spn' + t + 'r');
+  var G = SPN_G[t], gs = document.getElementById('spn' + t + 'g'), rs = document.getElementById('spn' + t + 'r');
   if (!gs) return;
   var g = G[+gs.value];
   if (fromGroup) rs.innerHTML = opts(g.rows.map(function (r) { return r.n; }), 0);
-  document.getElementById('spn' + t + 'o').innerHTML = (t === 1 ? spnRes1 : spnRes2)(g.rows[+rs.value || 0]);
+  document.getElementById('spn' + t + 'o').innerHTML = SPN_CFG[t].res(g.rows[+rs.value || 0]);
 }
 document.addEventListener('change', function (e) {
-  var m = /^spn([12])([gr])$/.exec(e.target.id);
+  var m = /^spn([1-5])([gr])$/.exec(e.target.id);
   if (!m) return;
   var t = +m[1];
   spnPick(t, m[2] === 'g');
   if (t === 1 && m[2] === 'g') {                       /* то же здание во второй таблице, если есть */
-    var code = spnCode(SPN_G1[+e.target.value].n), g2 = document.getElementById('spn2g');
-    if (code && g2) for (var i = 0; i < SPN_G2.length; i++) if (spnCode(SPN_G2[i].n) === code) { g2.value = i; spnPick(2, true); break; }
+    var code = spnCode(SPN_G[1][+e.target.value].n), g2 = document.getElementById('spn2g');
+    if (code && g2) for (var i = 0; i < SPN_G[2].length; i++) if (spnCode(SPN_G[2][i].n) === code) { g2.value = i; spnPick(2, true); break; }
   }
 });
 document.addEventListener('click', function (e) {
@@ -92,17 +120,19 @@ document.addEventListener('click', function (e) {
   navigator.clipboard.writeText(b.dataset.spncp).then(function () { var t = b.textContent; b.textContent = 'Скопировано'; setTimeout(function () { b.textContent = t; }, 1000); }, function () {});
 });
 PAGES.load = function () {
-  SPN_G1 = SPN_G1 || spnGroups(SPN_T1); SPN_G2 = SPN_G2 || spnGroups(SPN_T2);
   return '<h1>Пожарная нагрузка для расчёта дыма</h1><p class="lead">Исходные данные для интегральной (КВМ) модели. Выбери здание, затем помещение. При выборе здания в первом блоке во втором подставится тот же класс Ф, если он есть.</p>' +
     '<h2 id="spn-t1">Плотность пожарной нагрузки (табл. 1)</h2><p class="sub">Расчётная = средняя × коэффициент колебания. Масса горючего: M = q расч · S / Qн.</p>' + spnPicker(1) +
     '<h2 id="spn-t2">Свойства горючей смеси (табл. 2)</h2>' + spnPicker(2) +
+    '<h2 id="spn-t4">Горючие жидкости (табл. 4)</h2><p class="sub">Для пожара пролива: свойства жидкости на 1 кг и скорость выгорания с 1 м² зеркала.</p>' + spnPicker(4) +
+    '<h2 id="spn-t3">Горючие материалы (табл. 3)</h2><p class="sub">Теплота сгорания отдельных материалов и критический лучистый поток воспламенения. Источник указан при каждом значении.</p>' + spnPicker(3) +
+    '<h2 id="spn-t5">Строительные материалы (табл. 5)</h2><p class="sub">Теплофизика ограждений при 20 °C — для теплообмена со стенами в модели.</p>' + spnPicker(5) +
     '<details class="issue"><summary>Все таблицы целиком, с фильтром</summary>' +
     '<div class="spn-bar" style="margin-top:10px"><input id="spn-q" type="search" placeholder="Фильтр: офис, склад, автомобиль, кабели" aria-label="Фильтр таблиц пожарной нагрузки"><span class="muted" id="spn-n"></span></div>' +
     '<h3>Таблица 2. Смеси горючих материалов</h3><p class="sub">Нажми строку — скопируется. Типы: М по скорости развития, Д по дымовыделению, К по токсичности.</p>' +
     '<div class="tscroll tall">' + spnT2() + '</div>' +
     '<h3 style="margin-top:16px">Таблица 1. Плотность пожарной нагрузки</h3>' +
     '<div class="tscroll tall">' + spnT1() + '</div></details>' +
-    '<p class="tnote">Источник: ' + SPN_SRC + ' (табл. 1 и 2, значения перенесены без изменений, включая опечатки ИД первоисточника). В скобках у строки — ссылка справочника [номер источника, страница]: [2] Кошмаров Ю.А. «Прогнозирование опасных факторов пожара в помещении», [7] пособие к методике определения расчётных величин пожарного риска. Справочные данные: применимость к объекту обосновывает разработчик расчёта.</p>';
+    '<p class="tnote">Источник: ' + SPN_SRC + ' (табл. 1–5, значения перенесены без изменений, включая опечатки ИД первоисточника). В скобках у строки — ссылка справочника [номер источника, страница]: [2] Кошмаров Ю.А. «Прогнозирование опасных факторов пожара в помещении», [7] пособие к методике определения расчётных величин пожарного риска. Справочные данные: применимость к объекту обосновывает разработчик расчёта.</p>';
 };
 function spnFilter() {
   var q = document.getElementById('spn-q');
