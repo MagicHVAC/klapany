@@ -8,7 +8,7 @@
    Надбавка на неучтённые потери, % — принимает инженер (по умолчанию 0). */
 var KMS_MAT = [
   ['steel', 'Сталь (чёрная)', 0.1], ['galv', 'Сталь оцинкованная', 0.1], ['brick', 'Кирпичная шахта', NaN], ['conc', 'Бетонная шахта', NaN],
-  ['block', 'Шахта из блоков, плит', NaN], ['flex', 'Гибкий воздуховод', NaN], ['other', 'Другой материал', NaN]];
+  ['plast', 'Штукатурка', NaN], ['block', 'Шахта из блоков, плит', NaN], ['flex', 'Гибкий воздуховод', NaN], ['other', 'Другой материал', NaN]];
 var KMS_MAT_SRC = 'сталь — k = 0,1 мм по МР ВНИИПО п. 5.1 (к формуле (73)); прочие материалы — значение инженера';
 /* [ключ, название, есть угол, подсказка источника] */
 var KMS_T = [
@@ -31,10 +31,49 @@ var KMS_T = [
   ['mesh', 'Сетка', false, 'Идельчик, разд. 8'],
   ['sil', 'Шумоглушитель', false, 'паспорт изготовителя'],
   ['flexI', 'Гибкая вставка', false, 'паспорт изготовителя'],
-  ['node', 'Узел присоединения к шахте', false, 'Идельчик (МР п. 5.1)'],
+  ['node', 'Узел присоединения клапана к шахте', false, 'варианты из таблицы инженера или Идельчик (МР п. 5.1)'],
   ['sum', 'Прочие КМС одним числом', false, 'сумма ξ, посчитанная отдельно'],
   ['other', 'Другой элемент', false, 'источник — указать в названии']];
 var KMS_ANG = [15, 30, 45, 60, 75, 90, 120, 135, 150, 180];
+/* 1.23.1: таблица КМС, переданная инженером 06.11.2026 (окно «Коэффициент местного сопротивления» его расчётной программы).
+   Подставляется сама, если ξ не введён: отвод круглый или квадратный R/D = 1; отвод прямоугольный по H/W — поворот в плоскости стороны W;
+   внезапное расширение и сужение — по F0/F1, к скорости в меньшем сечении; узел присоединения клапана к шахте — 4 варианта.
+   Между узлами таблицы — линейная интерполяция; вне таблицы — ξ вводит инженер. */
+var KMS_TAB_SRC = 'таблица КМС инженера (06.11.2026)';
+var KMS_ANGS = [30, 45, 60, 90];
+var KMS_ELB_RD1 = [0.09, 0.13, 0.16, 0.21];
+var KMS_ELB_HW = [[0.25, [0.09, 0.12, 0.16, 0.20]], [0.5, [0.08, 0.11, 0.14, 0.18]], [0.75, [0.08, 0.10, 0.13, 0.16]], [1, [0.07, 0.09, 0.12, 0.15]], [1.5, [0.06, 0.08, 0.11, 0.14]],
+  [2, [0.06, 0.08, 0.10, 0.13]], [3, [0.06, 0.08, 0.10, 0.13]], [4, [0.06, 0.08, 0.11, 0.14]], [5, [0.07, 0.09, 0.11, 0.14]]];
+var KMS_SUDD_N = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1];
+var KMS_SUDD_E = [1, 0.81, 0.64, 0.5, 0.36, 0.25, 0.16, 0.09, 0.04, 0];
+var KMS_SUDD_C = [0.5, 0.45, 0.4, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0];
+var KMS_NODE = [['side', 'боковой вход через клапан без декоративной решётки', 1.8], ['sideG', 'боковой вход через клапан с декоративной решёткой', 3.5],
+  ['end', 'торцевой вход через клапан без декоративной решётки', 1.07], ['endG', 'торцевой вход через клапан с декоративной решёткой', 2.7]];
+function kmsLin(xs, ys, x) {
+  if (!(x >= xs[0] - 1e-9 && x <= xs[xs.length - 1] + 1e-9)) return NaN;
+  for (var i = 0; i < xs.length - 1; i++) if (x <= xs[i + 1] + 1e-9) return ys[i] + (ys[i + 1] - ys[i]) * (x - xs[i]) / (xs[i + 1] - xs[i]);
+  return ys[ys.length - 1];
+}
+/* ξ из таблицы: { xi, Fv — сечение, к скорости в котором ξ (м²), why } или null. s — участок, F — его сечение, Fup — сечение участка выше по сети */
+function kmsAuto(e, s, F, Fup) {
+  var ang = +(e.ang || 90);
+  if (e.t === 'elb') {
+    if (!s.rect || +s.a === +s.b) { var x = kmsLin(KMS_ANGS, KMS_ELB_RD1, ang); return isFinite(x) ? { xi: x, why: 'отвод R/D = 1, ' + ang + '°' } : null; }
+    var W = e.side === 'b' ? +s.b : +s.a, H = e.side === 'b' ? +s.a : +s.b, hw = H / W;
+    var col = KMS_ELB_HW.map(function (r) { return kmsLin(KMS_ANGS, r[1], ang); });
+    var y = kmsLin(KMS_ELB_HW.map(function (r) { return r[0]; }), col, hw);
+    return isFinite(y) ? { xi: y, why: 'отвод прямоугольный H/W = ' + dpuFmt(hw, 2) + ', ' + ang + '°' } : null;
+  }
+  if (e.t === 'suddE' || e.t === 'suddC') {
+    var F2 = +e.F > 0 ? +e.F : Fup; if (!(F2 > 0) || !(F > 0)) return null;
+    var lo = Math.min(F, F2), n = lo / Math.max(F, F2), z = kmsLin(KMS_SUDD_N, e.t === 'suddE' ? KMS_SUDD_E : KMS_SUDD_C, n);
+    return isFinite(z) ? { xi: z, Fv: lo, why: 'F0/F1 = ' + dpuFmt(n, 2) + ', к скорости в меньшем сечении' } : null;
+  }
+  if (e.t === 'node' && e.var) { for (var i = 0; i < KMS_NODE.length; i++) if (KMS_NODE[i][0] === e.var) return { xi: KMS_NODE[i][2], why: KMS_NODE[i][1] }; }
+  return null;
+}
+function kmsAutoT(t) { return t === 'elb' || t === 'suddE' || t === 'suddC' || t === 'node'; }
+function kmsArea(s) { var a = s.a / 1000, b = (s.rect ? s.b : s.a) / 1000; return s.rect ? a * b : Math.PI * a * a / 4; }
 function kmsT(k) { for (var i = 0; i < KMS_T.length; i++) if (KMS_T[i][0] === k) return KMS_T[i]; return KMS_T[KMS_T.length - 1]; }
 function kmsMat(k) { for (var i = 0; i < KMS_MAT.length; i++) if (KMS_MAT[i][0] === k) return KMS_MAT[i]; return KMS_MAT[KMS_MAT.length - 1]; }
 
@@ -84,25 +123,28 @@ function kmsUp(s, i) { var u = s.up === '' || s.up == null ? i : +s.up; return i
 function kmsNet(G, ro, nu, net, label) {
   var r = { rows: [], P0: 0, P: 0, add: +(net && net.add) || 0, err: [], v: 0, f: 0, Pd: 0, F: 0, De: 0, G: G, ro: ro, path: [], branched: false };
   if (!net || !net.secs || !net.secs.length) return r;
-  var sum = [];
+  var sum = [], areas = [];
   net.secs.forEach(function (s, i) {
     var nm = (label ? label + ', ' : '') + (s.nm || ('участок ' + (i + 1)));
     var up = kmsUp(s, i), q = s.q === '' || s.q == null || !isFinite(+s.q) ? 100 : +s.q, Gs = G * q / 100;
     if (up !== i || q !== 100) r.branched = true;
     var a = s.a / 1000, b = (s.rect ? s.b : s.a) / 1000, F = s.rect ? a * b : Math.PI * a * a / 4, De = s.rect ? 2 * a * b / (a + b) : a;
     var eps = kmsEps(s);
+    areas.push(F);
     if (!(F > 0)) { r.err.push(nm + ': задай размеры сечения.'); sum.push(up ? sum[up - 1] || 0 : 0); return; }
     if (!isFinite(eps)) { r.err.push(nm + ': задай шероховатость k для «' + kmsMat(s.mat)[1] + '», мм — в МР дана только для стали (0,1 мм).'); eps = 0; }
     var v = Gs / ro / F, Pd = ro * v * v / 2, Re = v * De / nu, lam = smkLam(Re, eps / 1000, De), R = lam / De * Pd, Rl = R * (+s.len || 0);
     var xi = 0, Z = 0, els = [];
     (s.els || []).forEach(function (e) {
       var t = kmsT(e.t), n = isFinite(+e.n) && +e.n > 0 ? +e.n : 1, x = e.xi === '' || e.xi == null ? NaN : +e.xi;
-      var Fe = +e.F > 0 ? +e.F : 0, np = +e.np >= 1 ? Math.round(+e.np) : 1;
-      var title = (e.nm ? e.nm : t[1]) + (t[2] ? ' ' + (e.ang || 90) + '°' : '');
-      if (!isFinite(x)) { r.err.push(nm + ': задай ξ для «' + title + '» (' + t[3] + ').'); x = 0; }
-      var ve = Fe ? Gs / ro / (np * Fe) : v, Pde = ro * ve * ve / 2, ze = x * n * Pde;
-      xi += Fe ? 0 : x * n; Z += ze;
-      els.push({ title: title, xi: x, n: n, F: Fe, np: np, v: ve, Pd: Pde, Z: ze });
+      var sudd = e.t === 'suddE' || e.t === 'suddC', Fe = !sudd && +e.F > 0 ? +e.F : 0, np = +e.np >= 1 ? Math.round(+e.np) : 1;
+      var title = (e.nm ? e.nm : t[1]) + (t[2] ? ' ' + (e.ang || 90) + '°' : ''), src = 'введено инженером', au = null;
+      if (!isFinite(x)) { au = kmsAuto(e, s, F, up ? areas[up - 1] : 0); if (au) { x = au.xi; src = KMS_TAB_SRC + ': ' + au.why; } }
+      if (!isFinite(x)) { r.err.push(nm + ': задай ξ для «' + title + '» (' + t[3] + ')' + (sudd ? ' — или сечение соседнего участка' : '') + '.'); x = 0; }
+      var Fv = Fe ? np * Fe : au && au.Fv ? au.Fv : 0;
+      var ve = Fv ? Gs / ro / Fv : v, Pde = ro * ve * ve / 2, ze = x * n * Pde;
+      xi += Fv ? 0 : x * n; Z += ze;
+      els.push({ title: title, xi: x, n: n, F: Fe, np: np, v: ve, Pd: Pde, Z: ze, src: src, Fv: Fv });
     });
     var P = Rl + Z, Pp = (up ? sum[up - 1] || 0 : 0) + P;
     sum.push(Pp);
@@ -148,14 +190,16 @@ function kmsInner(net, key) {
       '<div class="stf"><label>Доля расхода системы, %</label><input data-kn="' + id + '|q" type="number" step="any" value="' + kmsNum(s.q == null ? 100 : s.q) + '"><small class="dhint">ветвь — её доля; магистраль — 100</small></div></div>' +
       '<div class="tscroll"><table class="vei kmst"><thead><tr><th>Элемент КМС</th><th>Угол</th><th>ξ</th><th>шт.</th><th title="живое сечение одного изделия по паспорту; пусто — ξ к скорости в воздуховоде">Fж, м²</th><th title="сколько изделий стоит параллельно — расход делится между ними">параллельно</th><th>Источник ξ</th><th></th></tr></thead><tbody>' +
       (s.els || []).map(function (e, ei) {
-        var t = kmsT(e.t), eid = key + '|' + si + '|' + ei;
+        var t = kmsT(e.t), eid = key + '|' + si + '|' + ei, up = kmsUp(s, si), au = kmsAuto(e, s, kmsArea(s), up ? kmsArea(net.secs[up - 1]) : 0);
         return '<tr><td><select data-ke="' + eid + '|t">' + kmsOpt(KMS_T, e.t) + '</select>' + (e.t === 'other' ? '<input data-ke="' + eid + '|nm" type="text" placeholder="название" value="' + kmsNum(e.nm) + '">' : '') + '</td>' +
-          '<td>' + (t[2] ? '<select data-ke="' + eid + '|ang">' + kmsOpt(KMS_ANG.map(function (x) { return [x, x + '°']; }), e.ang || 90) + '</select>' : '—') + '</td>' +
-          '<td><input data-ke="' + eid + '|xi" type="number" step="any" inputmode="decimal" value="' + kmsNum(e.xi) + '" placeholder="ξ"' + (e.xi === '' || e.xi == null ? ' class="kmsneed"' : '') + '></td>' +
+          '<td>' + (t[2] ? '<select data-ke="' + eid + '|ang">' + kmsOpt(KMS_ANG.map(function (x) { return [x, x + '°']; }), e.ang || 90) + '</select>' +
+            (e.t === 'elb' && s.rect && +s.a !== +s.b ? '<select data-ke="' + eid + '|side" title="W — сторона в плоскости поворота">' + kmsOpt([['a', 'поворот по a (W = a)'], ['b', 'поворот по b (W = b)']], e.side || 'a') + '</select>' : '') :
+            e.t === 'node' ? '<select data-ke="' + eid + '|var">' + kmsOpt([['', 'вариант…']].concat(KMS_NODE.map(function (x) { return [x[0], x[1] + ' — ' + String(x[2]).replace('.', ',')]; })), e.var || '') + '</select>' : '—') + '</td>' +
+          '<td><input data-ke="' + eid + '|xi" type="number" step="any" inputmode="decimal" value="' + kmsNum(e.xi) + '" placeholder="' + (au ? dpuFmt(au.xi, 3) : 'ξ') + '"' + ((e.xi === '' || e.xi == null) && !au ? ' class="kmsneed"' : '') + ' title="' + (au ? 'пусто — из таблицы: ' + au.why : 'введи ξ') + '"></td>' +
           '<td><input data-ke="' + eid + '|n" type="number" step="1" min="1" value="' + kmsNum(e.n || 1) + '"></td>' +
-          '<td><input data-ke="' + eid + '|F" type="number" step="any" placeholder="—" value="' + kmsNum(e.F) + '"></td>' +
+          '<td><input data-ke="' + eid + '|F" type="number" step="any" placeholder="' + (e.t === 'suddE' || e.t === 'suddC' ? 'соседн.' : '—') + '" title="' + (e.t === 'suddE' || e.t === 'suddC' ? 'сечение соседнего участка, м²; пусто — участок выше по сети' : 'живое сечение одного изделия по паспорту') + '" value="' + kmsNum(e.F) + '"></td>' +
           '<td><input data-ke="' + eid + '|np" type="number" step="1" min="1" value="' + kmsNum(e.np || 1) + '"></td>' +
-          '<td class="kmssrc">' + t[3] + '</td><td><button type="button" class="eibtn kmsx" data-kdel="' + key + '|el|' + si + '|' + ei + '" title="Удалить элемент">×</button></td></tr>';
+          '<td class="kmssrc">' + (au && (e.xi === '' || e.xi == null) ? 'из таблицы: ' + au.why : t[3]) + '</td><td><button type="button" class="eibtn kmsx" data-kdel="' + key + '|el|' + si + '|' + ei + '" title="Удалить элемент">×</button></td></tr>';
       }).join('') + '</tbody></table></div>' +
       '<div class="dpbtns"><button type="button" class="eibtn" data-kadd="' + key + '|el|' + si + '">+ элемент КМС</button></div></div>';
   });
@@ -201,8 +245,8 @@ function kmsRep(r, title) {
     r.rows.map(function (x) {
       return [x.i + (br && x.crit ? ' *' : '')].concat(br ? [x.up || 'вент.', f(x.q, 0)] : []).concat([esc(x.nm), x.mat + ', ' + f(x.eps, 2), x.rect ? f(x.a, 0) + '×' + f(x.b, 0) : '⌀' + f(x.a, 0), f(x.len, 1), f(x.L, 0), f(x.v, 2), f(x.lam, 4), f(x.R, 3), f(x.Rl, 2), f(x.Z, 2), f(x.P, 2)]).concat(br ? [f(x.Pp, 2)] : []);
     }), 'rep-net');
-  h += repT(['Участок', 'Элемент КМС', 'ξ', 'шт.', 'F<sub>ж</sub> × параллельно, м²', 'v, м/с', 'P<sub>d</sub>, Па', 'Z, Па'], [].concat.apply([], r.rows.map(function (x) {
-    return x.els.length ? x.els.map(function (e, j) { return [j ? '' : x.i + '. ' + esc(x.nm), esc(e.title), f(e.xi, 2), e.n, e.F ? f(e.F, 3) + ' × ' + e.np : 'по воздуховоду', f(e.v, 2), f(e.Pd, 2), f(e.Z, 2)]; }) : [[x.i + '. ' + esc(x.nm), 'нет местных сопротивлений', '', '', '', '', '', '0']];
+  h += repT(['Участок', 'Элемент КМС', 'ξ', 'Источник ξ', 'шт.', 'Сечение для v, м²', 'v, м/с', 'P<sub>d</sub>, Па', 'Z, Па'], [].concat.apply([], r.rows.map(function (x) {
+    return x.els.length ? x.els.map(function (e, j) { return [j ? '' : x.i + '. ' + esc(x.nm), esc(e.title), f(e.xi, 3), esc(e.src), e.n, e.F ? f(e.F, 3) + ' × ' + e.np : e.Fv ? f(e.Fv, 3) + ' (меньшее)' : 'воздуховода', f(e.v, 2), f(e.Pd, 2), f(e.Z, 2)]; }) : [[x.i + '. ' + esc(x.nm), 'нет местных сопротивлений', '', '', '', '', '', '', '0']];
   })));
   if (br) h += '<p class="rep-p">Сеть разветвлённая: давление — по самой нагруженной ветви (участки ' + r.path.join(' → ') + ', отмечены *).</p>';
   h += repF('Потери в сети', 'ΔP<sub>сети</sub> = ' + (br ? 'max по ветвям ' : '') + 'Σ(R·l + Z)' + (r.add ? '·(1 + ' + f(r.add, 0) + '/100)' : ''), f(r.P0, 2) + (r.add ? ' · ' + f(1 + r.add / 100, 2) : ''), f(r.P, 2) + ' Па');
@@ -230,14 +274,14 @@ document.addEventListener('input', function (e) {
   }
   if (d.ke) {
     a = d.ke.split('|'); net = kmsNetOf(a[0]); if (!net) return; s = net.secs[+a[1]]; el = s.els[+a[2]];
-    if (a[3] === 't' || a[3] === 'ang') {
+    if (a[3] === 't' || a[3] === 'ang' || a[3] === 'side' || a[3] === 'var') {
       el[a[3]] = a[3] === 'ang' ? +v : v; if (el.t !== 'other') delete el.nm;
-      var lib = KMS_LIB[kmsElKey(el, s)]; el.xi = lib && isFinite(lib.v) ? lib.v : '';
+      var lib = KMS_LIB[kmsElKey(el, s)]; el.xi = kmsAutoT(el.t) ? '' : lib && isFinite(lib.v) ? lib.v : '';
       kmsRedraw(a[0]);
     } else if (a[3] === 'nm') el.nm = v;
     else if (a[3] === 'xi') {
       el.xi = v === '' ? '' : smkNum(v); t.classList.toggle('kmsneed', v === '');
-      if (v !== '' && el.t !== 'sum' && el.t !== 'other') { KMS_LIB[kmsElKey(el, s)] = { v: smkNum(v) }; kmsLibSave(); }
+      if (v !== '' && el.t !== 'sum' && el.t !== 'other' && !kmsAutoT(el.t)) { KMS_LIB[kmsElKey(el, s)] = { v: smkNum(v) }; kmsLibSave(); }
     } else if (a[3] === 'F') el.F = v === '' ? '' : smkNum(v);
     else if (a[3] === 'np') el.np = Math.max(1, Math.round(smkNum(v)) || 1);
     else el.n = smkNum(v) || 1;
@@ -254,7 +298,7 @@ document.addEventListener('click', function (e) {
   var a = (b.dataset.kadd || b.dataset.kdel).split('|'), net = kmsNetOf(a[0]); if (!net) return;
   if (b.dataset.kadd) {
     if (a[1] === 'sec') { var last = net.secs[net.secs.length - 1]; net.secs.push(last ? JSON.parse(JSON.stringify(last)) : kmsSec({})); net.secs[net.secs.length - 1].nm = 'Участок ' + net.secs.length; net.secs[net.secs.length - 1].up = ''; }
-    else { var s = net.secs[+a[2]], el = { t: 'elb', ang: 90, n: 1, xi: '' }, lib = KMS_LIB[kmsElKey(el, s)]; if (lib) el.xi = lib.v; s.els.push(el); }
+    else net.secs[+a[2]].els.push({ t: 'elb', ang: 90, n: 1, xi: '' });
   } else {
     if (a[1] === 'sec') { /* номера «идёт от» у следующих участков сдвигаются; ветвь от удалённого — к его родителю */
       var di = +a[2], dUp = kmsUp(net.secs[di], di);
