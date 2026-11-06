@@ -47,7 +47,7 @@ function p3fan(x, y, z, s, ox, oy, lab1, lab2) {
 }
 function p3wrap(W, H, body, title) {
   return '<svg class="p3svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="' + title + '">' +
-    '<style>.p3t{font:12px Arial,sans-serif;fill:#1d2733}.p3b{font-weight:700}.p3w{font:11px Arial,sans-serif;fill:#fff;font-weight:700}' +
+    '<style>.p3t{font:12px Arial,sans-serif;fill:#1d2733;paint-order:stroke;stroke:#f6f7f9;stroke-width:3px;stroke-linejoin:round}.p3b{font-weight:700}.p3w{font:11px Arial,sans-serif;fill:#fff;font-weight:700}' +
     '@keyframes p3r{to{transform:rotate(360deg)}}.p3spin{animation:p3r 1.6s linear infinite}@media(prefers-reduced-motion:reduce){.p3spin{animation:none}}</style>' +
     '<rect width="' + W + '" height="' + H + '" fill="#f6f7f9"/>' + p3txt(16, 24, title, 'p3t p3b') + body + '</svg>';
 }

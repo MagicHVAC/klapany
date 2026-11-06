@@ -51,8 +51,8 @@ function repTamb(p, o) {
 function p3tamb(p, o) {
   var R = o.rows, N = R.length, fh = 1.3, bx = 10, by = 7, f = function (v, n) { return dpuFmt(v, n); };
   var s = Math.max(9, Math.min(24, 560 / (N * fh + (bx + by) * 0.5 + 7)));
-  var W = 1040, H = Math.round((bx + by + 2) * 0.5 * s + (N * fh + 5) * s + 110), ox = 250 + (by + 1) * 0.866 * s, oy = H - (bx + by + 2) * 0.5 * s - 30;
-  var P = function (a, b, c) { return p3pt(a, b, c, s, ox, oy); }, h = P3M, top = N * fh, i;
+  var W = 1180, H = Math.round((bx + by + 2) * 0.5 * s + (N * fh + 5) * s + 110), ox = 330 + (by + 1) * 0.866 * s, oy = H - (bx + by + 2) * 0.5 * s - 30;
+  var P = function (a, b, c) { return p3pt(a, b, c, s, ox, oy); }, h = P3M, top = N * fh, i; P3Q = [];
   h += '<polygon points="' + p3poly([P(-1.5, -1.5, 0), P(bx + 2.5, -1.5, 0), P(bx + 2.5, by + 1.5, 0), P(-1.5, by + 1.5, 0)]) + '" fill="#e3e7eb" stroke="#cfd5db"/>';
   h += '<polygon points="' + p3poly([P(0, 0, 0), P(bx, 0, 0), P(bx, 0, top), P(0, 0, top)]) + '" fill="#dfe8f1" fill-opacity=".5" stroke="#9fb0c2" stroke-width=".6"/><polygon points="' + p3poly([P(0, 0, 0), P(0, by, 0), P(0, by, top), P(0, 0, top)]) + '" fill="#d7e2ed" fill-opacity=".5" stroke="#9fb0c2" stroke-width=".6"/>';
   var cx = 4.2, cy = 1.0, cw = 0.85;
@@ -84,5 +84,6 @@ function p3tamb(p, o) {
   h += p3lead(P(cx + 0.4, cy + cw, fh * 0.65), 240, 70, 'Открытый клапан: ' + f(o.vkl, 1) + ' м/с, ' + f(o.dPkl, 1) + ' Па', 'выше закрытые клапаны, утечки ' + f(o.Gs - o.Gsf, 3) + ' кг/с');
   h += p3legend([['#2fb67a', 'до 9 м/с в канале'], ['#e7c13a', '9…11 м/с'], ['#ee8a2f', '11…15 м/с'], ['#d8432e', 'больше 15 м/с'], ['#2f7fd8', 'движение воздуха']], W - 290, 44, 'Число — перепад на клапане, цвет — скорость');
   h += p3txt(16, H - 12, 'В помещение ' + f(o.Gsf, 2) + ' кг/с → вентилятор ' + f(o.Gs, 2) + ' кг/с. Этажей ' + N + '. Схема условная, числа — из расчёта.');
+  h += p3flush(P(0, by, 0)[0] - 95, P(bx + 2.5, -1.5, 0)[0] + 16, 175, H - 56);
   return p3wrap(W, H, h, 'Подпор в тамбур-шлюз (зону безопасности) ' + esc(p.system || ''));
 }

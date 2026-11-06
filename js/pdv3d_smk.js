@@ -52,10 +52,24 @@ function p3badge(x, y, v, t) {
 function p3line(pts, cls, mk, col) {
   return '<polyline points="' + p3poly(pts) + '" fill="none" stroke="' + col + '" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="9 7" class="' + cls + '" marker-end="url(#' + mk + ')"/>';
 }
-function p3lead(pt, dx, dy, t, t2) {
-  var e = dx < 0 ? 'end' : null, x = pt[0] + dx + (dx < 0 ? -4 : 4);
-  return '<line x1="' + pt[0].toFixed(1) + '" y1="' + pt[1].toFixed(1) + '" x2="' + (pt[0] + dx).toFixed(1) + '" y2="' + (pt[1] + dy).toFixed(1) + '" stroke="#1d2733" stroke-width=".7"/>' +
-    '<circle cx="' + pt[0].toFixed(1) + '" cy="' + pt[1].toFixed(1) + '" r="2" fill="#1d2733"/>' + p3txt(x, pt[1] + dy + 4, t, 'p3t p3b', e) + (t2 ? p3txt(x, pt[1] + dy + 18, t2, 'p3t', e) : '');
+/* 1.22.4: выноски не накладываются — копятся в очередь и раскладываются по колонкам слева и справа от здания
+   с шагом не меньше 38 px; номера этажей, легенда и нижняя строка не перекрываются */
+var P3Q = [];
+function p3lead(pt, dx, dy, t, t2) { P3Q.push({ pt: pt, side: dx < 0 ? 'L' : 'R', y0: pt[1] + dy, t: t, t2: t2 }); return ''; }
+function p3flush(xL, xR, yMin, yMax) {
+  var h = '', gap = 38;
+  ['L', 'R'].forEach(function (sd) {
+    var a = P3Q.filter(function (q) { return q.side === sd; }).sort(function (u, v) { return u.y0 - v.y0; }), k;
+    for (k = 0; k < a.length; k++) a[k].y = Math.max(a[k].y0, yMin, k ? a[k - 1].y + gap : -1e9);
+    for (k = a.length - 1; k >= 0; k--) a[k].y = Math.min(a[k].y, k < a.length - 1 ? a[k + 1].y - gap : yMax);
+    a.forEach(function (q) {
+      var x = sd === 'L' ? xL : xR, e = sd === 'L' ? 'end' : null, xe = x + (sd === 'L' ? 6 : -6), f = function (v) { return v.toFixed(1); };
+      h += '<polyline points="' + f(q.pt[0]) + ',' + f(q.pt[1]) + ' ' + f(xe) + ',' + f(q.y - 4) + ' ' + f(x + (sd === 'L' ? 2 : -2)) + ',' + f(q.y - 4) + '" fill="none" stroke="#1d2733" stroke-width=".7"/>' +
+        '<circle cx="' + f(q.pt[0]) + '" cy="' + f(q.pt[1]) + '" r="2" fill="#1d2733"/>' + p3txt(x, q.y, q.t, 'p3t p3b', e) + (q.t2 ? p3txt(x, q.y + 14, q.t2, 'p3t', e) : '');
+    });
+  });
+  P3Q = [];
+  return h;
 }
 /* крышный радиальный вентилятор: рама, корпус-цилиндр, колесо, колпак выброса */
 function p3roofFan(c, s) {
@@ -75,8 +89,8 @@ function p3roofFan(c, s) {
 function p3smk(p, o) {
   var N = o.rows.length, fh = 1.3, bx = 12, by = 7, f = function (v, n) { return dpuFmt(v, n); };
   var s = Math.max(9, Math.min(24, 560 / (N * fh + (bx + by) * 0.5 + 7)));
-  var W = 1040, H = Math.round((bx + by + 2) * 0.5 * s + (N * fh + 5) * s + 110), ox = 250 + (by + 1) * 0.866 * s, oy = H - (bx + by + 2) * 0.5 * s - 30;
-  var P = function (a, b, c) { return p3pt(a, b, c, s, ox, oy); }, h = P3M, top = N * fh;
+  var W = 1180, H = Math.round((bx + by + 2) * 0.5 * s + (N * fh + 5) * s + 110), ox = 330 + (by + 1) * 0.866 * s, oy = H - (bx + by + 2) * 0.5 * s - 30;
+  var P = function (a, b, c) { return p3pt(a, b, c, s, ox, oy); }, h = P3M, top = N * fh; P3Q = [];
   /* площадка и здание: стекло, перекрытия, импосты */
   h += '<polygon points="' + p3poly([P(-1.5, -1.5, 0), P(bx + 2.5, -1.5, 0), P(bx + 2.5, by + 1.5, 0), P(-1.5, by + 1.5, 0)]) + '" fill="#e3e7eb" stroke="#cfd5db"/>';
   var back = [P(0, 0, 0), P(bx, 0, 0), P(bx, 0, top), P(0, 0, top)], left = [P(0, 0, 0), P(0, by, 0), P(0, by, top), P(0, 0, top)];
@@ -155,5 +169,6 @@ function p3smk(p, o) {
   }
   h += p3legend(leg.concat([['#e2572b', 'движение дыма']]), W - 230, 44, 'Скорость (МР ВНИИПО п. 5.1.1)');
   h += p3txt(16, H - 12, 'Дым ' + f(o.G, 2) + ' кг/с → у вентилятора ' + f(o.GN, 2) + ' кг/с (подсосы +' + f(o.Ga, 2) + ' кг/с). Этажей ' + N + ', ДПУ ' + nd + '. Схема условная, числа — из расчёта.');
+  h += p3flush(P(0, by, 0)[0] - 95, P(bx + 2.5, -1.5, 0)[0] + 16, 175, H - 56);
   return p3wrap(W, H, h, 'Система вытяжной противодымной вентиляции ' + esc(p.system || ''));
 }
