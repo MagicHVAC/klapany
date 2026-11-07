@@ -147,18 +147,26 @@
       hiss = ac.createGain(); hiss.gain.value = .02; s2.connect(hp); hp.connect(hiss); hiss.connect(master); s2.start();
       return true;
     }
-    function crack(power) {
+    /* lo — глухой хлопок полена (низкая полоса, дольше), иначе — щелчок */
+    function crack(power, lo) {
       if (!on || !ac || ac.state !== 'running') return;
       var t = ac.currentTime + Math.random() * .02, src = ac.createBufferSource(), bp = ac.createBiquadFilter(), g = ac.createGain();
-      src.buffer = noise; bp.type = 'bandpass'; bp.frequency.value = 900 + Math.random() * 3500; bp.Q.value = 1.5 + Math.random() * 4;
-      var a = (.15 + Math.random() * .6) * power, dur = .01 + Math.random() * .05;
+      src.buffer = noise; bp.type = 'bandpass'; bp.frequency.value = lo ? 180 + Math.random() * 420 : 900 + Math.random() * 3500; bp.Q.value = lo ? .8 + Math.random() * 1.5 : 1.5 + Math.random() * 4;
+      var a = (.15 + Math.random() * .6) * power * (lo ? 1.6 : 1), dur = lo ? .04 + Math.random() * .1 : .01 + Math.random() * .05;
       g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(a, t + .002); g.gain.exponentialRampToValueAtTime(.0005, t + dur);
       src.connect(bp); bp.connect(g); g.connect(master);
       src.start(t, Math.random() * 2, dur + .02);
     }
     function level(I, m) {
       if (!on || !ac) return;
-      var now = ac.currentTime, vol = (m === 'a' ? .18 : .25 + .55 * I) * .4;   /* инженер 06.11: тише */
+      var now = ac.currentTime;
+      if (m === 'n') {
+        /* инженер 07.11: «Работа» — просто костёр, без ветра, громкость средняя: фоновые гул и шипение выключены, только треск и хлопки поленьев */
+        master.gain.setTargetAtTime(.45, now, .4); rum.gain.setTargetAtTime(0, now, .3); hiss.gain.setTargetAtTime(0, now, .3);
+        if (now > nextCrack) { var r = Math.random(); crack(.55 + Math.random() * .3); if (r < .25) crack(.35); if (r > .9) crack(.7, true); nextCrack = now + .06 + Math.random() * .38 + (Math.random() < .12 ? .6 : 0); }
+        return;
+      }
+      var vol = (m === 'a' ? .18 : .25 + .55 * I) * .4;   /* инженер 06.11: тише */
       master.gain.setTargetAtTime(vol, now, .4);
       rum.gain.setTargetAtTime(.35 + .5 * I, now, .5);
       hiss.gain.setTargetAtTime(.01 + .05 * I, now, .5);
