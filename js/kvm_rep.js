@@ -102,7 +102,7 @@ function repStairUG(p, o) {
     ['Подземных этажей; высота', 'n; h', Math.round(p.NUG) + '; ' + rf(p.hUG, 2), 'м'], ['Глубина (пол нижнего подземного)', 'h-n', rf(o.hn, 2), 'м']].concat(repAirRows(p.air)).concat([['Удаляется дыма с этажа пожара', 'Gsm', rf(p.Gsm, 2), 'кг/с'],
     ['Проекция маршей и площадок; КМС клетки; z', 'Fs; ξs; z', rf(p.Fs, 1) + '; ' + rf(p.xis, 0) + '; ' + rf(p.zUG || 1, 2), 'м²'],
     ['Наружный выход: дверь, высота, дверей, ξd, ξr', '', rf(p.Fda, 2) + ' м², ' + rf(p.hda, 2) + ' м, ' + p.nd + ', ' + rf(p.xid, 2) + ', ' + rf(p.xir, 2), ''], ['Двери на этажах: площадь, высота', 'Fd, hd', rf(p.Fd, 2) + ' м², ' + rf(p.hd, 2) + ' м', ''],
-    ['Воздуховод', '', repDuct(p.duct, null, p), ''], ['Воздухозабор выше места подачи на', 'h0s', rf(p.h0, 1), 'м']]));
+    ['Воздуховод', '', repDuct(p.duct, null, p), ''], ['Подача воздуха в клетку', '', p.ugFeed === 'bot' ? 'снизу — у нижнего подземного этажа' : 'сверху — у верхнего подземного этажа', ''], ['Воздухозабор выше места подачи на', 'h0s', rf(p.h0, 1), 'м']]));
   h += repSec(++n, 'Расчёт');
   h += repF('Плотности', 'ρ = 353/T; t<sub>s</sub> = (t<sub>a</sub> + t<sub>r</sub>)/2', 'ρ<sub>a</sub> = ' + rf(o.roa, 3) + '; ρ<sub>r</sub> = ' + rf(o.ror, 3) + '; ρ<sub>s</sub> = ' + rf(o.ros, 3), 'кг/м³') +
     repF('Ветровое давление', 'P<sub>w</sub> = 0,25·(K<sub>ww</sub> − K<sub>w0</sub>)·ρ<sub>a</sub>·v<sub>a</sub>²', '', rf(o.Pw, 2) + ' Па') +
@@ -118,7 +118,7 @@ function repStairUG(p, o) {
   h += repSec(++n, 'Вентилятор (93), (94)');
   h += (o.net ? kmsRep(o.net, 'Сеть от воздухозабора до клетки') : repF('Воздуховоды', 'P<sub>вв</sub> = λ·l/D<sub>э</sub>·P<sub>d</sub> + Σξ·P<sub>d</sub>', 'v = ' + rf(o.duct.v, 2) + ' м/с; P<sub>d</sub> = ' + rf(o.duct.Pd, 2) + ' Па; λ = ' + rf(o.duct.f, 4), rf(o.duct.P, 2) + ' Па')) +
     repF('Подача', 'L<sub>v</sub> = 3600·G<sub>s</sub>/ρ<sub>a</sub>', '3600 · ' + rf(o.Gs, 3) + ' / ' + rf(o.roa, 3), rf(o.Lv, 0) + ' м³/ч') +
-    repF('Статическое давление', 'P<sub>sv</sub> = P<sub>s</sub> + g·h<sub>s</sub>·(ρ<sub>a</sub> − ρ<sub>s</sub>) + g·h<sub>0s</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>вв</sub>', rf(o.Ps, 2) + ' + 9,81 · ' + rf(o.hsN, 2) + ' · ' + rf(o.roa - o.ros, 3) + ' + 9,81 · ' + rf(p.h0, 1) + ' · ' + rf(o.roa - o.ror, 3) + ' + ' + rf(o.duct.P, 2), rf(o.Psv, 0) + ' Па');
+    (o.bot ? repF('Статическое давление, подача снизу', 'P<sub>sv</sub> = P<sub>s(−n)</sub> + g·h<sub>s</sub>·(ρ<sub>a</sub> − ρ<sub>s</sub>) + g·h<sub>0s</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>вв</sub>', rf(o.Ps, 2) + ' + 9,81 · ' + rf(o.hsN, 2) + ' · ' + rf(o.roa - o.ros, 3) + ' + 9,81 · ' + rf(p.h0, 1) + ' · ' + rf(o.roa - o.ror, 3) + ' + ' + rf(o.duct.P, 2), rf(o.Psv, 0) + ' Па') : repF('Статическое давление, подача сверху', 'P<sub>sv</sub> = P<sub>s−1</sub> + g·h<sub>0s</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>вв</sub> (h<sub>s</sub> = 0)', rf(o.Ps, 2) + ' + 9,81 · ' + rf(p.h0, 1) + ' · ' + rf(o.roa - o.ror, 3) + ' + ' + rf(o.duct.P, 2), rf(o.Psv, 0) + ' Па'));
   return repSup('<div class="rep">' + h + repNote(o) + '</div>');
 }
 function repStair(p, o) {

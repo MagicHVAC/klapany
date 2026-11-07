@@ -125,14 +125,16 @@ function supStairUG(p, o) {
   }
   var vN = G / (ros * p.Fs), dPN = 0.5 * p.xis * ros * vN * vN;
   rows[rows.length - 1].v = vN; rows[rows.length - 1].dPs = dPN;
-  o.rows = rows; o.Gs = G; o.Ps = P + dPN; o.dpmax = dpmax; o.dpmin = dpmin;
-  o.hsN = (n - 1) * hu;
+  /* инженер 07.11 — оба варианта: сверху — в (94) Ps = Ps-1, hs = 0; снизу — Ps у нижнего этажа (там набирается весь расход), hs = (n − 1)·hUG */
+  o.bot = p.ugFeed === 'bot';
+  o.rows = rows; o.Gs = G; o.Pbot = P + dPN; o.Ps = o.bot ? o.Pbot : o.P1; o.dpmax = dpmax; o.dpmin = dpmin;
+  o.hsN = o.bot ? (n - 1) * hu : 0;
   o.duct = supNet(G, roa, o.ta, p, o);
   o.Lv = 3600 * G / roa;
   o.Psv = o.Ps + g * o.hsN * (roa - ros) + g * p.h0 * (roa - ror) + o.duct.P;
   if (dpmin < 20) o.warn.push('Перепад на закрытых дверях ' + dpmin.toFixed(1).replace('.', ',') + ' Па — меньше 20 Па (условие МР п. 4.1.4).');
   if (dpmax > 150) o.warn.push('Перепад на закрытых дверях до ' + dpmax.toFixed(0).replace('.', ',') + ' Па — больше 150 Па (СП 7 п. 7.16 б).');
-  o.warn.push('Вентилятор: в МР для лестницы — (93), (94), записаны для подачи в верх клетки. Для подземной части принято: Ps — у нижнего подземного этажа (там набирается весь расход), hs = (NUG − 1)·hUG. Сверь с принятой схемой подачи.');
+  o.warn.push(o.bot ? 'Вентилятор (94), подача снизу: Ps — у нижнего подземного этажа, hs = (n − 1)·hUG. В МР (94) записана для подачи в верх клетки — сверь.' : 'Вентилятор (94), подача сверху: Ps = Ps-1 у верхнего подземного этажа, hs = 0; h0s — от воздухозабора до места подачи.');
   return o;
 }
 function supBaseFrom(a) {

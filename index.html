@@ -15,8 +15,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=1.26.0">
-<link rel="stylesheet" href="css/vent.css?v=1.26.0">
+<link rel="stylesheet" href="css/style.css?v=1.26.1">
+<link rel="stylesheet" href="css/vent.css?v=1.26.1">
 </head>
 <body>
 <header class="top"><div class="tin">
@@ -41,63 +41,63 @@ setTimeout(function () { var v = document.getElementById('view'); if (v && v.chi
   var p = []; if (navigator.serviceWorker) p.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }));
   if (window.caches) p.push(caches.keys().then(function (k) { return Promise.all(k.map(function (n) { return caches.delete(n); })); }));
   Promise.all(p).then(function () { location.reload(); }, function () { location.reload(); }); }, 6000);</script>
-<script src="js/data_norms.js?v=1.26.0"></script>
-<script src="js/data_no.js?v=1.26.0"></script>
-<script src="js/data_nz.js?v=1.26.0"></script>
-<script src="js/data_more.js?v=1.26.0"></script>
-<script src="js/data_fire2.js?v=1.26.0"></script>
-<script src="js/data_build.js?v=1.26.0"></script>
-<script src="js/data_stairs.js?v=1.26.0"></script>
-<script src="js/stairs.js?v=1.26.0"></script>
-<script src="js/fieldcheck.js?v=1.26.0"></script>
-<script src="js/dpu.js?v=1.26.0"></script>
-<script src="js/net.js?v=1.26.0"></script>
-<script src="js/data_comp.js?v=1.26.0"></script>
-<script src="js/data_cat.js?v=1.26.0"></script>
-<script src="js/data_evac.js?v=1.26.0"></script>
-<script src="js/data_alarm.js?v=1.26.0"></script>
-<script src="js/schemes.js?v=1.26.0"></script>
-<script src="js/steps.js?v=1.26.0"></script>
-<script src="js/render.js?v=1.26.0"></script>
-<script src="js/anatomy.js?v=1.26.0"></script>
-<script src="js/comp.js?v=1.26.0"></script>
-<script src="js/cat.js?v=1.26.0"></script>
-<script src="js/stats.js?v=1.26.0"></script>
-<script src="js/data_rooms.js?v=1.26.0"></script>
-<script src="js/data_spn.js?v=1.26.0"></script>
-<script src="js/data_spn2.js?v=1.26.0"></script>
-<script src="js/app.js?v=1.26.0"></script>
-<script src="js/vn_core.js?v=1.26.0"></script>
-<script src="js/vn_exh.js?v=1.26.0"></script>
-<script src="js/vn_sup.js?v=1.26.0"></script>
-<script src="js/kvm_smk.js?v=1.26.0"></script>
-<script src="js/kvm_sup.js?v=1.26.0"></script>
-<script src="js/pdv3d.js?v=1.26.0"></script>
-<script src="js/pdv3d_smk.js?v=1.26.0"></script>
-<script src="js/kvm_rep.js?v=1.26.0"></script>
-<script src="js/kvm_comp.js?v=1.26.0"></script>
-<script src="js/kvm_tamb.js?v=1.26.0"></script>
-<script src="js/kvm_tamb_ui.js?v=1.26.0"></script>
-<script src="js/data_clim.js?v=1.26.0"></script>
-<script src="js/data_kms_cat.js?v=1.26.0"></script>
-<script src="js/kvm_kms.js?v=1.26.0"></script>
-<script src="js/kvm_scheme.js?v=1.26.0"></script>
-<script src="js/pdv3r.js?v=1.26.0"></script>
-<script src="js/kvm_sketch.js?v=1.26.0"></script>
-<script src="js/kvm_ui.js?v=1.26.0"></script>
-<script src="js/kvm_proj.js?v=1.26.0"></script>
-<script src="js/kvm_kmsz.js?v=1.26.0"></script>
-<script src="js/kvm_file.js?v=1.26.0"></script>
-<script src="js/data_aupt.js?v=1.26.0"></script>
-<script src="js/aupt.js?v=1.26.0"></script>
-<script src="js/search.js?v=1.26.0"></script>
-<script src="js/data_dbn.js?v=1.26.0"></script>
-<script src="js/dbn.js?v=1.26.0"></script>
-<script src="js/rooms.js?v=1.26.0"></script>
-<script src="js/farea.js?v=1.26.0"></script>
-<script src="js/hints.js?v=1.26.0"></script>
-<script src="js/hints_kv.js?v=1.26.0"></script>
-<script src="js/fx.js?v=1.26.0"></script>
-<script src="js/jokes.js?v=1.26.0"></script>
+<script src="js/data_norms.js?v=1.26.1"></script>
+<script src="js/data_no.js?v=1.26.1"></script>
+<script src="js/data_nz.js?v=1.26.1"></script>
+<script src="js/data_more.js?v=1.26.1"></script>
+<script src="js/data_fire2.js?v=1.26.1"></script>
+<script src="js/data_build.js?v=1.26.1"></script>
+<script src="js/data_stairs.js?v=1.26.1"></script>
+<script src="js/stairs.js?v=1.26.1"></script>
+<script src="js/fieldcheck.js?v=1.26.1"></script>
+<script src="js/dpu.js?v=1.26.1"></script>
+<script src="js/net.js?v=1.26.1"></script>
+<script src="js/data_comp.js?v=1.26.1"></script>
+<script src="js/data_cat.js?v=1.26.1"></script>
+<script src="js/data_evac.js?v=1.26.1"></script>
+<script src="js/data_alarm.js?v=1.26.1"></script>
+<script src="js/schemes.js?v=1.26.1"></script>
+<script src="js/steps.js?v=1.26.1"></script>
+<script src="js/render.js?v=1.26.1"></script>
+<script src="js/anatomy.js?v=1.26.1"></script>
+<script src="js/comp.js?v=1.26.1"></script>
+<script src="js/cat.js?v=1.26.1"></script>
+<script src="js/stats.js?v=1.26.1"></script>
+<script src="js/data_rooms.js?v=1.26.1"></script>
+<script src="js/data_spn.js?v=1.26.1"></script>
+<script src="js/data_spn2.js?v=1.26.1"></script>
+<script src="js/app.js?v=1.26.1"></script>
+<script src="js/vn_core.js?v=1.26.1"></script>
+<script src="js/vn_exh.js?v=1.26.1"></script>
+<script src="js/vn_sup.js?v=1.26.1"></script>
+<script src="js/kvm_smk.js?v=1.26.1"></script>
+<script src="js/kvm_sup.js?v=1.26.1"></script>
+<script src="js/pdv3d.js?v=1.26.1"></script>
+<script src="js/pdv3d_smk.js?v=1.26.1"></script>
+<script src="js/kvm_rep.js?v=1.26.1"></script>
+<script src="js/kvm_comp.js?v=1.26.1"></script>
+<script src="js/kvm_tamb.js?v=1.26.1"></script>
+<script src="js/kvm_tamb_ui.js?v=1.26.1"></script>
+<script src="js/data_clim.js?v=1.26.1"></script>
+<script src="js/data_kms_cat.js?v=1.26.1"></script>
+<script src="js/kvm_kms.js?v=1.26.1"></script>
+<script src="js/kvm_scheme.js?v=1.26.1"></script>
+<script src="js/pdv3r.js?v=1.26.1"></script>
+<script src="js/kvm_sketch.js?v=1.26.1"></script>
+<script src="js/kvm_ui.js?v=1.26.1"></script>
+<script src="js/kvm_proj.js?v=1.26.1"></script>
+<script src="js/kvm_kmsz.js?v=1.26.1"></script>
+<script src="js/kvm_file.js?v=1.26.1"></script>
+<script src="js/data_aupt.js?v=1.26.1"></script>
+<script src="js/aupt.js?v=1.26.1"></script>
+<script src="js/search.js?v=1.26.1"></script>
+<script src="js/data_dbn.js?v=1.26.1"></script>
+<script src="js/dbn.js?v=1.26.1"></script>
+<script src="js/rooms.js?v=1.26.1"></script>
+<script src="js/farea.js?v=1.26.1"></script>
+<script src="js/hints.js?v=1.26.1"></script>
+<script src="js/hints_kv.js?v=1.26.1"></script>
+<script src="js/fx.js?v=1.26.1"></script>
+<script src="js/jokes.js?v=1.26.1"></script>
 </body>
 </html>
