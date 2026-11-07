@@ -88,11 +88,21 @@ var KV_TYP = [
     ['typ.vA', 'Вертикаль a, м'], ['typ.vB', 'Вертикаль b, м'], ['typ.vL', 'Вертикаль L (высота этажа), м'], ['typ.vZ', 'Вертикаль Σζ']]],
   ['Отличия крайних участков', [['typ.z1', '1-й участок (этаж пожара): Σζ вертикали'], ['typ.topL', 'Верхний участок: L вертикали до вентилятора, м', '', 'горизонтали на нём нет'], ['typ.topZ', 'Верхний участок: Σζ вертикали']]]
 ];
+/* 1.24.1: компактная форма — поля, ненужные выбранному варианту, скрыты (коридор: двери, qп, коридор; зал: площадь пола, очаг, ψ, η, r);
+   переключатели до 4 вариантов — радиокнопками, видны сразу. Смена поля из KV_REDRAW перерисовывает форму. */
+var KV_HALL = function (p) { return +p.variant === 2; }, KV_COR = function (p) { return +p.variant === 0; };
+var KV_VIS = { smk: { living: KV_COR, doorsTxt: KV_COR, qp: KV_COR, cL: KV_COR, cA: KV_COR, cH: KV_COR, dA: KV_COR, dH: KV_COR,
+  Ff: KV_HALL, psi: KV_HALL, Fo: KV_HALL, eta: KV_HALL, r: KV_HALL,
+  ductRes: function (p) { return !!p.endExhaust; }, vOut: function (p) { return !!p.endExhaust; } } };
+var KV_REDRAW = { variant: 1, endExhaust: 1 };
+function kvVis(p, k) { var m = KV_VIS[KV.mode], f = m && m[k]; return !f || f(p); }
 function kvField(p, f) {
-  var id = 'kv-' + f[0].replace('.', '_'), v = f[0] === 'doorsTxt' ? kvDoorsTxt(p.doors) : kvGet(p, f[0]);
-  if (Array.isArray(f[2])) return '<div class="stf"><label for="' + id + '">' + f[1] + '</label><select id="' + id + '" data-kv="' + f[0] + '">' +
+  var id = 'kv-' + f[0].replace('.', '_'), v = f[0] === 'doorsTxt' ? kvDoorsTxt(p.doors) : kvGet(p, f[0]), hid = kvVis(p, f[0]) ? '' : ' hidden';
+  if (Array.isArray(f[2]) && f[2].length <= 4) return '<div class="stf kvrad"' + hid + '><label for="' + id + '">' + f[1] + '</label><div class="kvrg">' +
+    f[2].map(function (o, i) { return '<label class="kvro"><input type="radio" name="' + id + '" id="' + id + (i ? '_' + i : '') + '" data-kv="' + f[0] + '" value="' + o[0] + '"' + (String(o[0]) === String(v) ? ' checked' : '') + '><span>' + o[1] + '</span></label>'; }).join('') + '</div></div>';
+  if (Array.isArray(f[2])) return '<div class="stf kvsel"' + hid + '><label for="' + id + '">' + f[1] + '</label><select id="' + id + '" data-kv="' + f[0] + '">' +
     f[2].map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(v) ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>';
-  return '<div class="stf"><label for="' + id + '">' + f[1] + '</label><input id="' + id + '" data-kv="' + f[0] + '" ' + (f[2] === 't' ? 'type="text"' : 'type="number" step="any" inputmode="decimal"') +
+  return '<div class="stf' + (f[2] === 't' ? ' kvtxt' : '') + '"' + hid + '><label for="' + id + '">' + f[1] + '</label><input id="' + id + '" data-kv="' + f[0] + '" ' + (f[2] === 't' ? 'type="text"' : 'type="number" step="any" inputmode="decimal"') +
     ' value="' + (v == null || (typeof v === 'number' && !isFinite(v)) ? '' : String(v).replace(/"/g, '&quot;')) + '">' + (f[3] ? '<small class="dhint">' + f[3] + '</small>' : '') + '</div>';
 }
 function kvCompForm() {
@@ -114,15 +124,8 @@ function kvForm() {
   if (window.kmsEnsure) kmsEnsure(KV.mode, p);
   KV_F[KV.mode].forEach(function (g, gi) {
     if (gi === 1 && window.kmsClimForm) h += kmsClimForm(KV.mode, p);
-    h += '<h3 class="nh">' + g[0] + '</h3><div class="trpick stpick">';
-    g[1].forEach(function (f) {
-      var id = 'kv-' + f[0].replace('.', '_'), v = f[0] === 'doorsTxt' ? kvDoorsTxt(p.doors) : kvGet(p, f[0]);
-      if (Array.isArray(f[2])) h += '<div class="stf"><label for="' + id + '">' + f[1] + '</label><select id="' + id + '" data-kv="' + f[0] + '">' +
-        f[2].map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(v) ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>';
-      else h += '<div class="stf"><label for="' + id + '">' + f[1] + '</label><input id="' + id + '" data-kv="' + f[0] + '" ' + (f[2] === 't' ? 'type="text"' : 'type="number" step="any" inputmode="decimal"') +
-        ' value="' + (v == null ? '' : String(v).replace(/"/g, '&quot;')) + '">' + (f[3] ? '<small class="dhint">' + f[3] + '</small>' : '') + '</div>';
-    });
-    h += '</div>';
+    var all = g[1].every(function (f) { return !kvVis(p, f[0]); });
+    h += '<section class="kvgrp"' + (all ? ' hidden' : '') + '><h3 class="nh">' + g[0] + '</h3><div class="trpick stpick">' + g[1].map(function (f) { return kvField(p, f); }).join('') + '</div></section>';
   });
   if (KV.mode === 'smk') h += kvTypForm();
   if (window.kmsForm) h += kmsForm(KV.mode, p);
@@ -155,7 +158,8 @@ PAGES.pdv = (function (old) {
         return '<button type="button" data-kvm="' + t[0] + '"' + (t[0] === KV.mode ? ' class="on"' : '') + '>' + t[1] + '<small>' + t[2] + '</small></button>'; }).join('') + '</div>' +
       '<div class="dpbtns"><button type="button" class="eibtn" id="kv-new">Новый (пример)</button><button type="button" class="eibtn" id="kv-doc">Скачать отчёт в Word</button>' + (window.kvfBtns ? kvfBtns() : '') + '</div>' +
       (window.kvpBlock ? '<div id="kvp">' + kvpBlock() + '</div>' : '') +
-      '<div id="kv-form">' + kvForm() + '</div>' + kvDlBtns() + '<div class="barres stres" id="kv-res"></div><div id="kv-rep"></div>' + kvDlBtns() +
+      '<div class="kvlay"><div class="kvL" id="kv-form">' + kvForm() + '</div><aside class="kvR"><div class="kvRh">Результат</div><div class="barres stres" id="kv-res"></div>' + kvDlBtns() +
+      '<a class="kvgo" href="#kv-rep">К отчёту с формулами ↓</a></aside></div><div id="kv-rep"></div>' + kvDlBtns() +
       '<details class="issue"><summary>Отдельные расчёты по формулам МР (прежние вкладки)</summary><div>' + old().replace(/^<h1>[\s\S]*?<\/p>/, '') + '</div></details>';
   };
 })(PAGES.pdv);
@@ -173,9 +177,16 @@ function kvRun(mode, p) {
 function kvImgs(mode, p, o, cb) {
   var list = [], out = [];
   if (window.pdvScheme) { try { var s2 = pdvScheme(mode, p, o); if (s2) list.push({ title: 'Схема системы ' + esc(p.system || ''), svg: s2, w: 600, note: 'Схема по расчёту: участки, расходы и давления — из таблиц расчёта.' }); } catch (x) {} }
-  if (window.pdv3d) { try { var s3 = pdv3d(mode, p, o); if (s3) list.push({ title: 'Объёмная схема ' + esc(p.system || ''), svg: s3 }); } catch (x) {} }
+  var svg3 = ''; if (window.pdv3d) { try { svg3 = pdv3d(mode, p, o); } catch (x) {} }
   var next = function (i) {
-    if (i >= list.length || !window.pdv3dPng) { cb(out); return; }
+    if (i >= list.length || !window.pdv3dPng) {
+      /* 1.24.0: объёмная схема — рендер WebGL; нет WebGL — прежняя SVG */
+      var t3 = 'Объёмная схема ' + esc(p.system || '');
+      var old3 = function () { if (!svg3 || !window.pdv3dPng) return cb(out); pdv3dPng(svg3, function (png) { var vb = /viewBox="[\d.\s-]*?\s([\d.]+)\s([\d.]+)"/.exec(svg3); out.push({ title: t3, png: png, ar: vb ? +vb[2] / +vb[1] : 0 }); cb(out); }); };
+      if (window.pdv3rPng) pdv3rPng(mode, p, o, function (u) { if (u) { out.push({ title: t3, png: u, ar: 960 / 1360, note: 'Цвет шахты и воздуховодов — скорость (до 9 м/с зелёный, 9–11 жёлтый, 11–15 оранжевый, больше 15 красный; МР ВНИИПО п. 5.1.1). Схема по расчёту, не чертёж.' }); cb(out); } else old3(); });
+      else old3();
+      return;
+    }
     pdv3dPng(list[i].svg, function (png) { var vb = /viewBox="[\d.\s-]*?\s([\d.]+)\s([\d.]+)"/.exec(list[i].svg); out.push({ title: list[i].title, png: png, note: list[i].note, w: list[i].w, ar: vb ? +vb[2] / +vb[1] : 0 }); next(i + 1); });
   };
   next(0);
@@ -207,6 +218,11 @@ function kvCalc() {
   $('#kv-res').innerHTML = h;
   $('#kv-rep').innerHTML = isFinite(o.Lv) ? kvReport(p, o) : '';
   if (isFinite(o.Lv) && window.pdv3d) { try { $('#kv-rep').insertAdjacentHTML('afterbegin', '<div class="rep-3d">' + pdv3d(KV.mode, p, o) + '</div>'); } catch (x) {} }
+  /* 1.24.0: объёмный вид WebGL — перерисовка через 0,7 с после последней правки */
+  if (isFinite(o.Lv) && window.pdv3rView) {
+    $('#kv-rep').insertAdjacentHTML('afterbegin', '<div class="rep-3r"><div class="rep-3rh">Объёмный вид по расчёту — вращай мышью или пальцем, колесо — ближе/дальше</div><div id="kv-3r" class="kv3r">' + (window.P3R && P3R.last ? '<img src="' + P3R.last + '" alt="">' : '') + '</div></div>');
+    clearTimeout(P3R.t); P3R.t = setTimeout(function () { var b = $('#kv-3r'); if (b) pdv3rView(b, KV.mode, KV.p, KV.o); }, 700);
+  }
 }
 
 /* ---------- отчёт: вёрстка — kvm_rep.js ---------- */
@@ -217,9 +233,10 @@ function kvInput(e) {
   if (t.dataset && t.dataset.kv) {
     var k = t.dataset.kv, v = t.value;
     if (k === 'doorsTxt') KV.p.doors = kvDoorsParse(v);
-    else if (t.tagName === 'SELECT') kvSet(KV.p, k, v === 'true' ? true : v === 'false' ? false : (isFinite(+v) ? +v : v));
+    else if (t.tagName === 'SELECT' || t.type === 'radio') kvSet(KV.p, k, v === 'true' ? true : v === 'false' ? false : (isFinite(+v) ? +v : v));
     else kvSet(KV.p, k, t.type === 'text' || (k === 'typ.zkl' && v.trim() === '') ? v : smkNum(v));
     if (k.indexOf('typ.') === 0 && KV.p.segMode !== 'table') { KV.p.segs = kvBuildSegs(KV.p.typ); var sg = $('#kv-segs'); if (sg) sg.innerHTML = kvSegs(); }
+    if (KV_REDRAW[k] && KV.mode === 'smk') { var sy = window.scrollY; $('#kv-form').innerHTML = kvForm(); if (window.hintsAttach) hintsAttach(); window.scrollTo(0, sy); var r = document.getElementById(t.id); if (r) r.focus({ preventScroll: true }); }
     kvCalc();
   } else if (t.classList && t.classList.contains('kvc')) {
     var s = KV.p.segs[+t.dataset.seg], c = t.dataset.c;
