@@ -89,3 +89,15 @@ body.vent { background-image: none; }
 @media (prefers-reduced-motion: reduce) { .vbg i { animation: none; } }
 body.vent .vtabs { background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(10px); border-radius: 14px; padding: 8px; margin-left: -8px; margin-right: -8px; }
 body.vent .vc { background: color-mix(in srgb, var(--surface) 88%, transparent); }
+
+/* 1.23.7: телефон — уточнения свёрнуты, примеры скрыты */
+.vfd > summary { cursor: pointer; font-weight: 600; color: var(--text); list-style: none; }
+.vfd > summary::-webkit-details-marker { display: none; }
+.vfd > summary::before { content: '▸ '; color: var(--air); } .vfd[open] > summary::before { content: '▾ '; }
+.vfin { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-top: 8px; }
+@media (min-width: 641px) { .vfd > summary { display: none; } .vfin { margin-top: 0; } }
+@media (max-width: 640px) {
+  .vsearch { padding: 10px; } .vsearch #q { height: 42px; font-size: 16px; }
+  .vsearch .vex { display: none; }
+  .vfin label:not(.chk) { display: flex; flex-direction: column; gap: 3px; width: 100%; } .vfin select { margin-left: 0; width: 100%; }
+}

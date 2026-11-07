@@ -554,3 +554,18 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .kvbar select, .kvbar input { height: 30px; padding: 0 6px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); color: var(--text); font: inherit; font-size: 13px; } .kvbar input { width: 90px; }
 .kvseg tr.on td { background: rgba(80,160,255,.12); } .kvels { color: #e0a100; font-size: 10px; margin-left: 2px; }
 .kmszq { flex-wrap: wrap; } .kmszwhy { display: block; color: var(--muted); font-size: 11px; white-space: normal; }
+/* 1.23.7: телефон — шапка не занимает экран (инженер: «полэкрана плашка анимации и переключения»).
+   Шапка уезжает вверх при прокрутке (нижнее меню остаётся), режимы анимации в шапке скрыты — у схемы свои кнопки «Работа / Пожар / После»,
+   «Звук» и «ДБН» — значками в строке с названием. */
+@media (max-width: 640px) {
+  html { scroll-padding-top: 8px; }
+  .top { position: relative; padding-bottom: 6px; }
+  .tin { gap: 6px 8px; }
+  .brand { flex: 1 1 auto; font-size: 13px; order: 1; } .brand small { font-size: 10px; }
+  .mode { display: none; }
+  .sndbtn { order: 2; height: 32px; padding: 0 9px; border-radius: 10px; font-size: 12px; }
+  #snd span { display: none; }
+  .top .pages { order: 4; flex: 1 1 100%; }
+  .top .pages a { font-size: 12px; padding: 5px 10px; }
+  #q { order: 5; height: 36px; }
+}

@@ -148,7 +148,11 @@
     }
     var any = store.bt || store.mt || store.tt || store.reg;
     if (h && any) h += '<button type="button" id="vreset" class="vreset">Сбросить уточнения</button>';
+    /* 1.23.7: на телефоне уточнения свёрнуты в «Уточнить» (раскрытие запоминается) — список не уезжает за экран */
+    var nAct = [store.bt, store.mt, store.tt, store.gen, store.as, store.reg].filter(Boolean).length;
+    if (h) h = '<details class="vfd"' + (innerWidth > 640 || store.fo ? ' open' : '') + '><summary>Уточнить' + (nAct ? ' · ' + nAct : '') + '</summary><div class="vfin">' + h + '</div></details>';
     $('#vfilt').innerHTML = h; $('#vfilt').hidden = !h;
+    var dd = $('#vfilt details'); if (dd) dd.addEventListener('toggle', function () { if (innerWidth <= 640) { store.fo = dd.open; save(); } });
   }
 
   /* ---------- события ---------- */
