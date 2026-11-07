@@ -23,8 +23,11 @@ function tbCalc(p) {
   var a = p.sh.a / 1000, b = p.sh.b / 1000, F = a * b, De = 2 * a * b / (a + b), Pm = 2 * (a + b), eps = p.sh.eps / 1000;
   o.F = F; o.De = De;
   if (!(F > 0) || !(p.Fkl > 0)) { o.err.push('Задай сечение канала и клапана.'); return o; }
-  o.Psf = p.Pplus - g * 0.5 * p.hd * (ra - rr) + (p.windDoor ? 0.5 * A.kww * ra * A.va * A.va : 0);
-  o.Gsf = p.openDoor ? p.vd * rsf * p.Fd : p.nd * p.Fd * Math.sqrt(p.Pplus / o.Sdsf) + (p.mFdsl > 0 ? p.mFdsl * Math.sqrt(p.Pplus / o.Sdsl) : 0);
+  /* 1.27.0: (63) без подогрева — (ρa − ρr); (67) с подогревом — (ρsl − ρsf), ρsl при Ts = 0,5(Ta + Tr) (21); hi = 0 — нижний защищаемый этаж */
+  o.rsl = 353 / ((A.ta + A.tr) / 2 + 273.15);
+  o.Psf = p.Pplus - g * 0.5 * p.hd * (p.heat ? o.rsl - rsf : ra - rr) + (p.windDoor ? 0.5 * A.kww * ra * A.va * A.va : 0);
+  /* (59): открытая дверь — Gr = vr·ρa·Fdr (наружный воздух); закрытые — (60)/(62)/(69) */
+  o.Gsf = p.openDoor ? p.vd * ra * p.Fd : p.nd * p.Fd * Math.sqrt(p.Pplus / o.Sdsf) + (p.mFdsl > 0 ? p.mFdsl * Math.sqrt(p.Pplus / o.Sdsl) : 0);
   o.Lsf = 3600 * o.Gsf / ra;
   /* этажи снизу вверх: подземные, затем надземные; отметки пола и клапанов — как в отчётах */
   var fl = [], j, k;
@@ -62,6 +65,9 @@ function tbCalc(p) {
   o.Psv = top.P + o.PN + g * (p.h0 + o.hN) * o.dro + o.dPvv + o.dPtop;
   o.Q = p.heat ? o.Gs * 1.005 * (p.tsf - A.ta) : 0;
   o.dpmax = Math.max.apply(null, o.rows.map(function (x) { return x.dPk; }));
+  if (p.openDoor && p.vd < (p.heat ? 1.5 : 1.3)) o.warn.push('Скорость в открытой двери ' + String(p.vd).replace('.', ',') + ' м/с — меньше нормированной ' + (p.heat ? '1,5 м/с (зона безопасности, МР 4.5)' : '1,3 м/с (тамбур-шлюз, МР 4.3.1)') + '.');
+  if (p.heat && p.tsf < 18) o.warn.push('Температура подогретого воздуха ' + p.tsf + ' °C — ниже 18 °C (МР 4.5: Tsf ≥ 291 K).');
+  o.PsvW = o.Psv; o.Psv = 1.2 * o.PsvW / ra; /* приведение 1,2/ρa — по аналогии с (94), (96) МР 5.2 */
   if (o.vsh > 11) o.warn.push('Скорость в канале ' + o.vsh.toFixed(1).replace('.', ',') + ' м/с — больше 11 м/с (МР ВНИИПО п. 5.1.1).');
   if (p.heat && o.dro > 0) o.warn.push('При подогреве слагаемое g·hN·(ρa − ρsf) = ' + (g * o.hN * o.dro).toFixed(1).replace('.', ',') + ' Па учтено и в PN, и отдельно — давление вентилятора с запасом.');
   return o;

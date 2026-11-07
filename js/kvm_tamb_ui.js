@@ -17,7 +17,7 @@ var TB_F = [
 /* ---------- отчёт ---------- */
 function repTamb(p, o) {
   var n = 0, h = repHead('Расчёт подпора в тамбур-шлюз (зону безопасности)', p, REP_M), A = p.air, top = o.rows[o.rows.length - 1];
-  h += repSum([['Подача вентилятора', rf(o.Lv, 0) + ' м³/ч', 'при ' + rf(A.ta, 0) + ' °C'], ['Давление вентилятора', rf(o.Psv, 0) + ' Па', 'статическое'], ['Расход в помещение', rf(o.Gsf, 2) + ' кг/с', rf(o.Lsf, 0) + ' м³/ч']]
+  h += repSum([['Подача вентилятора', rf(o.Lv, 0) + ' м³/ч', 'при ' + rf(A.ta, 0) + ' °C'], ['Давление вентилятора', rf(o.Psv, 0) + ' Па', 'приведённое; рабочее ' + rf(o.PsvW, 0) + ' Па'], ['Расход в помещение', rf(o.Gsf, 2) + ' кг/с', rf(o.Lsf, 0) + ' м³/ч']]
     .concat(p.heat ? [['Воздухонагреватель', rf(o.Q, 1) + ' кВт', 'до ' + rf(p.tsf, 0) + ' °C']] : []));
   h += repSec(++n, 'Исходные данные');
   h += repIn([['Двери', '', p.openDoor ? 'одна открыта' : 'закрыты', ''], ['Приток', '', p.heat ? 'с подогревом до ' + rf(p.tsf, 0) + ' °C' : 'без подогрева', ''],
@@ -42,7 +42,7 @@ function repTamb(p, o) {
     (o.net ? kmsRep(o.net, 'Сеть от воздухозабора до канала') : repF('Воздуховод до канала', 'ΔP<sub>вв</sub> = (λ·l/D + Σξ)·ρ<sub>a</sub>·v²/2', 'v = ' + rf(o.vvv, 2) + ' м/с; λ = ' + rf(o.lamVV, 4), rf(o.dPvv, 2) + ' Па')) +
     repF('Давление у оголовка', 'P<sub>N</sub> = g·h<sub>N</sub>·(ρ<sub>a</sub> − ρ<sub>sf</sub>) − P<sub>w0</sub>', 'h<sub>N</sub> = ' + rf(o.hN, 2) + ' м', rf(o.PN, 2) + ' Па') +
     repF('Подача', 'L<sub>v</sub> = 3600·G<sub>s</sub>/ρ<sub>a</sub>', '3600 · ' + rf(o.Gs, 4) + ' / ' + rf(o.roa, 3), rf(o.Lv, 0) + ' м³/ч') +
-    repF('Статическое давление', 'P<sub>sv</sub> = P<sub>ш верх</sub> + P<sub>N</sub> + g·(h<sub>0s</sub> + h<sub>N</sub>)·(ρ<sub>a</sub> − ρ<sub>sf</sub>) + ΔP<sub>вв</sub> + ΔP<sub>top</sub>', rf(top.P, 2) + ' + ' + rf(o.PN, 2) + ' + ' + rf(9.81 * (p.h0 + o.hN) * o.dro, 2) + ' + ' + rf(o.dPvv, 2) + ' + ' + rf(o.dPtop, 2), rf(o.Psv, 2) + ' Па') +
+    repF('Статическое давление', 'P<sub>sv</sub> = P<sub>ш верх</sub> + P<sub>N</sub> + g·(h<sub>0s</sub> + h<sub>N</sub>)·(ρ<sub>a</sub> − ρ<sub>sf</sub>) + ΔP<sub>вв</sub> + ΔP<sub>top</sub>', rf(top.P, 2) + ' + ' + rf(o.PN, 2) + ' + ' + rf(9.81 * (p.h0 + o.hN) * o.dro, 2) + ' + ' + rf(o.dPvv, 2) + ' + ' + rf(o.dPtop, 2), rf(o.PsvW, 2) + ' Па (рабочее)') + repPsv(o, o.roa, 'ρ<sub>a</sub>', 'по аналогии с (94)') +
     (p.heat ? repF('Мощность воздухонагревателя', 'Q = G<sub>s</sub>·c·(t<sub>sf</sub> − t<sub>a</sub>), c = 1,005 кДж/(кг·К)', rf(o.Gs, 3) + ' · 1,005 · (' + rf(p.tsf, 0) + ' − ' + rf(A.ta, 0) + ')', rf(o.Q, 1) + ' кВт') : '');
   return repSup('<div class="rep">' + h + repNote(o) + '</div>');
 }

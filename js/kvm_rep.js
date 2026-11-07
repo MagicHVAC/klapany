@@ -31,21 +31,32 @@ function repSum(items) {
 }
 function repNote(o) { return (o.warn && o.warn.length) ? '<div class="rep-note"><b>Замечания</b><ul>' + o.warn.map(function (w) { return '<li>' + w + '</li>'; }).join('') + '</ul></div>' : ''; }
 var REP_M = 'МР ВНИИПО к СП 7.13130.2013 (2013), СП 7.13130.2013 с Изм. № 1–3';
+/* 1.27.0: МР (89), (90), (94), (96) — давление вентилятора приводится к стандартным условиям (ρ = 1,2 кг/м³) для подбора по каталогу */
+function repPsv(o, ro, rn, fn) {
+  return repF('Приведённое к стандартным условиям (' + fn + ') — для подбора по каталогу', 'P<sub>sv</sub> = 1,2·P<sub>раб</sub>/' + rn, '1,2 · ' + rf(o.PsvW, 2) + ' / ' + rf(ro, 4), rf(o.Psv, 0) + ' Па');
+}
+function repLam() { return (typeof SMK_COLEBROOK !== 'undefined' && SMK_COLEBROOK) ? 'λ — по Кольбруку (НЕ по МР, режим сверки)' : 'λ — по Альтшулю, МР (73): λ = 0,11·(68/Re + k/d<sub>e</sub>)<sup>1/4</sup>'; }
 
 /* ---------- вытяжная ---------- */
 function repSmk(p, o) {
-  var cor = p.variant === 0, n = 0, h = repHead('Расчёт системы вытяжной противодымной вентиляции', p, REP_M);
-  h += repSum([['Подача вентилятора', rf(o.Lv, 0) + ' м³/ч', 'при ' + rf(o.tFan, 0) + ' °C'], ['Давление вентилятора', rf(o.Psv, 0) + ' Па', 'статическое'], ['Удалять дыма', rf(o.G, 2) + ' кг/с', rf(o.L, 0) + ' м³/ч'],
-    ['Дымоприёмных устройств', 'не менее ' + o.Nmin, 'шаг ≥ ' + rf(o.Lmin, 2) + ' м'], o.comp ? ['Компенсация: вентилятор', rf(o.comp.Lv, 0) + ' м³/ч', rf(o.comp.Psv, 0) + ' Па при ' + rf(p.tComp, 0) + ' °C'] : ['Компенсация', rf(o.LaMin, 0) + '…' + rf(o.LaMax, 0) + ' м³/ч', 'при ' + rf(p.tComp, 0) + ' °C']]);
+  var V = +p.variant, cor = V === 0, n = 0, VN = ['коридор, холл, одноуровневый вестибюль — смежные с горящим помещением (МР 3.2.1)', 'многоуровневый вестибюль, молл, атриум — смежные с горящим помещением (МР 3.2.2)', 'зал, атриум — из горящего помещения (МР 3.1.1, 3.1.2)', 'атриум, очаг под галереей на уровне основания (МР 3.1.2, (9))', 'закрытая автостоянка, рампа (МР 3.1.2)'], h = repHead('Расчёт системы вытяжной противодымной вентиляции', p, REP_M);
+  h += repSum([['Подача вентилятора', rf(o.Lv, 0) + ' м³/ч', 'при ' + rf(o.tFan, 0) + ' °C'], ['Давление вентилятора', rf(o.Psv, 0) + ' Па', 'приведённое (МР (' + (o.Pvf ? '90' : '89') + ')); рабочее ' + rf(o.PsvW, 0) + ' Па'], ['Удалять дыма', rf(o.G, 2) + ' кг/с', rf(o.L, 0) + ' м³/ч'],
+    ['Дымоприёмных устройств', 'не менее ' + o.Nmin, 'шаг ≥ ' + rf(o.Lmin, 2) + ' м'], o.comp ? ['Компенсация: вентилятор', rf(o.comp.Lv, 0) + ' м³/ч', rf(o.comp.Psv, 0) + ' Па при ' + rf(p.tComp, 0) + ' °C'] : ['Компенсация', rf(o.La, 0) + ' м³/ч', 'n = ' + rf(o.nDis, 2) + ', при ' + rf(p.tComp, 0) + ' °C']]);
   h += repSec(++n, 'Исходные данные');
-  var rows = [['Вариант', '', cor ? 'коридор, холл, смежные с горящим помещением' : 'зал (атриум) — из горящего помещения', ''], ['Здание', '', p.living ? 'жилое' : 'общественное', ''],
-    ['Горящее помещение a × b × h', '', rf(p.L, 2) + ' × ' + rf(p.W, 2) + ' × ' + rf(p.H, 2), 'м'], ['Температура в помещении', 'tr', rf(p.tr, 0), '°C'], ['Высота незадымляемой зоны', 'Hнз', rf(p.hNz, 2), 'м']];
+  var rows = [['Вариант', '', VN[V], '']].concat(cor ? [['Здание', '', p.living ? 'жилое' : 'общественное', '']] : []).concat([
+    [V === 1 ? 'Защищаемый объём a × b × h' : 'Горящее помещение a × b × h', '', rf(p.L, 2) + ' × ' + rf(p.W, 2) + ' × ' + rf(p.H, 2), 'м'], ['Температура в помещении', 'tr', rf(p.tr, 0), '°C'], ['Низ дымового слоя от пола', 'Hнз', rf(p.hNz, 2), 'м']]);
   if (cor) rows = rows.concat([['Проёмы горящего помещения', 'Bi × Hi', p.doors.map(function (d) { return rf(d[0], 2) + ' × ' + rf(d[1], 2); }).join('; '), 'м'], ['Удельная пожарная нагрузка', 'qп', rf(p.qp, 0), 'МДж/м²'],
     ['Теплота сгорания', 'Qн', rf(p.Q, 1), 'МДж/кг'], ['Длина коридора', 'lc', rf(p.cL, 2), 'м'], ['Площадь коридора', 'Ac', rf(p.cA, 1), 'м²'], ['Высота коридора', 'hк', rf(p.cH, 2), 'м'], ['Дверь выхода', 'Ad × Hd', rf(p.dA, 2) + ' м² × ' + rf(p.dH, 2), 'м']]);
-  else rows = rows.concat([['Площадь пола', 'Ff', rf(p.Ff, 1), 'м²'], ['Площадь очага', 'Fo', rf(p.Fo, 1), 'м²'], ['Теплота сгорания', 'Qн', rf(p.Q, 1), 'МДж/кг'], ['Скорость выгорания', 'ψ', rf(p.psi, 4), 'кг/(м²·с)'],
-    ['Полнота сгорания', 'η', rf(p.eta, 2), ''], ['Коэффициент теплопотерь на излучение', 'r', rf(p.r, 2), '']]);
-  rows = rows.concat([['Наружный воздух: лето / зима', 'tн', rf(p.tOut, 0) + ' / ' + rf(p.tComp, 0), '°C'], ['Участков сети', '', p.segs.length, ''], ['Закрытый клапан: сопротивление газопроницанию', 'Sкл', rf(p.Skl, 0), 'м³/кг'],
-    ['Выброс', '', p.endExhaust ? 'на фасад, ' + rf(p.vOut, 0) + ' м/с' : 'на кровлю', ''], ['ДПУ a × b, низ от пола', '', rf(p.dpuW, 0) + ' × ' + rf(p.dpuB, 0) + ' мм, ' + rf(p.dpuH, 2) + ' м', '']]);
+  else {
+    rows.push(['Площадь пола', 'Asm', rf(o.Asm, 1) + (p.Ff > 0 ? '' : ' (a × b)'), 'м²']);
+    if (V !== 4) rows = rows.concat([['Площадь очага', 'Fo', rf(p.Fo, 1), 'м²'], ['Теплота сгорания', 'Qн', rf(p.Q, 1), 'МДж/кг'], ['Скорость выгорания', 'ψ', rf(p.psi, 4), 'кг/(м²·с)'], ['Полнота сгорания', 'η', rf(p.eta, 2), '']]);
+    else rows = rows.concat([['Ярусов хранения', '', String(o.tiers), ''], ['Верх дверей эвакуационных выходов', '', rf(p.dExitH, 2), 'м']]);
+    rows.push(['Доля конвективной теплоты', 'r', rf(p.r, 2), '']);
+    if (V === 1) rows = rows.concat([['Проём горящего помещения', 'Aw × Hw', rf(p.wA, 2) + ' м² × ' + rf(p.wH, 2), 'м'], ['Низ проёма от пола', '', rf(p.wZ, 2), 'м']]);
+    if (V === 3) rows = rows.concat([['Ширина струи из-под галереи', 'W', rf(p.gW, 2), 'м'], ['От основания до ограждения галереи', 'H', rf(p.gH, 2), 'м']]);
+  }
+  rows = rows.concat([['Наружный воздух: лето / зима', 'tн', rf(p.tOut, 0) + ' / ' + rf(p.tComp, 0), '°C'], ['Участков сети', '', p.segs.length, ''], ['Закрытый клапан: Sдп', '', p.Skl > 0 ? rf(p.Skl, 0) + ' м³/кг (паспорт)' : 'по МР прил. 3 от температуры газа', ''],
+    ['Конечный участок', '', p.endExhaust ? 'вентилятор с воздуховодами, выброс на фасад, v<sub>f</sub> = ' + rf(p.vOut, 0) + ' м/с' : 'крышный или настенный вентилятор', ''], ['Присоединительные воздуховоды', 'Pd', rf(o.dPout, 1), 'Па'], ['ДПУ a × b, низ от пола', '', rf(p.dpuW, 0) + ' × ' + rf(p.dpuB, 0) + ' мм, ' + rf(p.dpuH, 2) + ' м', '']]);
   h += repIn(rows);
   h += repSec(++n, 'Расход продуктов горения');
   if (cor) {
@@ -60,32 +71,47 @@ function repSmk(p, o) {
       repF('Средняя температура слоя в коридоре (16)', 'T<sub>sm</sub> = T<sub>r</sub> + 1,22·(T<sub>0</sub> − T<sub>r</sub>)·(2h<sub>sm</sub> + A<sub>c</sub>/l<sub>c</sub>)/l<sub>c</sub>·[1 − exp(−0,58·l<sub>c</sub>/(2h<sub>sm</sub> + A<sub>c</sub>/l<sub>c</sub>))]', 'h<sub>sm</sub> = ' + rf(o.hsm, 2) + ' м', rf(o.Tsm, 1) + ' K') +
       repF('Массовый расход (17)', 'G<sub>ПГ</sub> = k<sub>sm</sub>·A<sub>d</sub>·H<sub>d</sub><sup>1/2</sup>', rf(o.ksm, 1) + ' · ' + rf(p.dA, 2) + ' · ' + rf(p.dH, 2) + '<sup>1/2</sup>', rf(o.G, 3) + ' кг/с');
   } else {
-    h += repF('Мощность очага (3)', 'Q<sub>f</sub> = η·Q<sub>н</sub>·1000·ψ·F<sub>o</sub>', rf(p.eta, 2) + ' · ' + rf(p.Q, 1) + ' · 1000 · ' + rf(p.psi, 4) + ' · ' + rf(p.Fo, 1), rf(o.Qf, 0) + ' кВт') +
-      repF('Безопасное расстояние', 'R = [Q<sub>f</sub>/(4π·q<sub>r</sub>)]<sup>0,5</sup>, q<sub>r</sub> = 10 кВт/м²', '', rf(o.Rsafe, 2) + ' м') +
-      repF('Высота пламени', 'Z = 0,166·(r·Q<sub>f</sub>)<sup>2/5</sup>', '', rf(o.Zf, 2) + ' м ' + (o.f === 8 ? '> ' : '< ') + 'H<sub>нз</sub> = ' + rf(p.hNz, 2) + ' м') +
-      repF('Конвективная колонка (' + o.f + ')', o.f === 8 ? 'G<sub>k</sub> = 0,032·(r·Q<sub>f</sub>)<sup>3/5</sup>·(h − H<sub>sm</sub>)' : 'G<sub>k</sub> = 0,071·(r·Q<sub>f</sub>)<sup>1/3</sup>·z<sup>5/3</sup> + 0,0018·r·Q<sub>f</sub>', '', rf(o.Gk, 3) + ' кг/с') +
+    var Qr = p.r * o.Qf;
+    h += (V === 4 ? repF('Мощность очага (МР 3.1.2)', 'Q<sub>f</sub> = 5,0 МВт × число ярусов', '5000 · ' + o.tiers, rf(o.Qf, 0) + ' кВт')
+        : repF('Мощность очага (3)', 'Q<sub>f</sub> = η·Q<sub>н</sub>·1000·ψ·F<sub>o</sub>', rf(p.eta, 2) + ' · ' + rf(p.Q, 1) + ' · 1000 · ' + rf(p.psi, 4) + ' · ' + rf(p.Fo, 1), rf(o.Qf, 0) + ' кВт')) +
+      (V === 2 ? repF('Справочно: радиус при q<sub>кр</sub> = 10 кВт/м² (не из МР)', 'R = [Q<sub>f</sub>/(4π·q<sub>кр</sub>)]<sup>0,5</sup>', '', rf(o.Rsafe, 2) + ' м') : '') +
+      repF('Геометрия слоя', 'h<sub>sm</sub> = H − H<sub>нз</sub>; l<sub>sm</sub> = 2(a + b); A<sub>sm</sub>', rf(p.H, 2) + ' − ' + rf(p.hNz, 2) + '; 2 · (' + rf(p.L, 2) + ' + ' + rf(p.W, 2) + ')', rf(o.hsm, 2) + ' м; ' + rf(o.lsm, 2) + ' м; ' + rf(o.Asm, 1) + ' м²') +
+      (o.f === 7 || o.f === 8 ? repF('Высота факела, выбор (7) или (8)', 'z<sub>1</sub> = 0,166·(r·Q<sub>f</sub>)<sup>2/5</sup>', '0,166 · (' + rf(p.r, 2) + ' · ' + rf(o.Qf, 0) + ')<sup>0,4</sup>', rf(o.Zf, 2) + ' м ' + (o.f === 8 ? '> ' : '< ') + 'z = H<sub>нз</sub> = ' + rf(p.hNz, 2) + ' м → (' + o.f + ')') : '') +
+      (o.f === 7 ? repF('Конвективная колонка (7)', 'G<sub>k</sub> = 0,071·(r·Q<sub>f</sub>)<sup>1/3</sup>·z<sup>5/3</sup> + 0,0018·r·Q<sub>f</sub>', '0,071 · ' + rf(Qr, 1) + '<sup>1/3</sup> · ' + rf(p.hNz, 2) + '<sup>5/3</sup> + 0,0018 · ' + rf(Qr, 1), rf(o.Gk, 3) + ' кг/с')
+      : o.f === 8 ? repF('Конвективная колонка (8)', 'G<sub>k</sub> = 0,032·(r·Q<sub>f</sub>)<sup>3/5</sup>·z', '0,032 · ' + rf(Qr, 1) + '<sup>3/5</sup> · ' + rf(p.hNz, 2), rf(o.Gk, 3) + ' кг/с')
+      : o.f === 9 ? repF('Струя из-под галереи (9)', 'G<sub>k</sub> = 0,36·(Q<sub>f</sub>·W)<sup>1/3</sup>·(z + 0,25·H), z = H<sub>нз</sub> − H', '0,36 · (' + rf(o.Qf, 0) + ' · ' + rf(p.gW, 2) + ')<sup>1/3</sup> · (' + rf(o.zg, 2) + ' + 0,25 · ' + rf(p.gH, 2) + ')', rf(o.Gk, 3) + ' кг/с') +
+          '<p class="rep-p">В МР (9) напечатано (Q<sub>f</sub>·W)<sup>1/3</sup>; в первоисточнике — стандарте NFPA 92 [5] — W². Расчёт — по тексту МР.</p>'
+      : repF('Геометрический комплекс (МР 3.2.2)', 'a = 2,4·A<sub>w</sub><sup>2/5</sup>·H<sub>w</sub><sup>1/5</sup> − 2,1·H<sub>w</sub>', '2,4 · ' + rf(p.wA, 2) + '<sup>0,4</sup> · ' + rf(p.wH, 2) + '<sup>0,2</sup> − 2,1 · ' + rf(p.wH, 2), rf(o.aw, 3) + ' м') +
+        repF('Конвективная колонка из проёма (18)', 'G<sub>k</sub> = 0,68·(A<sub>w</sub>·H<sub>w</sub><sup>1/2</sup>)<sup>1/3</sup>·(Z<sub>w</sub> + a)<sup>5/3</sup> + 1,59·A<sub>w</sub>·H<sub>w</sub><sup>1/2</sup>, Z<sub>w</sub> = H<sub>нз</sub> − (низ проёма + H<sub>w</sub>)', 'Z<sub>w</sub> = ' + rf(o.Zw, 2) + ' м', rf(o.Gk, 3) + ' кг/с')) +
       repF('Температура колонки и слоя (4)', 'T<sub>k</sub> = T<sub>r</sub> + r·Q<sub>f</sub>/(c<sub>pk</sub>·G<sub>k</sub>); α = 0,01163·exp(0,0023·(T<sub>sm</sub> − 273))', 'T<sub>k</sub> = ' + rf(o.Tk, 0) + ' K; α = ' + rf(o.alpha, 4), 'T<sub>sm</sub> = ' + rf(o.Tsm, 1) + ' K') +
-      repF('Массовый расход (12)', 'G<sub>ПГ</sub> = G<sub>k</sub>', '', rf(o.G, 3) + ' кг/с');
+      repF('Массовый расход — режим (12), без интегрирования (2)', 'G<sub>ПГ</sub> = G<sub>k</sub>', '', rf(o.G, 3) + ' кг/с');
   }
   h += repF('Объёмный расход', 'L<sub>ПГ</sub> = G<sub>ПГ</sub>/ρ<sub>ПГ</sub>·3600, ρ<sub>ПГ</sub> = 353/T<sub>sm</sub>', rf(o.G, 3) + ' / ' + rf(353 / o.Tsm, 3) + ' · 3600', rf(o.L, 0) + ' м³/ч');
   h += repSec(++n, 'Сеть вытяжной противодымной вентиляции');
   h += repF('Открытый клапан на этаже пожара', 'ΔP<sub>кл</sub> = ½·(ζ<sub>кл</sub> + ζ′)·V<sub>кл</sub>²·ρ<sub>ПГ</sub>, F<sub>кл</sub> = (a − 50)·(b − 50)', 'F<sub>кл</sub> = ' + rf(o.Fkl, 4) + ' м²; V<sub>кл</sub> = ' + rf(o.vkl, 2) + ' м/с; ½ · (' + rf(o.zkl, 2) + ' + ' + rf(p.segs[0].nodeZ, 2) + ') · ' + rf(o.vkl, 2) + '² · ' + rf(353 / o.Tsm, 3), rf(o.dPkl, 2) + ' Па') +
-    '<p class="rep-p">Подсосы: через стенки — (ρ<sub>в</sub>/3600)·S·0,032·ΔP<sup>0,65</sup> (МР прил. 3 п. 1), через закрытые клапаны — F<sub>кл</sub>·(|P<sub>Ш</sub>|/S<sub>кл</sub>)<sup>1/2</sup>; смешение — по массе; λ — по Кольбруку.</p>';
+    '<p class="rep-p">Подсосы: через стенки — (ρ<sub>в</sub>/3600)·S·0,032·ΔP<sup>0,65</sup> (МР прил. 3 п. 1), через закрытые клапаны — (85) F<sub>кл</sub>·(|P<sub>Ш</sub>|/S<sub>дп</sub>)<sup>1/2</sup>, S<sub>дп</sub> — ' + (p.Skl > 0 ? 'по паспорту ' + rf(p.Skl, 0) : 'по МР прил. 3 при температуре газа участка') + ' м³/кг; давление по участкам — (83): P<sub>i+1</sub> = P<sub>i</sub> − ΔP<sub>тр</sub> + g·h·(ρ<sub>r</sub> − ρ<sub>i</sub>); смешение — по массе; ' + repLam() + '; теплопотери через стенки не учтены (МР 5.1.5 допускает при падении t < 1 К; в запас по объёму).</p>';
   h += repT(['Участок', 'P<sub>Ш</sub>, Па', 'Подсос клапана, кг/с', 'Подсос стенок, кг/с', 'G<sub>Ш</sub>, кг/с', 'T, K', 'ρ, кг/м³', 'v, м/с', 'λ', 'ΔP<sub>Ш</sub>, Па'], o.rows.map(function (r) {
     return [r.i + (r.open ? ' (пожар)' : r.last ? ' (верх)' : ''), rf(r.P, 2), rf(r.gKl, 5), rf(r.gH + r.gV, 5), rf(r.G, 4), rf(r.T, 1), rf(r.ro, 3), rf(r.ver.v, 2), rf(r.ver.lam, 4), rf(r.ver.dp, 2)];
   }), 'rep-net');
   if (window.kmszRep) h += kmszRep(p);
   h += repSec(++n, 'Вентилятор');
   h += repF('Подача', 'L<sub>v</sub> = G<sub>Ш</sub>/ρ<sub>N</sub>·3600', rf(o.GN, 4) + ' / ' + rf(o.roN, 4) + ' · 3600', rf(o.Lv, 0) + ' м³/ч') +
-    (o.netOut ? kmsRep(o.netOut, 'Сеть от вентилятора до выброса') : '') + repF('Статическое давление', 'P<sub>sv</sub> = |P<sub>ШN</sub>| + ΔP<sub>Ш</sub>' + (o.dPout ? ' + ΔP<sub>выбр</sub>' : '') + (o.Pvf ? ' + 0,5·ρ<sub>N</sub>·v<sub>f</sub>²' : ''), rf(Math.abs(o.PN), 2) + ' + ' + rf(o.PshN - Math.abs(o.PN), 2) + (o.dPout ? ' + ' + rf(o.dPout, 2) : '') + (o.Pvf ? ' + ' + rf(o.Pvf, 2) : ''), rf(o.Psv, 2) + ' Па') +
+    (o.netOut ? kmsRep(o.netOut, 'Сеть от вентилятора до выброса') : '') + repF('Статическое давление в рабочих условиях', 'P<sub>раб</sub> = |P<sub>N</sub>| + P<sub>d</sub>' + (o.Pvf ? ' + 0,5·ρ<sub>N</sub>·v<sub>f</sub>²' : ''), rf(o.PshN, 2) + ' + ' + rf(o.dPout, 2) + (o.Pvf ? ' + ' + rf(o.Pvf, 2) : ''), rf(o.PsvW, 2) + ' Па (рабочее)') + repPsv(o, o.roN, 'ρ<sub>N</sub>', o.Pvf ? '90' : '89') +
     repF('Температура перед вентилятором', 't = T<sub>N</sub> − 273', '', rf(o.tFan, 0) + ' °C');
   h += repSec(++n, 'Дымоприёмные устройства (СП 7.13130, прил. Е)');
-  h += repF('Наибольший расход через 1 ДПУ (Е.1)', 'V<sub>1max</sub> = 4,16·γ·d<sup>5/2</sup>·[(T<sub>sm</sub> − T<sub>r</sub>)/T<sub>r</sub>]<sup>1/2</sup>', 'D<sub>э</sub> = ' + rf(o.dpuD, 3) + ' м; γ = ' + rf(o.gamma, 1) + '; d = ' + rf(o.d, 2) + ' м', rf(o.V1, 2) + ' м³/с') +
-    repF('Наименьшее число ДПУ', 'N<sub>min</sub> = G<sub>ПГ</sub>/(ρ<sub>ПГ</sub>·V<sub>1max</sub>)', '', String(o.Nmin)) +
-    repF('Наименьшее расстояние между ДПУ (Е.2)', 'L<sub>min</sub> = 0,9·V<sub>1max</sub><sup>1/2</sup>', '', rf(o.Lmin, 3) + ' м');
+  /* 1.27.0: число ДПУ — пошагово (инженер 07.11: «как получилось количество — должно быть расписано») */
+  var Vs = o.G / o.ro, Nx = o.V1 > 0 ? Vs / o.V1 : NaN;
+  h += repF('1. Эквивалентный диаметр ДПУ', 'D<sub>э</sub> = 2·a·b/(a + b)', '2 · ' + rf(p.dpuW / 1000, 3) + ' · ' + rf(p.dpuB / 1000, 3) + ' / (' + rf(p.dpuW / 1000, 3) + ' + ' + rf(p.dpuB / 1000, 3) + ')', rf(o.dpuD, 3) + ' м') +
+    repF('2. Заглубление ДПУ в дымовой слой', 'd = H<sub>ДПУ</sub> − H<sub>нз</sub>; условие d ≥ 2D<sub>э</sub>', rf(p.dpuH, 2) + ' − ' + rf(p.hNz, 2) + ' = ' + rf(o.d, 2) + ' м; 2D<sub>э</sub> = ' + rf(2 * o.dpuD, 2) + ' м', o.d >= 2 * o.dpuD ? 'выполнено' : 'НЕ выполнено') +
+    repF('3. Коэффициент расположения', 'γ = 1 — горизонтально, ось дальше 2D от стены; γ = 0,5 — ближе 2D или вертикально', ['горизонтально, дальше 2D', 'горизонтально, ближе 2D', 'вертикально'][p.dpuType] || '', 'γ = ' + rf(o.gamma, 1)) +
+    repF('4. Наибольший расход через 1 ДПУ (Е.1)', 'V<sub>1max</sub> = 4,16·γ·d<sup>5/2</sup>·[(T<sub>sm</sub> − T<sub>r</sub>)/T<sub>r</sub>]<sup>1/2</sup>', '4,16 · ' + rf(o.gamma, 1) + ' · ' + rf(o.d, 2) + '<sup>5/2</sup> · [(' + rf(o.Tsm, 1) + ' − ' + rf(o.Tr, 1) + ') / ' + rf(o.Tr, 1) + ']<sup>1/2</sup>', rf(o.V1, 3) + ' м³/с') +
+    repF('5. Объёмный расход дыма из помещения', 'V<sub>sm</sub> = G<sub>ПГ</sub>/ρ<sub>sm</sub>, ρ<sub>sm</sub> = 353/T<sub>sm</sub>', rf(o.G, 3) + ' / ' + rf(o.ro, 4), rf(Vs, 3) + ' м³/с') +
+    repF('6. Число ДПУ', 'N = V<sub>sm</sub>/V<sub>1max</sub> → округление вверх до целого', rf(Vs, 3) + ' / ' + rf(o.V1, 3) + ' = ' + rf(Nx, 2), 'N<sub>min</sub> = ' + o.Nmin + ' шт.') +
+    repF('7. Наименьшее расстояние между ДПУ (Е.2)', 'L<sub>min</sub> = 0,9·V<sub>1max</sub><sup>1/2</sup>', '0,9 · ' + rf(o.V1, 3) + '<sup>1/2</sup>', rf(o.Lmin, 2) + ' м') +
+    '<p class="rep-p">Кроме расчёта проверь требования СП 7.13130 к расстановке ДПУ (зона обслуживания одного устройства) — принимается большее из чисел. Формулы Е.1, Е.2 — по редакции СП 7.13130 с Изм. № 1–3; приложение Е изменено приказом МЧС России от 27.03.2025 № 251 — проверь по действующей редакции.</p>';
   h += repSec(++n, 'Компенсирующая подача воздуха');
-  h += repF('Массовый расход', 'G<sub>a</sub> = G<sub>Ш</sub>/(1,3 … 1,0)', '', rf(o.GaMin, 2) + ' … ' + rf(o.GaMax, 2) + ' кг/с') +
-    repF('Объёмный расход при ' + rf(p.tComp, 0) + ' °C', 'L<sub>a</sub> = 3600·G<sub>a</sub>/ρ<sub>a</sub>', '', rf(o.LaMin, 0) + ' … ' + rf(o.LaMax, 0) + ' м³/ч');
+  h += repF('Массовый расход (65)', 'G<sub>a</sub> = G<sub>sm</sub>/(1 − n), −0,3 ≤ n ≤ 0,3', rf(o.G, 3) + ' / (1 − ' + rf(o.nDis, 2) + ')', rf(o.Gac, 3) + ' кг/с (допустимо ' + rf(o.GaMin, 2) + ' … ' + rf(o.GaMax, 2) + ')') +
+    repF('Объёмный расход при ' + rf(p.tComp, 0) + ' °C (66)', 'L<sub>a</sub> = 3600·G<sub>a</sub>/ρ<sub>a</sub>', '3600 · ' + rf(o.Gac, 3) + ' / ' + rf(o.roComp, 3), rf(o.La, 0) + ' м³/ч');
   if (o.comp && window.repComp) h += repComp(p, o);
   return repSup('<div class="rep">' + h + repNote(o) + '</div>');
 }
@@ -118,7 +144,7 @@ function repStairUG(p, o) {
   h += repSec(++n, 'Вентилятор (93), (94)');
   h += (o.net ? kmsRep(o.net, 'Сеть от воздухозабора до клетки') : repF('Воздуховоды', 'P<sub>вв</sub> = λ·l/D<sub>э</sub>·P<sub>d</sub> + Σξ·P<sub>d</sub>', 'v = ' + rf(o.duct.v, 2) + ' м/с; P<sub>d</sub> = ' + rf(o.duct.Pd, 2) + ' Па; λ = ' + rf(o.duct.f, 4), rf(o.duct.P, 2) + ' Па')) +
     repF('Подача', 'L<sub>v</sub> = 3600·G<sub>s</sub>/ρ<sub>a</sub>', '3600 · ' + rf(o.Gs, 3) + ' / ' + rf(o.roa, 3), rf(o.Lv, 0) + ' м³/ч') +
-    (o.bot ? repF('Статическое давление, подача снизу', 'P<sub>sv</sub> = P<sub>s(−n)</sub> + g·h<sub>s</sub>·(ρ<sub>a</sub> − ρ<sub>s</sub>) + g·h<sub>0s</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>вв</sub>', rf(o.Ps, 2) + ' + 9,81 · ' + rf(o.hsN, 2) + ' · ' + rf(o.roa - o.ros, 3) + ' + 9,81 · ' + rf(p.h0, 1) + ' · ' + rf(o.roa - o.ror, 3) + ' + ' + rf(o.duct.P, 2), rf(o.Psv, 0) + ' Па') : repF('Статическое давление, подача сверху', 'P<sub>sv</sub> = P<sub>s−1</sub> + g·h<sub>0s</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>вв</sub> (h<sub>s</sub> = 0)', rf(o.Ps, 2) + ' + 9,81 · ' + rf(p.h0, 1) + ' · ' + rf(o.roa - o.ror, 3) + ' + ' + rf(o.duct.P, 2), rf(o.Psv, 0) + ' Па'));
+    (o.bot ? repF('Статическое давление, подача снизу', 'P<sub>sv</sub> = P<sub>s(−n)</sub> + g·h<sub>s</sub>·(ρ<sub>a</sub> − ρ<sub>s</sub>) + g·h<sub>0s</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>вв</sub>', rf(o.Ps, 2) + ' + 9,81 · ' + rf(o.hsN, 2) + ' · ' + rf(o.roa - o.ros, 3) + ' + 9,81 · ' + rf(p.h0, 1) + ' · ' + rf(o.roa - o.ror, 3) + ' + ' + rf(o.duct.P, 2), rf(o.PsvW, 0) + ' Па (рабочее)') : repF('Статическое давление, подача сверху', 'P<sub>sv</sub> = P<sub>s−1</sub> + g·h<sub>0s</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>вв</sub> (h<sub>s</sub> = 0)', rf(o.Ps, 2) + ' + 9,81 · ' + rf(p.h0, 1) + ' · ' + rf(o.roa - o.ror, 3) + ' + ' + rf(o.duct.P, 2), rf(o.PsvW, 0) + ' Па (рабочее)')) + repPsv(o, o.roa, 'ρ<sub>a</sub>', '94');
   return repSup('<div class="rep">' + h + repNote(o) + '</div>');
 }
 function repStair(p, o) {
@@ -143,7 +169,7 @@ function repStair(p, o) {
   h += repSec(++n, 'Вентилятор (93), (94)');
   h += (o.net ? kmsRep(o.net, 'Сеть от воздухозабора до клетки') : repF('Воздуховоды до оголовка', 'P<sub>вв</sub> = λ·l/D<sub>э</sub>·P<sub>d</sub> + Σξ·P<sub>d</sub>', 'v = ' + rf(o.duct.v, 2) + ' м/с; P<sub>d</sub> = ' + rf(o.duct.Pd, 2) + ' Па; λ = ' + rf(o.duct.f, 4), rf(o.duct.P, 2) + ' Па')) +
     repF('Подача', 'L<sub>v</sub> = 3600·G<sub>s</sub>/ρ<sub>a</sub>', '3600 · ' + rf(o.Gs, 3) + ' / ' + rf(o.roa, 3), rf(o.Lv, 0) + ' м³/ч') +
-    repF('Статическое давление', 'P<sub>sv</sub> = P<sub>s</sub> + g·h<sub>sN</sub>·(ρ<sub>a</sub> − ρ<sub>s</sub>) + g·h<sub>0s</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>вв</sub>', rf(o.Ps, 2) + ' + 9,81 · ' + rf(o.hsN, 2) + ' · ' + rf(o.roa - o.ros, 3) + ' + 9,81 · ' + rf(p.h0, 1) + ' · ' + rf(o.roa - o.ror, 3) + ' + ' + rf(o.duct.P, 2), rf(o.Psv, 0) + ' Па');
+    repF('Статическое давление', 'P<sub>sv</sub> = P<sub>s</sub> + g·h<sub>sN</sub>·(ρ<sub>a</sub> − ρ<sub>s</sub>) + g·h<sub>0s</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>вв</sub>', rf(o.Ps, 2) + ' + 9,81 · ' + rf(o.hsN, 2) + ' · ' + rf(o.roa - o.ros, 3) + ' + 9,81 · ' + rf(p.h0, 1) + ' · ' + rf(o.roa - o.ror, 3) + ' + ' + rf(o.duct.P, 2), rf(o.PsvW, 0) + ' Па (рабочее)') + repPsv(o, o.roa || o.roa, 'ρ<sub>a</sub>', '94');
   return repSup('<div class="rep">' + h + repNote(o) + '</div>');
 }
 
@@ -166,7 +192,7 @@ function repLift(p, o) {
   h += repSec(++n, 'Вентилятор (95), (96)');
   h += (o.net ? kmsRep(o.net, 'Сеть от воздухозабора до шахты') : repF('Воздуховоды', 'P<sub>dl</sub> = (λ·l/D<sub>э</sub> + Σξ)·0,5·ρ<sub>a</sub>·v²', 'v = ' + rf(o.duct.v, 2) + ' м/с; λ = ' + rf(o.duct.f, 4), rf(o.duct.P, 2) + ' Па')) +
     repF('Подача', 'L<sub>v</sub> = 3600·G<sub>l</sub>/ρ<sub>a</sub>', '3600 · ' + rf(o.Gl, 3) + ' / ' + rf(o.roa, 3), rf(o.Lv, 0) + ' м³/ч') +
-    repF('Статическое давление', p.method === 1 ? 'P<sub>sv</sub> = P<sub>l</sub> + g·h<sub>lN</sub>·(ρ<sub>a</sub> − ρ<sub>l</sub>) + g·h<sub>0l</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>dl</sub>' : 'P<sub>sv</sub> = P<sub>l</sub> + g·h<sub>0l</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>dl</sub>', '', rf(o.Psv, 0) + ' Па');
+    repF('Статическое давление (96)', 'P<sub>раб</sub> = P<sub>l</sub> + g·h<sub>lN</sub>·(ρ<sub>a</sub> − ρ<sub>l</sub>) + g·h<sub>0l</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>dl</sub>', rf(o.Pl, 2) + ' + ' + rf(o.gH, 2) + ' + 9,81 · ' + rf(p.h0, 1) + ' · ' + rf(o.roa - o.ror, 3) + ' + ' + rf(o.duct.P, 2), rf(o.PsvW, 0) + ' Па (рабочее)') + repPsv(o, o.roa, 'ρ<sub>a</sub>', '96');
   return repSup('<div class="rep">' + h + repNote(o) + '</div>');
 }
 

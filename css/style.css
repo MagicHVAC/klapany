@@ -620,3 +620,9 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .sksvg .skg { stroke: #24344a; stroke-width: .6; } .sksvg .sks { stroke: #8fb4d9; stroke-width: 5; cursor: pointer; } .sksvg .sks.on { stroke: #ffb020; }
 .sksvg .skn { fill: #fff; stroke: #2f8fe0; stroke-width: 2; cursor: pointer; } .sksvg .skn.st { fill: #2fb67a; } .sksvg .skn.cur { stroke: #ffb020; stroke-width: 3; }
 .sksvg .skt { fill: #cfe0f2; font-size: 11px; pointer-events: none; } .sksvg .skm { fill: #ffb020; }
+/* 1.27.0: справка к полям — во всплывающем окне по «?», под полем текст не показывается */
+.htip { white-space: pre-line; }
+.kvL .stf .dhint { display: none; }
+.kvadv ul { margin: 4px 0 6px; padding-left: 18px; font-size: 13px; } .kvadv .eibtn { margin-top: 8px; width: 100%; }
+.bstep.kvadv { border-color: var(--nz); }
+.kvR .bstep.kvadv li b, .kvR .bstep.kvadv small b, .bstep.kvadv li b, .bstep.kvadv small b { display: inline; font: 700 13px/1.4 var(--body); color: var(--fp); margin: 0; }

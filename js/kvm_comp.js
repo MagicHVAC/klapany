@@ -15,8 +15,8 @@ var KV_COMP = ['Компенсирующая подача: сеть (ДП)', [
 
 function compCalc(p, o) {
   var c = p.comp; if (!c || !c.on || !isFinite(o.GaMax)) return;
-  var ro = o.roComp, t = p.tComp, Fkl = Math.max(c.vA - 50, 1) * Math.max(c.vB - 50, 1) / 1e6, Skl = p.Skl || 11000;
-  var r = { ro: ro, Ga: o.GaMax, Fkl: Fkl, gLeak: 0 }, G = o.GaMax;
+  var ro = o.roComp, t = p.tComp, Fkl = Math.max(c.vA - 50, 1) * Math.max(c.vB - 50, 1) / 1e6, Skl = p.Skl > 0 ? p.Skl : smkSklT(t);
+  var r = { ro: ro, Ga: o.Gac, Fkl: Fkl, gLeak: 0, Skl: Skl }, G = o.Gac;
   for (var i = 0; i < 4; i++) {
     r.G = G;
     if (p.compNet && p.compNet.secs && window.kmsNet) { /* 1.23.0: участки с КМС (kvm_kms.js) вместо «магистраль + шахта + ζ входа» */
@@ -27,15 +27,15 @@ function compCalc(p, o) {
       r.sh = supDuct(G, ro, t, { a: c.sA, b: c.sB, rect: true, len: c.sL, eps: 0.1, xi: c.sZ });
       r.dPin = c.inZ * r.mag.Pd;
     }
-    r.vkl = o.GaMax / ro / Fkl; r.dPkl = c.vZ * ro * r.vkl * r.vkl / 2;
-    r.vg = c.gF > 0 ? o.GaMax / ro / c.gF : 0; r.dPg = c.gZ * ro * r.vg * r.vg / 2;
+    r.vkl = o.Gac / ro / Fkl; r.dPkl = c.vZ * ro * r.vkl * r.vkl / 2;
+    r.vg = c.gF > 0 ? o.Gac / ro / c.gF : 0; r.dPg = c.gZ * ro * r.vg * r.vg / 2;
     r.Pcl = r.dPkl + r.dPg; /* давление в шахте у этажа пожара относительно помещений */
     r.gLeak = c.nCl * Fkl * Math.sqrt(Math.max(r.Pcl, 0) / Skl);
-    G = o.GaMax + r.gLeak;
+    G = o.Gac + r.gLeak;
   }
   r.Psv = r.dPin + r.mag.P + r.sh.P + r.dPkl + r.dPg;
   if (r.net) o.err = o.err.concat(r.net.err);
-  r.Lv = 3600 * r.G / ro; r.La = 3600 * o.GaMax / ro;
+  r.Lv = 3600 * r.G / ro; r.La = 3600 * o.Gac / ro;
   o.comp = r;
   if (r.sh.v > 15) o.warn.push('Компенсация: скорость в шахте ' + r.sh.v.toFixed(1).replace('.', ',') + ' м/с — проверь сечение и шум.');
   if (r.vg > 6) o.warn.push('Компенсация: скорость в решётке ' + r.vg.toFixed(1).replace('.', ',') + ' м/с — проверь по паспорту решётки (потери и шум).');

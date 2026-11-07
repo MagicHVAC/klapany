@@ -113,9 +113,10 @@ var HINTS = {
 
 var HINT_TIP = null;
 function hintText(inp) {
-  var t = HINTS[inp.id]; if (t) return t;
-  var f = inp.closest('.stf'), l = f && f.querySelector('label'), s = f && f.querySelector('.dhint');
-  return l ? l.textContent + (s ? '. ' + s.textContent : '') : '';
+  /* 1.27.0: справка = словарь + мелкая подсказка поля (она больше не показывается под полем в «Расчёте ПДВ») */
+  var t = HINTS[inp.id], f = inp.closest('.stf'), l = f && f.querySelector('label'), s = f && f.querySelector('.dhint');
+  if (t) return t + (s && t.indexOf(s.textContent) < 0 ? '\n' + s.textContent : '');
+  return l ? l.textContent.replace(/\s*\?\s*$/, '') + (s ? '. ' + s.textContent : '') : '';
 }
 function hintShow(inp) {
   var t = hintText(inp); if (!t) return;

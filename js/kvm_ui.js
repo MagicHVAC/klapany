@@ -11,7 +11,8 @@ function kvDefSmk() {
   for (var i = 0; i < 15; i++) segs.push({ vw: 800, vh: 300, nodeZ: 3.5, hA: 0.8, hB: 0.3, hL: i === 14 ? 0 : 1, hZ: 0, vA: 0.8, vB: 0.3, vL: 3, vZ: i === 0 || i === 14 ? 0 : 0.09 });
   return { name: 'Коридор', system: 'ДУ1', variant: 0, living: false, L: 5.2, W: 3.77, H: 2.4, Ff: 19.6, doors: [[0.9, 2.1], [2.3, 2.4]], hNz: 1.15, tr: 22, Fo: 9,
     qp: 600, Q: 14, v: 0.015, psi: 0.0137, cL: 43.43, cA: 112.8, dA: 1.89, dH: 2.1, cH: 2.3, eta: 0.8, r: 0.75, tOut: 28, tComp: -13, wind: 6.2,
-    segs: segs, typ: kvTypDef(), segMode: 'typ', comp: window.compDef ? compDef() : null, Skl: 11000, eps: 0.0001, endExhaust: false, ductRes: 100, vOut: 20, dpuH: 2.3, dpuW: 800, dpuB: 400, dpuType: 2 };
+    gW: 6, gH: 4, wA: 4, wH: 2.5, wZ: 0, tiers: 1, dExitH: 2.2, Plim: 1000, nDis: 0, lamCol: false,
+    segs: segs, typ: kvTypDef(), segMode: 'typ', comp: window.compDef ? compDef() : null, Skl: 0, eps: 0.0001, endExhaust: false, ductRes: 100, vOut: 20, dpuH: 2.3, dpuW: 800, dpuB: 400, dpuType: 2 };
 }
 function kvDefStair() {
   return { kind: 'stair', name: 'Лестничная клетка Н2', system: 'ПД1', part: 'og', ugFeed: 'top', NUG: 2, hUG: 3.3, zUG: 1, windows: true, outerExit: true, noFloor1: false, floorTamb: false, N: 15, h1: 3.9, hf: 3.15, p: 1,
@@ -28,15 +29,19 @@ function kvDef(m) { return m === 'stair' ? kvDefStair() : m === 'lift' ? kvDefLi
 /* ---------- схема полей: [путь, подпись, тип, подсказка] ---------- */
 var KV_F = {
   smk: [
-    ['Объект', [['name', 'Проект', 't'], ['system', 'Система', 't'], ['variant', 'Вариант', [[0, 'коридор, холл — смежные с горящим (МР 3.2.1)'], [2, 'зал, атриум — из горящего помещения (МР 3.1.1)']]],
-      ['living', 'Здание', [[false, 'общественное — ksm = 1,2'], [true, 'жилое — ksm = 1,0']]], ['tr', 'tr — воздух в помещении, °C'], ['hNz', 'Hнз — высота незадымляемой зоны, м', '', 'низ дымового слоя от пола']]],
-    ['Горящее помещение', [['L', 'Длина a, м'], ['W', 'Ширина b, м'], ['H', 'Высота h, м'], ['Ff', 'Площадь пола, м² (зал)'], ['doorsTxt', 'Проёмы B×H, м', 't', 'через «;», например 0,9x2,1; 2,3x2,4'],
-      ['qp', 'qп — удельная пожарная нагрузка, МДж/м²', '', 'коридор: g0 = qп/13,8'], ['Q', 'Qн — теплота сгорания, МДж/кг'], ['psi', 'ψ — скорость выгорания, кг/(м²·с)', '', 'зал'],
-      ['Fo', 'Fo — площадь очага, м²', '', 'зал'], ['eta', 'η — полнота сгорания', '', 'зал'], ['r', 'r — коэффициент теплопотерь на излучение', '', 'зал']]],
+    ['Объект', [['name', 'Проект', 't'], ['system', 'Система', 't'], ['variant', 'Вариант', [[0, 'коридор, холл, одноуровневый вестибюль — смежные с горящим (МР 3.2.1)'], [1, 'многоуровневый вестибюль, молл, атриум — смежные с горящим (МР 3.2.2)'], [2, 'зал, атриум — из горящего помещения (МР 3.1.1)'], [3, 'атриум — очаг под галереей на уровне основания (МР 3.1.2, ф. 9)'], [4, 'закрытая автостоянка, рампа (МР 3.1.2, Qf = 5 МВт)']]],
+      ['living', 'Здание', [[false, 'общественное — ksm = 1,2'], [true, 'жилое — ksm = 1,0']]], ['tr', 'tr — воздух в помещении, °C'], ['hNz', 'Hнз — низ дымового слоя от пола, м']]],
+    ['Горящее помещение', [['L', 'Длина a, м'], ['W', 'Ширина b, м'], ['H', 'Высота h, м'], ['Ff', 'Площадь пола, м² (0 — a × b)'], ['doorsTxt', 'Проёмы B×H, м', 't'],
+      ['qp', 'qп — удельная пожарная нагрузка, МДж/м²'], ['Q', 'Qн — теплота сгорания, МДж/кг'], ['psi', 'ψ — скорость выгорания, кг/(м²·с)'],
+      ['Fo', 'Fo — площадь очага, м²'], ['eta', 'η — полнота сгорания'], ['r', 'r — доля конвективной теплоты (1 − излучение)']]],
+    ['Проём, галерея, стоянка', [['wA', 'Aw — площадь проёма горящего помещения, м²'], ['wH', 'Hw — высота проёма, м'], ['wZ', 'Низ проёма от пола защищаемого объёма, м'],
+      ['gW', 'W — ширина струи из-под галереи, м'], ['gH', 'H — от основания атриума до ограждения галереи, м'],
+      ['tiers', 'Ярусов хранения', [[1, 'манеж — Qf = 5 МВт'], [2, '2 яруса — 10 МВт'], [3, '3 яруса — 15 МВт']]], ['dExitH', 'Верх дверей эвакуационных выходов, м']]],
     ['Коридор', [['cL', 'lc — длина, м'], ['cA', 'Ac — площадь, м²'], ['cH', 'hк — высота потолка, м'], ['dA', 'Ad — площадь двери выхода, м²'], ['dH', 'Hd — высота двери, м']]],
-    ['Наружный воздух', [['tOut', 'tн — летом (расчёт дыма), °C'], ['tComp', 'tн — зимой (компенсация), °C'], ['wind', 'Скорость ветра, м/с']]],
-    ['Клапаны и выброс', [['Skl', 'Sкл — сопротивление газопроницанию закрытого клапана, м³/кг', '', '11000 — по умолчанию; по МР прил. 3 — 29300…38300'], ['eps', 'ε — шероховатость, м', '', 'металл 0,0001'],
-      ['endExhaust', 'Выброс', [[false, 'на кровлю'], [true, 'на фасад — + сопротивление и 0,5ρv²']]], ['ductRes', 'Сопротивление воздуховодов до выброса, Па'], ['vOut', 'Скорость выброса на фасад, м/с']]],
+    ['Наружный воздух', [['tOut', 'tн — летом (расчёт дыма), °C'], ['tComp', 'tн — зимой (компенсация), °C'], ['wind', 'Скорость ветра, м/с'], ['nDis', 'n — дисбаланс компенсации (−0,3…0,3)']]],
+    ['Клапаны и выброс', [['Skl', 'Sдп закрытого клапана, м³/кг (0 — по МР прил. 3)'], ['eps', 'k — шероховатость, м'],
+      ['endExhaust', 'Конечный участок', [[false, 'крышный или настенный вентилятор — (89)'], [true, 'вентилятор с воздуховодами и выбросом на фасад — (90)']]], ['ductRes', 'Pd — присоединительные воздуховоды и обвязка, Па'], ['vOut', 'vf — скорость выброса, м/с'],
+      ['Plim', 'Предел давления вентилятора, Па']]],
     ['Дымоприёмное устройство', [['dpuH', 'Нижняя точка ДПУ от пола, м'], ['dpuW', 'ДПУ: a, мм'], ['dpuB', 'ДПУ: b, мм'],
       ['dpuType', 'Расположение', [[0, 'горизонтально, дальше 2D от стены — γ = 1'], [1, 'горизонтально, ближе 2D к стене — γ = 0,5'], [2, 'вертикально — γ = 0,5']]]]]
   ],
@@ -95,17 +100,19 @@ var KV_TYP = [
    переключатели до 4 вариантов — радиокнопками, видны сразу. Смена поля из KV_REDRAW перерисовывает форму. */
 var KV_WIN = function (p) { return !!p.windows; };
 var KV_UG = function (p) { return p.part === 'ug'; }, KV_OG = function (p) { return p.part !== 'ug'; }, KV_WIN_OG = function (p) { return p.part !== 'ug' && !!p.windows; };
-var KV_HALL = function (p) { return +p.variant === 2; }, KV_COR = function (p) { return +p.variant === 0; };
+var KV_V = function () { var a = [].slice.call(arguments); return function (p) { return a.indexOf(+p.variant) >= 0; }; };
+var KV_COR = KV_V(0), KV_HALL = KV_V(1, 2, 3);
 var KV_VIS = { smk: { living: KV_COR, doorsTxt: KV_COR, qp: KV_COR, cL: KV_COR, cA: KV_COR, cH: KV_COR, dA: KV_COR, dH: KV_COR,
-  Ff: KV_HALL, psi: KV_HALL, Fo: KV_HALL, eta: KV_HALL, r: KV_HALL,
-  ductRes: function (p) { return !!p.endExhaust; }, vOut: function (p) { return !!p.endExhaust; } },
+  Q: KV_V(0, 1, 2, 3), Ff: KV_V(1, 2, 3, 4), psi: KV_HALL, Fo: KV_HALL, eta: KV_HALL, r: KV_V(1, 2, 3, 4),
+  wA: KV_V(1), wH: KV_V(1), wZ: KV_V(1), gW: KV_V(3), gH: KV_V(3), tiers: KV_V(4), dExitH: KV_V(4),
+  vOut: function (p) { return !!p.endExhaust; } },
   stair: { Fw: KV_WIN_OG, winVar: KV_WIN_OG, winVal: KV_WIN_OG, windows: KV_OG, outerExit: KV_OG, noFloor1: KV_OG, N: KV_OG, h1: KV_OG, hf: KV_OG, NUG: KV_UG, hUG: KV_UG, ugFeed: KV_UG, zUG: function (p) { return p.part === 'ug' || !!p.noFloor1; } },
   tamb: { tsf: function (p) { return !!p.heat; }, vd: function (p) { return !!p.openDoor; } } };
 var KV_REDRAW = { part: 1, noFloor1: 1, variant: 1, endExhaust: 1, windows: 1, heat: 1, openDoor: 1 };
 function kvVis(p, k) { var m = KV_VIS[KV.mode], f = m && m[k]; return !f || f(p); }
 function kvField(p, f) {
   var id = 'kv-' + f[0].replace('.', '_'), v = f[0] === 'doorsTxt' ? kvDoorsTxt(p.doors) : kvGet(p, f[0]), hid = kvVis(p, f[0]) ? '' : ' hidden';
-  if (Array.isArray(f[2]) && f[2].length <= 4) return '<div class="stf kvrad"' + hid + '><label for="' + id + '">' + f[1] + '</label><div class="kvrg">' +
+  if (Array.isArray(f[2]) && f[2].length <= 6) return '<div class="stf kvrad"' + hid + '><label for="' + id + '">' + f[1] + '</label><div class="kvrg">' +
     f[2].map(function (o, i) { return '<label class="kvro"><input type="radio" name="' + id + '" id="' + id + (i ? '_' + i : '') + '" data-kv="' + f[0] + '" value="' + o[0] + '"' + (String(o[0]) === String(v) ? ' checked' : '') + '><span>' + o[1] + '</span></label>'; }).join('') + '</div></div>';
   if (Array.isArray(f[2])) return '<div class="stf kvsel"' + hid + '><label for="' + id + '">' + f[1] + '</label><select id="' + id + '" data-kv="' + f[0] + '">' +
     f[2].map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(v) ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>';
@@ -125,9 +132,12 @@ function kvTypForm() {
     (p.segMode === 'table' ? ' (правлена вручную: считается по таблице)' : ' (собрана из типового этажа)') + '</summary><div id="kv-segs">' + kvSegs() + '</div></details>';
 }
 
+var KV_LAM = ['lamCol', 'λ трения в воздуховодах', [[false, 'по Альтшулю — МР ВНИИПО (73)'], [true, 'по Кольбруку — НЕ по МР, только для сверки']]];
 function kvForm() {
   var p = KV.p, h = '';
   if (!KV_F.tamb && window.TB_F) KV_F.tamb = TB_F;
+  var gs = KV_F[KV.mode], lg = gs.filter(function (g) { return /Клапаны и выброс|Вентилятор/.test(g[0]); })[0] || gs[gs.length - 1]; if (!lg[1].some(function (f) { return f[0] === 'lamCol'; })) lg[1].push(KV_LAM);
+  if (p.lamCol === undefined) p.lamCol = false;
   if (window.kmsEnsure) kmsEnsure(KV.mode, p);
   KV_F[KV.mode].forEach(function (g, gi) {
     if (gi === 1 && window.kmsClimForm) h += kmsClimForm(KV.mode, p);
@@ -174,6 +184,7 @@ PAGES.pdv = (function (old) {
 /* 1.23.0: расчёт любой системы по виду — для формы и для проекта «все системы» (kvm_proj.js) */
 function kvRun(mode, p) {
   var o;
+  SMK_COLEBROOK = !!p.lamCol; /* 1.27.0: решение инженера 07.11 — по умолчанию Альтшуль (МР (73)) */
   if (window.kmsEnsure) kmsEnsure(mode, p);
   try { o = mode === 'smk' ? smkCalc(p) : mode === 'stair' ? supStair(p) : mode === 'tamb' ? tbCalc(p) : supLift(p); } catch (e) { o = { err: ['Ошибка расчёта: ' + e.message], warn: [] }; }
   if (mode === 'smk' && window.compCalc && isFinite(o.Lv)) { try { compCalc(p, o); } catch (x) { o.warn.push('Компенсация: ошибка расчёта — ' + x.message); } }
@@ -208,7 +219,7 @@ function kvCalc() {
   if (o.err && o.err.length) h += o.err.map(function (e) { return vnC('Ошибка', 'Проверь данные', e, 'warn'); }).join('');
   if (isFinite(o.Lv)) {
     h += vnC('Вентилятор: подача', kf(o.Lv, 0) + ' м³/ч', KV.mode === 'smk' ? 'Lv = GШ/ρN·3600 = ' + kf(o.GN, 4) + ' / ' + kf(o.roN, 4) + ' · 3600; t перед вентилятором ' + kf(o.tFan, 0) + ' °C' : 'Lv = 3600·G/ρa = 3600 · ' + kf(o.Gs || o.Gl, 2) + ' / ' + kf(o.roa, 2), 'final');
-    h += vnC('Вентилятор: давление', kf(o.Psv, KV.mode === 'smk' ? 2 : 0) + ' Па', KV.mode === 'smk' ? 'Psv = |PШN| + ΔPШ' + (o.Pvf ? ' + Pd + 0,5ρN·vf²' : '') : KV.mode === 'tamb' ? 'Psv = Pш верх + PN + g(h0s + hN)(ρa − ρsf) + ΔPвв + ΔPtop' : 'статическое, по (94)/(96)', 'final');
+    h += vnC('Вентилятор: давление', kf(o.Psv, 0) + ' Па', (isFinite(o.PsvW) ? 'приведённое к 1,2 кг/м³ — для подбора по каталогу; в рабочих условиях ' + kf(o.PsvW, 0) + ' Па. ' : '') + (KV.mode === 'smk' ? 'Psv = 1,2·(PN + Pd' + (o.Pvf ? ' + 0,5ρN·vf²' : '') + ')/ρN — МР (' + (o.Pvf ? '90' : '89') + ')' : KV.mode === 'tamb' ? 'Psv = Pш верх + PN + g(h0s + hN)(ρa − ρsf) + ΔPвв + ΔPtop' : 'статическое, по (94)/(96)'), 'final');
     if (KV.mode === 'tamb') {
       h += vnC('В помещение', kf(o.Gsf, 2) + ' кг/с', (p.openDoor ? 'открытая дверь: vd·ρ·Fd' : 'закрытые двери: по Sdsf, Sdsl') + '; Psf = ' + kf(o.Psf, 1) + ' Па');
       h += vnC('Открытый клапан', kf(o.vkl, 1) + ' м/с', 'ΔPкл = ' + kf(o.dPkl, 1) + ' Па; утечки выше ' + kf(o.Gs - o.Gsf, 3) + ' кг/с');
@@ -216,22 +227,31 @@ function kvCalc() {
     }
     if (KV.mode === 'smk') {
       h += vnC('Удалять дыма', kf(o.G, 2) + ' кг/с', kf(o.L, 0) + ' м³/ч при Tsm = ' + kf(o.Tsm, 0) + ' K; подсосы в сети +' + kf(o.Ga, 3) + ' кг/с');
-      h += vnC('ДПУ', o.Nmin + ' шт.', 'V1max = ' + kf(o.V1, 2) + ' м³/с, Lmin = ' + kf(o.Lmin, 3) + ' м (СП 7 прил. Е)');
-      h += o.comp ? vnC('Компенсация: вентилятор', kf(o.comp.Lv, 0) + ' м³/ч · ' + kf(o.comp.Psv, 0) + ' Па', 'расход наибольший Ga = GШ/1,0 = ' + kf(o.comp.La, 0) + ' м³/ч + утечки закрытых клапанов; t = ' + kf(p.tComp, 0) + ' °C', 'final')
-        : vnC('Компенсация', kf(o.LaMin, 0) + '…' + kf(o.LaMax, 0) + ' м³/ч', 'Ga = GШ/(1,3…1,0) при t = ' + kf(p.tComp, 0) + ' °C');
+      h += vnC('ДПУ', o.Nmin + ' шт.', 'N = Vsm/V1max = ' + kf(o.G / o.ro, 2) + ' / ' + kf(o.V1, 2) + ' = ' + kf(o.G / o.ro / o.V1, 2) + ' → вверх до целого; V1max = 4,16·γ·d^5/2·[(Tsm − Tr)/Tr]^1/2, γ = ' + kf(o.gamma, 1) + ', d = ' + kf(o.d, 2) + ' м; Lmin = ' + kf(o.Lmin, 2) + ' м (СП 7 прил. Е)' + (o.d < 2 * o.dpuD ? '; d < 2D — ДПУ велико или стоит низко' : ''));
+      h += o.comp ? vnC('Компенсация: вентилятор', kf(o.comp.Lv, 0) + ' м³/ч · ' + kf(o.comp.Psv, 0) + ' Па', 'Ga = Gsm/(1 − n) = ' + kf(o.comp.La, 0) + ' м³/ч (МР (65)) + утечки закрытых клапанов; t = ' + kf(p.tComp, 0) + ' °C', 'final')
+        : vnC('Компенсация', kf(o.La, 0) + ' м³/ч', 'Ga = Gsm/(1 − n) = ' + kf(o.G, 3) + '/(1 − ' + kf(o.nDis, 2) + ') — МР (65); допустимо ' + kf(o.LaMin, 0) + '…' + kf(o.LaMax, 0) + ' м³/ч (n = −0,3…0,3) при t = ' + kf(p.tComp, 0) + ' °C');
     }
   }
   h += (o.warn || []).map(function (w) { return vnC('Внимание', 'Проверь', w, 'warn'); }).join('');
+  if (o.adv) h += kvAdvHtml(o.adv);
   $('#kv-res').innerHTML = h;
   $('#kv-rep').innerHTML = isFinite(o.Lv) ? kvReport(p, o) : '';
   if (isFinite(o.Lv) && window.pdv3d) { try { $('#kv-rep').insertAdjacentHTML('afterbegin', '<div class="rep-3d">' + pdv3d(KV.mode, p, o) + '</div>'); } catch (x) {} }
-  /* 1.24.0: объёмный вид WebGL — перерисовка через 0,7 с после последней правки */
-  if (isFinite(o.Lv) && window.pdv3rView) {
-    $('#kv-rep').insertAdjacentHTML('afterbegin', '<div class="rep-3r"><div class="rep-3rh">Объёмный вид по расчёту — вращай мышью или пальцем, колесо — ближе/дальше</div><div id="kv-3r" class="kv3r">' + (window.P3R && P3R.last ? '<img src="' + P3R.last + '" alt="">' : '') + '</div></div>');
-    clearTimeout(P3R.t); P3R.t = setTimeout(function () { var b = $('#kv-3r'); if (b) pdv3rView(b, KV.mode, KV.p, KV.o); }, 700);
-  }
+  /* 1.27.0: объёмный вид WebGL со страницы убран по указанию инженера (07.11): ниже есть объёмная схема информативнее. В Word лист остаётся (kvImgs). */
 }
 
+/* 1.27.0: «Как уложиться» — предложенные сечения и пересчёт с ними (smkAdvise, kvm_smk.js) */
+function kvAdvHtml(a) {
+  var m = function (x, y) { return kf(x * 1000, 0) + '×' + kf(y * 1000, 0); }, r = a.r, li = [];
+  if (a.shaft[0] !== a.shaft[2] || a.shaft[1] !== a.shaft[3]) li.push('шахта (вертикаль): ' + m(a.shaft[0], a.shaft[1]) + ' → <b>' + m(a.shaft[2], a.shaft[3]) + ' мм</b>');
+  if (a.hor[0] !== a.hor[2] || a.hor[1] !== a.hor[3]) li.push('горизонталь этажа: ' + m(a.hor[0], a.hor[1]) + ' → <b>' + m(a.hor[2], a.hor[3]) + ' мм</b>');
+  if (a.valve[0] !== a.valve[2] || a.valve[1] !== a.valve[3]) li.push('клапан: ' + a.valve[0] + '×' + a.valve[1] + ' → <b>' + a.valve[2] + '×' + a.valve[3] + ' мм</b>');
+  if (a.valveShort && !a.manualZ) li.push('клапана с известным ζ такого размера нет: нужно проходное сечение не меньше <b>' + kf(a.Fp, 3) + ' м²</b> — клапан по паспорту (ζ вписать в таблицу участков) или несколько клапанов параллельно');
+  if (a.manualZ) li.push('клапан с ζ по паспорту: проходное сечение не меньше <b>' + kf(a.Fp, 3) + ' м²</b> (скорость ≤ 11 м/с) — подбери типоразмер сам');
+  return '<div class="bstep kvadv"><span>Как уложиться: ' + a.why.join('; ') + '</span><ul>' + li.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul>' +
+    '<small>С этими сечениями: ' + kf(r.Lv, 0) + ' м³/ч, <b>' + kf(r.Psv, 0) + ' Па</b>, скорость до ' + kf(r.vmax, 1) + ' м/с' + (a.ok ? ' — укладывается.' : ' — ещё не укладывается: разбей систему на 2 или уменьши число этажей на шахту.') + '</small>' +
+    '<button type="button" class="eibtn on" id="kv-adv">Применить предложенные сечения</button></div>';
+}
 /* ---------- отчёт: вёрстка — kvm_rep.js ---------- */
 function kvReport(p, o, mode) { mode = mode || KV.mode; return mode === 'smk' ? repSmk(p, o) : mode === 'stair' ? repStair(p, o) : mode === 'tamb' ? repTamb(p, o) : repLift(p, o); }
 
@@ -259,6 +279,7 @@ document.addEventListener('change', function (e) { if (e.target.tagName === 'SEL
 document.addEventListener('click', function (e) {
   var m = e.target.closest && e.target.closest('[data-kvm]');
   if (m) { KV.mode = m.dataset.kvm; KV.p = kvDef(KV.mode); KV.file = ''; KV.pid = null; try { localStorage.setItem('klapany-kv-mode', KV.mode); } catch (x) {} show('pdv'); return; }
+  if (e.target.id === 'kv-adv' && KV.o && KV.o.adv) { var q = KV.o.adv.q; KV.p.segs = q.segs; if (q.typ) KV.p.typ = q.typ; $('#kv-form').innerHTML = kvForm(); if (window.hintsAttach) hintsAttach(); kvCalc(); return; }
   if (e.target.id === 'kv-new') { KV.p = kvDef(KV.mode); KV.file = ''; KV.pid = null; show('pdv'); return; }
   if (e.target.id === 'kv-retyp') { KV.p.segMode = 'typ'; KV.p.segs = kvBuildSegs(KV.p.typ); $('#kv-form').innerHTML = kvForm(); if (window.hintsAttach) hintsAttach(); kvCalc(); return; }
   if (e.target.id === 'kv-add') { KV.p.segMode = 'table'; var L = KV.p.segs, last = L[L.length - 1], prev = L[L.length - 2] || last; L.splice(L.length - 1, 0, JSON.parse(JSON.stringify(prev))); $('#kv-form').innerHTML = kvForm(); if (window.hintsAttach) hintsAttach(); kvCalc(); return; }

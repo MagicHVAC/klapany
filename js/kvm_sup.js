@@ -47,7 +47,7 @@ function supStair(d) {
   if (p.air) { o = supBaseFrom(p.air); }
   o.p = p; o.err = []; o.warn = [];
   if (p.h1Guess) o.warn.push('Высота 1-го этажа в проекте задана номером из списка — принято ' + p.h1.toFixed(2).replace('.', ',') + ' м. Проверь.');
-  var ros = o.ros, dro = ros - o.ror, Pw = o.Pw;
+  var ros = o.ros, dro = ros - o.ror, Pw = p.windows === false ? 0 : o.Pw; /* 1.27.0: ядро — (35)–(37) без ветра */
   o.Sd = p.Sd > 0 ? p.Sd : (p.gasProof ? 60000 : 5300) / ros;
   if (p.part === 'ug') return supStairUG(p, o);
   var elev = function (i) { return i <= 1 ? 0 : p.h1 + (i - 2) * p.hf; };
@@ -57,20 +57,22 @@ function supStair(d) {
   if (!p.noFloor1) {
     /* 4.1.2: ЛК сообщается с 1-м этажом одинарной дверью — (33), (34) */
     o.P1 = p.Pplus + Pw - 0.5 * g * p.hd * dro;
-    o.Gsa = Math.sqrt(2 * ros * (p.Pplus + Pw + 0.5 * g * p.hda * (o.roa - ros)) / ((p.nd * p.xid + p.xir + 1) / (p.Fda * p.Fda)));
+    o.Gsa = Math.sqrt(2 * ros * (p.Pplus + o.Pw + 0.5 * g * p.hda * (o.roa - ros)) / ((p.nd * p.xid + p.xir + 1) / (p.Fda * p.Fda)));
     start = 1;
   } else {
     /* 4.1.1: не сообщается с 1-м этажом — (23), (24) */
     o.P1 = p.Pplus + Pw - g * (elev(2) + 0.5 * p.hd) * dro;
-    o.Gsa = p.outerExit ? Math.sqrt(2 * ros * (p.Pplus + Pw - g * (elev(2) + 0.5 * p.hd) * dro + 0.5 * g * p.hda * (o.roa - ros)) /
+    o.Gsa = p.outerExit ? Math.sqrt(2 * ros * (p.Pplus + o.Pw - g * (elev(2) + 0.5 * p.hd) * dro + 0.5 * g * p.hda * (o.roa - ros)) /
       ((p.nd * p.xid + p.xir + 1) / (p.Fda * p.Fda) + 60 * (p.zUG > 0 ? p.zUG : 1) / (p.Fs * p.Fs))) : 0;
     start = 2;
   }
+  /* 1.27.0: 4.1.2 — при поэтажных выходах через тамбур-шлюзы исключается (25), утечки через двери остаются */
+  if (p.floorTamb) o.GsF = 0;
   o.Gs0 = Math.max(o.GsF, o.Gsa);
   var P = o.P1, G = o.Gs0, dpmax = 0, dPprev = 20;
   var winG = function (i, Ps) {
     if (!p.windows || !(p.Fw > 0)) return { gw: 0, G: 0 };
-    var x = Ps + Pw + g * hc(i) * (o.roa - ros), gw;
+    var x = Ps + g * hc(i) * (ros - o.ror), gw; /* 1.27.0: (31) как напечатано в МР: [Ps(i+1) + g(h(i+1) + 0,5hd)(ρs − ρr)]^0,67 */
     if (p.winVar === 1) gw = Math.pow(Math.max(x, 0) / 100, 2 / 3) * o.roa * p.winVal;        /* ΔQ100, м³/(ч·м²) */
     else if (p.winVar === 0) gw = Math.pow(Math.max(x, 0) / 10, 2 / 3) * p.winVal;             /* ΔG10, кг/(ч·м²) */
     else if (p.winVar === 2) gw = Math.pow(Math.max(x, 0) / 10, 2 / 3) / p.winVal;             /* R10 */
@@ -82,18 +84,19 @@ function supStair(d) {
     var v = G / (ros * p.Fs), dPs = 0.5 * p.xis * ros * v * v;
     rows[rows.length - 1].v = v; rows[rows.length - 1].dPs = dPs;
     P += dPs;
-    /* так в отчётах «КВМ-Дым»: утечка через дверь (i+1)-го этажа — по перепаду на двери этажа ниже */
-    var dPd = P - Pw + g * hc(i + 1) * dro, gd = p.floorTamb ? 0 : p.Fd / Math.sqrt(o.Sd) * Math.sqrt(Math.max(dPprev, 0)), w = winG(i + 1, P);
+    /* 1.27.0: (29)/(30) — утечка через дверь (i+1)-го этажа по перепаду на ЭТОЙ двери (раньше, как в отчётах КВМ, — по двери этажа ниже) */
+    var dPd = P - Pw + g * hc(i + 1) * dro, gd = p.Fd / Math.sqrt(o.Sd) * Math.sqrt(Math.max(dPd, 0)), w = winG(i + 1, P);
     G += gd + w.G; if (dPd > dpmax) dpmax = dPd; dPprev = dPd;
     rows.push({ i: i + 1, h: hc(i + 1), P: P, dPd: dPd, dG: gd, dGw: w.G, Gw: w.gw, G: G });
   }
   var vN = G / (ros * p.Fs), dPN = 0.5 * p.xis * ros * vN * vN;
   rows[rows.length - 1].v = vN; rows[rows.length - 1].dPs = dPN;
   o.rows = rows; o.Gs = G; o.Ps = P + dPN; o.dpmax = dpmax;
-  o.hsN = p.N * p.hf;
+  o.hsN = p.N > 1 ? p.h1 + (p.N - 2) * p.hf : 0; /* 1.27.0: (94) hsN — между уровнями нижнего и верхнего этажей */
   o.duct = supNet(G, o.roa, o.ta, p, o);
   o.Lv = 3600 * G / o.roa;
-  o.Psv = o.Ps + g * o.hsN * (o.roa - ros) + g * p.h0 * (o.roa - o.ror) + o.duct.P;
+  o.PsvW = o.Ps + g * o.hsN * (o.roa - ros) + g * p.h0 * (o.roa - o.ror) + o.duct.P;
+  o.Psv = 1.2 * o.PsvW / o.roa; /* (94): приведённое к стандартным условиям */
   if (dpmax > 150) o.warn.push('Перепад на закрытых дверях до ' + dpmax.toFixed(0).replace('.', ',') + ' Па — больше 150 Па (СП 7 п. 7.16 б): рассечка или распределённая подача.');
   return o;
 }
@@ -131,7 +134,8 @@ function supStairUG(p, o) {
   o.hsN = o.bot ? (n - 1) * hu : 0;
   o.duct = supNet(G, roa, o.ta, p, o);
   o.Lv = 3600 * G / roa;
-  o.Psv = o.Ps + g * o.hsN * (roa - ros) + g * p.h0 * (roa - ror) + o.duct.P;
+  o.PsvW = o.Ps + g * o.hsN * (roa - ros) + g * p.h0 * (roa - ror) + o.duct.P;
+  o.Psv = 1.2 * o.PsvW / roa; /* (94): приведённое к стандартным условиям */
   if (dpmin < 20) o.warn.push('Перепад на закрытых дверях ' + dpmin.toFixed(1).replace('.', ',') + ' Па — меньше 20 Па (условие МР п. 4.1.4).');
   if (dpmax > 150) o.warn.push('Перепад на закрытых дверях до ' + dpmax.toFixed(0).replace('.', ',') + ' Па — больше 150 Па (СП 7 п. 7.16 б).');
   o.warn.push(o.bot ? 'Вентилятор (94), подача снизу: Ps — у нижнего подземного этажа, hs = (n − 1)·hUG. В МР (94) записана для подачи в верх клетки — сверь.' : 'Вентилятор (94), подача сверху: Ps = Ps-1 у верхнего подземного этажа, hs = 0; h0s — от воздухозабора до места подачи.');
@@ -181,14 +185,15 @@ function supLift(d) {
     sum += dG; rows.push({ i: i, h: elev(i), P: o.Pl, dPd: dPd, dG: dG });
   }
   o.rows = rows; o.leak = sum; o.Gl = o.G1 + sum;
-  o.hl = p.h2 + (p.N - 1) * p.hf - base;
+  o.hl = p.h2 + (p.N - 2) * p.hf - base; /* 1.27.0: (96) hlN — между уровнями нижнего и верхнего этажей */
   o.duct = supNet(o.Gl, o.roa, o.ta, p, o);
   o.Lv = 3600 * o.Gl / o.roa;
   /* так в отчётах «КВМ-Дым»: без слагаемого g·hlN·(ρa − ρl) из формулы (96) МР — его показываем отдельно */
   o.gH = g * o.hl * (o.roa - rol);
-  o.PsvMR = o.Pl + o.gH + g * p.h0 * (o.roa - o.ror) + o.duct.P;
-  o.Psv = p.method === 1 ? o.PsvMR : o.PsvMR - o.gH;
-  if (p.method !== 1) o.warn.push('Давление вентилятора — без слагаемого g·hlN·(ρa − ρl) = ' + o.gH.toFixed(1).replace('.', ',') + ' Па. По формуле (96) МР ВНИИПО — ' + o.PsvMR.toFixed(0).replace('.', ',') + ' Па.');
+  /* 1.27.0: (96) целиком, со слагаемым g·hlN·(ρa − ρl) (в отчётах КВМ его нет), и приведение 1,2/ρa */
+  o.PsvW = o.Pl + o.gH + g * p.h0 * (o.roa - o.ror) + o.duct.P;
+  o.PsvMR = o.PsvW; o.Psv = 1.2 * o.PsvW / o.roa;
+  if (p.method === 1) o.warn.push('Метод «приток только сверху, потери в зазоре кабина–шахта» — не из МР ВНИИПО (допущение программ); по МР — метод «по расходу в открытом проёме».');
   return o;
 }
 function supCalcIni(text) {
