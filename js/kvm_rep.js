@@ -193,6 +193,19 @@ function repLift(p, o) {
   h += (o.net ? kmsRep(o.net, 'Сеть от воздухозабора до шахты') : repF('Воздуховоды', 'P<sub>dl</sub> = (λ·l/D<sub>э</sub> + Σξ)·0,5·ρ<sub>a</sub>·v²', 'v = ' + rf(o.duct.v, 2) + ' м/с; λ = ' + rf(o.duct.f, 4), rf(o.duct.P, 2) + ' Па')) +
     repF('Подача', 'L<sub>v</sub> = 3600·G<sub>l</sub>/ρ<sub>a</sub>', '3600 · ' + rf(o.Gl, 3) + ' / ' + rf(o.roa, 3), rf(o.Lv, 0) + ' м³/ч') +
     repF('Статическое давление (96)', 'P<sub>раб</sub> = P<sub>l</sub> + g·h<sub>lN</sub>·(ρ<sub>a</sub> − ρ<sub>l</sub>) + g·h<sub>0l</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>dl</sub>', rf(o.Pl, 2) + ' + ' + rf(o.gH, 2) + ' + 9,81 · ' + rf(p.h0, 1) + ' · ' + rf(o.roa - o.ror, 3) + ' + ' + rf(o.duct.P, 2), rf(o.PsvW, 0) + ' Па (рабочее)') + repPsv(o, o.roa, 'ρ<sub>a</sub>', '96');
+  /* 1.27.2: подземная часть шахты — МР 4.2.5, 4.2.6 (supLiftUG, kvm_lift_ug.js) */
+  if (o.ug && isFinite(o.ug.Lv)) {
+    var u = o.ug, gg = 9.81;
+    h += repSec(++n, 'Подземная часть шахты — отдельная система (МР 4.2.5, 4.2.6)');
+    h += repF('Давление в шахте (55)', 'P<sub>l−n</sub> = 20 + g·(h<sub>−n</sub> − (h<sub>−n</sub> + 0,5·h<sub>dl</sub>))·(ρ<sub>l</sub> − ρ<sub>r</sub>)', '20 − 0,5 · 9,81 · ' + rf(p.hdl, 2) + ' · ' + rf(o.rol - o.ror, 4), rf(u.Pl, 2) + ' Па') +
+      repF('Расход через открытые двери основного этажа (56)', 'G<sub>l1</sub> = {2ρ<sub>l</sub>/[ξ<sub>l</sub>/(nF<sub>dl</sub>)² + (ξ<sub>d</sub> + 1)/(mF<sub>dr</sub>)²]·[20 − 0,5gh<sub>dl</sub>(ρ<sub>l</sub> − ρ<sub>r</sub>) + 0,25(k<sub>ww</sub> − k<sub>w0</sub>)ρ<sub>a</sub>v<sub>a</sub>² − g(h<sub>−n</sub> − 0,5h<sub>dl</sub>)(ρ<sub>a</sub> − ρ<sub>l</sub>)]}<sup>1/2</sup>', 'h<sub>−n</sub> = −' + rf(p.NUG * p.hUG, 2) + ' м', rf(u.G1, 3) + ' кг/с') +
+      repF('Доля нижней системы (4.2.6)', 'G<sub>l1</sub><sup>ниж</sup> = s·G<sub>l1</sub>; надземной — (1 − s)·G<sub>l1</sub><sup>надз</sup>', 's = ' + rf(u.share, 2) + (o.G1full ? '; надземная: ' + rf(o.G1full, 3) + ' → ' + rf(o.G1, 3) + ' кг/с' : ''), rf(u.G1u, 3) + ' кг/с') +
+      repT(['Этаж', 'Отметка, м', 'ΔP на дверях, Па', 'Утечка, кг/с'], u.rows.map(function (r) { return [String(r.i), rf(r.h, 2), rf(r.dPd, 2), rf(r.dG, 4)]; }), 'rep-net') +
+      repF('Суммарный расход (58)', 'G<sub>l</sub> = G<sub>l1</sub><sup>ниж</sup> + Σ[(P<sub>l−i</sub> + g(h<sub>−n</sub> − (h<sub>−i</sub> + 0,5h<sub>dl</sub>))(ρ<sub>l</sub> − ρ<sub>r</sub>))/S<sub>lr−i</sub>]<sup>1/2</sup>', rf(u.G1u, 3) + ' + ' + rf(u.leak, 4), rf(u.Gl, 3) + ' кг/с') +
+      repF('Подача (95)', 'L<sub>v</sub> = 3600·G<sub>l</sub>/ρ<sub>a</sub>', '3600 · ' + rf(u.Gl, 3) + ' / ' + rf(o.roa, 3), rf(u.Lv, 0) + ' м³/ч') +
+      repF('Статическое давление (96)', 'P<sub>раб</sub> = P<sub>l−n</sub> + g·h<sub>l</sub>·(ρ<sub>a</sub> − ρ<sub>l</sub>) + g·h<sub>0l</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>dl</sub>', rf(u.Pl, 2) + ' + 9,81 · ' + rf(u.hl, 2) + ' · ' + rf(o.roa - o.rol, 4) + ' + 9,81 · ' + rf(u.h0, 1) + ' · ' + rf(o.roa - o.ror, 4) + ' + ' + rf(u.duct.P, 2), rf(u.PsvW, 2) + ' Па (рабочее)') +
+      repPsv(u, o.roa, 'ρ<sub>a</sub>', '96');
+  }
   return repSup('<div class="rep">' + h + repNote(o) + '</div>');
 }
 

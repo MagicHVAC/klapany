@@ -163,7 +163,6 @@ function supLiftFromIni(d) {
 function supLift(d) {
   var p = d.kind ? d : supLiftFromIni(d), o = d.kind ? supBaseFrom(p.air) : supBase(d), g = SUP_G;
   o.p = p; o.err = []; o.warn = [];
-  if (p.NUG > 0 && p.method !== 1) o.warn.push('Подземная часть шахты (' + p.NUG + ' эт.) пока не считается — только надземная.');
   var rol = o.ros, dro = rol - o.ror, Pw = p.outer ? o.Pw : 0;
   o.rol = rol; o.Sdl = p.Sdl > 0 ? p.Sdl : 2600 / rol; o.Sdr = p.Sdr > 0 ? p.Sdr : 5300 / rol;
   o.Slr = o.Sdl / Math.pow(p.nc * p.Fdl, 2) + (p.hallUp ? o.Sdr / Math.pow(p.m * p.Fdr, 2) : 0);
@@ -171,6 +170,12 @@ function supLift(d) {
   o.P1 = p.Pplus - g * (p.h2 + 0.5 * p.hdl) * dro + 0.5 * g * p.hdl * (o.roa - rol) + Pw;
   var den = o.xil / Math.pow(p.nc * p.Fdl, 2) + (p.hall1 ? (p.xid + 1) / Math.pow(p.m * p.Fdr, 2) : 0);
   o.G1 = Math.sqrt(2 * rol * Math.max(o.P1, 0) / den);
+  /* 1.27.2: подземная часть — МР 4.2.5, (55)–(58), отдельная система (kvm_lift_ug.js); 4.2.6 — расход через двери основного этажа делится:
+     нижней системе доля ugShare, надземной — (1 − ugShare) от её G1 по (44)/(50)/(51)/(54) */
+  if (p.NUG > 0 && p.method !== 1 && typeof supLiftUG === 'function') {
+    o.ug = supLiftUG(p, o); o.err = o.err.concat(o.ug.err || []); o.warn = o.warn.concat(o.ug.warn || []);
+    if (o.ug.share >= 0) { o.G1full = o.G1; o.G1 = o.G1 * (1 - o.ug.share); }
+  }
   o.Pl = Pw + p.Pplus - g * (p.h2 + 0.5 * p.hdl) * dro;
   /* LMethod = 1 («приток только сверху»): высоты от нижнего подземного этажа, давление по (55) + потери в зазоре кабина–шахта */
   var base = 0;

@@ -20,7 +20,7 @@ function kvDefStair() {
     Pplus: 20, h0: 15, duct: { a: 800, b: 600, rect: false, len: 20, eps: 0.1, xi: 2 }, air: { ta: -13, tr: 18, va: 6.2, kww: 0.8, kw0: -0.6 } };
 }
 function kvDefLift() {
-  return { kind: 'lift', name: 'Лифтовая шахта', system: 'ПД2', outer: true, hall1: true, hallUp: true, hallUG: false, method: 0, N: 14, h2: 3.9, hf: 3.15, NUG: 0, hUG: 3,
+  return { kind: 'lift', name: 'Лифтовая шахта', system: 'ПД2', outer: true, hall1: true, hallUp: true, hallUG: true, ugShare: 0.5, method: 0, N: 14, h2: 3.9, hf: 3.15, NUG: 0, hUG: 3,
     Fdl: 1.8, Fdr: 1.8, hdl: 2, nc: 1, m: 1, xil: 0, xid: 2.44, Fk: 2.5, Fls: 4.25, Sdl: 0, Sdr: 0, muGap: 0.65,
     Pplus: 20, h0: 3, duct: { a: 800, b: 800, rect: true, len: 2.33, eps: 0.1, xi: 2 }, air: { ta: -13, tr: 18, va: 6.2, kww: 0.8, kw0: -0.6 } };
 }
@@ -64,7 +64,8 @@ var KV_F = {
     ['Объект', [['name', 'Проект', 't'], ['system', 'Система', 't']]],
     ['Условия', [['outer', 'Шахта', [[true, 'у наружной стены — ветер в расчёте'], [false, 'в центральном ядре']]], ['hall1', 'Холл на основном посадочном этаже', [[true, 'выгорожен — (50)'], [false, 'нет — (44)']]],
       ['hallUp', 'Холлы на вышележащих этажах', [[true, 'выгорожены'], [false, 'нет']]], ['method', 'Метод', [[0, 'по расходу в открытом проёме по МР'], [1, 'приток только сверху, потери в зазоре кабины']]]]],
-    ['Здание', [['N', 'Надземных этажей'], ['h2', 'Отметка 2-го этажа, м'], ['hf', 'Высота вышележащих этажей, м'], ['NUG', 'Подземных этажей'], ['hUG', 'Высота подземных этажей, м']]],
+    ['Здание', [['N', 'Надземных этажей'], ['h2', 'Отметка 2-го этажа, м'], ['hf', 'Высота вышележащих этажей, м'], ['NUG', 'Подземных этажей'], ['hUG', 'Высота подземных этажей, м'],
+      ['hallUG', 'Холлы на подземных этажах', [[true, 'выгорожены на каждом — п. 4.2.5'], [false, 'нет (в МР формул нет)']]], ['ugShare', 'Доля расхода основного этажа подземной системе, 0…1 (п. 4.2.6)']]],
     ['Воздух', [['air.ta', 'ta — наружный (зима), °C'], ['air.tr', 'tr — в здании, °C'], ['air.va', 'va — ветер, м/с'], ['air.kww', 'Kww — наветренный'], ['air.kw0', 'Kw0 — заветренный']]],
     ['Шахта', [['Fdl', 'Fdl — двери шахты, м²'], ['hdl', 'hdl — их высота, м'], ['nc', 'n — кабин'], ['Fdr', 'Fdr — дверь холла, м²'], ['m', 'm — дверей холла'], ['xid', 'ξd — КМС двери холла'],
       ['Fk', 'Fk — сечение кабины, м²'], ['Fls', 'Fls — сечение шахты, м²'], ['xil', 'ξl (0 — по (45): 4,3 + Fk/Fls)'], ['muGap', 'μ зазора кабина–шахта'], ['Sdl', 'Sdl по паспорту (0 — 2600/ρl)'], ['Sdr', 'Sdr по паспорту (0 — 5300/ρl)']]],
@@ -107,7 +108,10 @@ var KV_VIS = { smk: { living: KV_COR, doorsTxt: KV_COR, qp: KV_COR, cL: KV_COR, 
   wA: KV_V(1), wH: KV_V(1), wZ: KV_V(1), gW: KV_V(3), gH: KV_V(3), tiers: KV_V(4), dExitH: KV_V(4),
   vOut: function (p) { return !!p.endExhaust; } },
   stair: { Fw: KV_WIN_OG, winVar: KV_WIN_OG, winVal: KV_WIN_OG, windows: KV_OG, outerExit: KV_OG, noFloor1: KV_OG, N: KV_OG, h1: KV_OG, hf: KV_OG, NUG: KV_UG, hUG: KV_UG, ugFeed: KV_UG, zUG: function (p) { return p.part === 'ug' || !!p.noFloor1; } },
-  tamb: { tsf: function (p) { return !!p.heat; }, vd: function (p) { return !!p.openDoor; } } };
+  tamb: { tsf: function (p) { return !!p.heat; }, vd: function (p) { return !!p.openDoor; } },
+  lift: { hallUG: function (p) { return p.NUG > 0; }, ugShare: function (p) { return p.NUG > 0; }, hUG: function (p) { return p.NUG > 0; } } };
+/* 1.27.2: видимость полей — сразу при вводе числа, без перерисовки формы (иначе теряется курсор) */
+function kvVisRefresh() { [].forEach.call(document.querySelectorAll('#kv-form [data-kv]'), function (e) { var f = e.closest('.stf'); if (f) f.hidden = !kvVis(KV.p, e.dataset.kv); }); }
 var KV_REDRAW = { part: 1, noFloor1: 1, variant: 1, endExhaust: 1, windows: 1, heat: 1, openDoor: 1 };
 function kvVis(p, k) { var m = KV_VIS[KV.mode], f = m && m[k]; return !f || f(p); }
 function kvField(p, f) {
@@ -223,6 +227,7 @@ function kvCalc() {
   if (isFinite(o.Lv)) {
     h += vnC('Вентилятор: подача', kf(o.Lv, 0) + ' м³/ч', KV.mode === 'smk' ? 'Lv = GШ/ρN·3600 = ' + kf(o.GN, 4) + ' / ' + kf(o.roN, 4) + ' · 3600; t перед вентилятором ' + kf(o.tFan, 0) + ' °C' : 'Lv = 3600·G/ρa = 3600 · ' + kf(o.Gs || o.Gl, 2) + ' / ' + kf(o.roa, 2), 'final');
     h += vnC('Вентилятор: давление', kf(o.Psv, 0) + ' Па', (isFinite(o.PsvW) ? 'приведённое к 1,2 кг/м³ — для подбора по каталогу; в рабочих условиях ' + kf(o.PsvW, 0) + ' Па. ' : '') + (KV.mode === 'smk' ? 'Psv = 1,2·(PN + Pd' + (o.Pvf ? ' + 0,5ρN·vf²' : '') + ')/ρN — МР (' + (o.Pvf ? '90' : '89') + ')' : KV.mode === 'tamb' ? 'Psv = Pш верх + PN + g(h0s + hN)(ρa − ρsf) + ΔPвв + ΔPtop' : 'статическое, по (94)/(96)'), 'final');
+    if (KV.mode === 'lift' && o.ug && isFinite(o.ug.Lv)) h += vnC('Подземная часть: вентилятор', kf(o.ug.Lv, 0) + ' м³/ч · ' + kf(o.ug.Psv, 0) + ' Па', 'МР 4.2.5, (55)–(58), (95), (96) — отдельная система; доля расхода основного этажа ' + kf(o.ug.share * 100, 0) + ' % (п. 4.2.6); рабочее ' + kf(o.ug.PsvW, 0) + ' Па', 'final');
     if (KV.mode === 'tamb') {
       h += vnC('В помещение', kf(o.Gsf, 2) + ' кг/с', (p.openDoor ? 'открытая дверь: vd·ρ·Fd' : 'закрытые двери: по Sdsf, Sdsl') + '; Psf = ' + kf(o.Psf, 1) + ' Па');
       h += vnC('Открытый клапан', kf(o.vkl, 1) + ' м/с', 'ΔPкл = ' + kf(o.dPkl, 1) + ' Па; утечки выше ' + kf(o.Gs - o.Gsf, 3) + ' кг/с');
@@ -266,6 +271,7 @@ function kvInput(e) {
     else if (t.tagName === 'SELECT' || t.type === 'radio') kvSet(KV.p, k, v === 'true' ? true : v === 'false' ? false : (isFinite(+v) ? +v : v));
     else kvSet(KV.p, k, t.type === 'text' || (k === 'typ.zkl' && v.trim() === '') ? v : smkNum(v));
     if (k.indexOf('typ.') === 0 && KV.p.segMode !== 'table') { KV.p.segs = kvBuildSegs(KV.p.typ); var sg = $('#kv-segs'); if (sg) sg.innerHTML = kvSegs(); }
+    kvVisRefresh();
     if (KV_REDRAW[k]) { var sy = window.scrollY; $('#kv-form').innerHTML = kvForm(); if (window.hintsAttach) hintsAttach(); window.scrollTo(0, sy); var r = document.getElementById(t.id); if (r) r.focus({ preventScroll: true }); }
     kvCalc();
   } else if (t.classList && t.classList.contains('kvc')) {
