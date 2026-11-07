@@ -232,7 +232,7 @@ function dpuDoc() {
     '<p>Объект защиты: ' + (r.k === 'room' ? 'помещение (дымовая зона)' : 'коридор') + '.</p><h2 style="font-size:12pt">Исходные данные</h2><table>' + src + '</table>' +
     '<p>Массовый расход и средняя температура дымового слоя приняты по расчёту по п. 7.4 СП 7.13130.' + (r.roAuto ? ' Плотность продуктов горения принята по уравнению состояния ρ = 353/T<sub>sm</sub>.' : '') + '</p>' +
     '<h2 style="font-size:12pt">Расчёт</h2>' + calc + warn +
-    '<p style="font-size:10pt;color:#555">Сформировано: «Справочник инженера ОВиК» v' + APP.ver + ', ' + new Date().toLocaleDateString('ru-RU') + '. Решение принимает ГИП.</p></body></html>';
+    '<p style="font-size:10pt;color:#555">Сформировано: «Справочник инженера ОВиК» v' + APP.ver + ', ' + new Date().toLocaleDateString('ru-RU') + '.</p></body></html>';
   var blob = new Blob(['﻿', html], { type: 'application/msword' }), a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = 'Расчёт_ДПУ.doc'; document.body.appendChild(a); a.click();
   setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);

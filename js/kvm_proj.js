@@ -25,7 +25,7 @@ function kvpBlock() {
     rows.map(function (r) {
       return '<tr' + (r.id === KV.pid && !r.sub ? ' class="on"' : '') + '><td>' + esc(r.sys) + (r.bad ? ' <span class="kmsbad" title="Есть незаполненные данные">⚠</span>' : '') + '</td><td>' + r.kind + '</td><td>' + esc(r.obj) + '</td><td class="n">' + f(r.L, 0) + '</td><td class="n">' + f(r.P, 0) + '</td><td class="n">' + f(r.t, 0) + '</td><td>' +
         (r.sub ? '' : '<button type="button" class="eibtn" data-kvp-open="' + r.id + '">Открыть</button><button type="button" class="eibtn kmsx" data-kvp-del="' + r.id + '" title="Убрать из проекта">×</button>') + '</td></tr>';
-    }).join('') + '</tbody></table></div><p class="tnote">L и P — подача и статическое давление вентилятора по расчёту системы; подбор вентилятора — по этим данным, решение принимает ГИП.</p>';
+    }).join('') + '</tbody></table></div><p class="tnote">L и P — подача и статическое давление вентилятора по расчёту системы; подбор вентилятора — по этим данным.</p>';
   else h += '<p class="tnote">Проект пуст. Заполни систему на вкладке и нажми «Добавить эту систему в проект» — так соберёшь все ДВ и ДП здания и выгрузишь их одним документом Word.</p>';
   return h + '</div></details>';
 }

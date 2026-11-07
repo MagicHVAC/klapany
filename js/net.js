@@ -226,7 +226,7 @@ function netDoc() {
     '<p><b>Принят вентилятор: ' + f(r.fanL, 0) + ' м³/ч, ' + f(r.fanP, 0) + ' Па</b> (большее из двух случаев), температура перемещаемых газов до ' + f(Math.max(r.TN, r.Tt) - 273.15, 0) + ' °C.</p>' +
     (r.warn.length ? '<p><b>Замечания:</b></p><ul>' + r.warn.map(function (w) { return '<li>' + w + '</li>'; }).join('') + '</ul>' : '') +
     '<p>Допущения: ρ<sub>a</sub> = 353/T<sub>a</sub>; теплопотери стенками q = ' + f(r.q, 1) + ' Вт/м; коэффициенты местных сопротивлений приняты проектировщиком по справочнику Идельчика и паспортам клапанов.</p>' +
-    '<p style="font-size:10pt;color:#555">Сформировано: «Справочник инженера ОВиК» v' + APP.ver + ', ' + new Date().toLocaleDateString('ru-RU') + '. Решение принимает ГИП.</p></body></html>';
+    '<p style="font-size:10pt;color:#555">Сформировано: «Справочник инженера ОВиК» v' + APP.ver + ', ' + new Date().toLocaleDateString('ru-RU') + '.</p></body></html>';
   var blob = new Blob(['﻿', html], { type: 'application/msword' }), a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = 'Расчёт_сети_дымоудаления.doc'; document.body.appendChild(a); a.click();
   setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);

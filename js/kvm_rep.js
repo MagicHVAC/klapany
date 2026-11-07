@@ -238,7 +238,7 @@ function repPages(rep, imgs) {
 function repDoc(html, file) {
   html = repSumWord(html);
   var doc = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>Расчёт ПДВ</title><style>' + REP_CSS + '</style></head><body><div class="Section1">' +
-    html.replace(/<div class="rep-scroll">|<\/div><!--s-->/g, '') + '<p style="font-size:9pt;color:#555;margin-top:14pt">Решение принимает ГИП.</p></div></body></html>';
+    html.replace(/<div class="rep-scroll">|<\/div><!--s-->/g, '') + '</div></body></html>';
   var blob = new Blob(['﻿', doc], { type: 'application/msword' }), a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = file + '.doc'; document.body.appendChild(a); a.click();
   setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);

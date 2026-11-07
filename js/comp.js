@@ -71,7 +71,7 @@ function distShow(reform) {
       if (ck('d-cold')) h += (a === 3 && b === 3) ? cell('Холодные районы, плюс 50 %', dNum(base * 1.5) + ' м', 'Между жилыми зданиями IV степени С2, С3 и V степени.') : cell('П. 4.9', 'Не увеличивается', 'Только оба жилых здания IV степени С2, С3 или V степени.', 'warn');
     }
   }
-  if (h.split('class="bstep').length > 3) h += '<p class="tnote">Каждая поправка показана от табличного значения. Совмещение поправок нормы прямо не регулируют — решение за ГИП.</p>';
+  if (h.split('class="bstep').length > 3) h += '<p class="tnote">Каждая поправка показана от табличного значения. Совмещение поправок нормы прямо не регулируют.</p>';
   o.innerHTML = h;
   o.classList.remove('pop'); void o.offsetWidth; o.classList.add('pop');
 }
