@@ -226,7 +226,7 @@ function kmsInner(net, key) {
       }).join('') + '</tbody></table></div>' +
       '<div class="dpbtns"><button type="button" class="eibtn" data-kadd="' + key + '|el|' + si + '">+ элемент КМС</button></div></div>';
   });
-  h += '<div class="dpbtns"><button type="button" class="eibtn" data-kadd="' + key + '|sec">+ участок</button>' +
+  h += '<div class="dpbtns"><button type="button" class="eibtn" data-kadd="' + key + '|sec">+ участок</button>' + (window.skOpen ? '<button type="button" class="eibtn on" data-sketch="' + key + '">Эскиз трассы на сетке' + (net.sk && net.sk.segs.length ? ' (' + net.sk.segs.length + ' отр.)' : '') + '</button>' : '') +
     '<div class="stf kmsadd"><label>Надбавка на неучтённые потери, %</label><input data-knet="' + key + '|add" type="number" step="any" value="' + kmsNum(net.add || 0) + '"><small class="dhint">принимает инженер</small></div></div>';
   return h;
 }

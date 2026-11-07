@@ -611,3 +611,12 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .kvL .kvbar, .kvL .kmss, .kvL .dpbtns { flex-wrap: wrap; max-width: 100%; box-sizing: border-box; }
 .kvL .sub { max-width: 100%; }
 #kv-rep { min-width: 0; overflow-x: auto; }
+/* 1.25.0: эскиз трассы */
+.skdlg { max-width: min(1180px, 98vw); }
+.skbar { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin: 6px 0; font-size: 13px; }
+.skbar input, .skbar select { height: 30px; padding: 0 6px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); color: var(--text); font: inherit; font-size: 13px; } .skbar input[type=number] { width: 80px; }
+.skwrap { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 10px; } @media (max-width: 860px) { .skwrap { grid-template-columns: minmax(0, 1fr); } }
+.sksvg { width: 100%; background: #0d1828; border-radius: 10px; cursor: crosshair; user-select: none; } .sk3d { min-height: 300px; height: 100%; background: #f3f5f8; border-radius: 10px; }
+.sksvg .skg { stroke: #24344a; stroke-width: .6; } .sksvg .sks { stroke: #8fb4d9; stroke-width: 5; cursor: pointer; } .sksvg .sks.on { stroke: #ffb020; }
+.sksvg .skn { fill: #fff; stroke: #2f8fe0; stroke-width: 2; cursor: pointer; } .sksvg .skn.st { fill: #2fb67a; } .sksvg .skn.cur { stroke: #ffb020; stroke-width: 3; }
+.sksvg .skt { fill: #cfe0f2; font-size: 11px; pointer-events: none; } .sksvg .skm { fill: #ffb020; }
