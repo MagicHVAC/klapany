@@ -46,9 +46,12 @@ var KV_F = {
       ['noFloor1', 'Связь с 1-м этажом', [[false, 'через одинарную дверь — (33), (34)'], [true, 'нет или через тамбур-шлюз — (23), (24)']]], ['floorTamb', 'Поэтажные выходы', [[false, 'одинарные двери'], [true, 'через тамбур-шлюзы — без утечек']]]]],
     ['Здание', [['N', 'Надземных этажей'], ['h1', 'Высота 1-го этажа, м'], ['hf', 'Высота вышележащих этажей, м'], ['p', 'Лестничных клеток в коридор']]],
     ['Воздух', [['air.ta', 'ta — наружный (зима), °C'], ['air.tr', 'tr — в здании, °C'], ['air.va', 'va — ветер, м/с'], ['air.kww', 'Kww — наветренный'], ['air.kw0', 'Kw0 — заветренный'], ['Gsm', 'Gsm — удаляется дыма с этажа, кг/с']]],
-    ['Лестничная клетка', [['Fs', 'Fs — проекция маршей и площадок, м²'], ['xis', 'ξs — КМС маршей'], ['Fda', 'Fda — дверь наружного выхода, м²'], ['hda', 'hda — её высота, м'], ['nd', 'n — дверей подряд в выходе'],
-      ['xid', 'ξd — КМС дверного проёма'], ['xir', 'ξr — КМС тамбура выхода', '', 'прямой 0, прямоугольный 0,99, z-образный 2,9–4'], ['Fd', 'Fd — дверь на этаже, м²'], ['hd', 'hd — её высота, м'],
-      ['gasProof', 'Двери на этажах', [[false, 'обычные: 5300/ρs'], [true, 'дымогазонепроницаемые: 60000/ρs']]], ['Sd', 'Sd по паспорту, м³/кг (0 — по МР)'], ['Fw', 'Окно на этаже, м²'],
+    ['Лестничная клетка', [['Fs', 'Fs — проекция маршей и площадок, м²'], ['xis', 'ξs — КМС маршей']]],
+    ['Наружный выход', [['Fda', 'Fda — дверь наружного выхода, м²'], ['hda', 'hda — её высота, м'], ['nd', 'n — дверей подряд в выходе'],
+      ['xid', 'ξd — КМС дверного проёма'], ['xir', 'ξr — КМС тамбура выхода', '', 'прямой 0, прямоугольный 0,99, z-образный 2,9–4']]],
+    ['Поэтажные выходы', [['Fd', 'Fd — дверь на этаже, м²'], ['hd', 'hd — её высота, м'],
+      ['gasProof', 'Двери на этажах', [[false, 'обычные: 5300/ρs'], [true, 'дымогазонепроницаемые: 60000/ρs']]], ['Sd', 'Sd по паспорту, м³/кг (0 — по МР)']]],
+    ['Окна лестничной клетки', [['Fw', 'Окно на этаже, м²'],
       ['winVar', 'Воздухопроницаемость окон задана', [[1, 'ΔQ100, м³/(ч·м²)'], [0, 'ΔG10, кг/(ч·м²)'], [2, 'R10'], [3, 'R100']]], ['winVal', 'Значение воздухопроницаемости']]],
     ['Вентилятор', [['Pplus', 'P+ — избыточное давление, Па'], ['h0', 'h0s — от воздухозабора до оголовка, м']]]
   ],
@@ -90,11 +93,14 @@ var KV_TYP = [
 ];
 /* 1.24.1: компактная форма — поля, ненужные выбранному варианту, скрыты (коридор: двери, qп, коридор; зал: площадь пола, очаг, ψ, η, r);
    переключатели до 4 вариантов — радиокнопками, видны сразу. Смена поля из KV_REDRAW перерисовывает форму. */
+var KV_WIN = function (p) { return !!p.windows; };
 var KV_HALL = function (p) { return +p.variant === 2; }, KV_COR = function (p) { return +p.variant === 0; };
 var KV_VIS = { smk: { living: KV_COR, doorsTxt: KV_COR, qp: KV_COR, cL: KV_COR, cA: KV_COR, cH: KV_COR, dA: KV_COR, dH: KV_COR,
   Ff: KV_HALL, psi: KV_HALL, Fo: KV_HALL, eta: KV_HALL, r: KV_HALL,
-  ductRes: function (p) { return !!p.endExhaust; }, vOut: function (p) { return !!p.endExhaust; } } };
-var KV_REDRAW = { variant: 1, endExhaust: 1 };
+  ductRes: function (p) { return !!p.endExhaust; }, vOut: function (p) { return !!p.endExhaust; } },
+  stair: { Fw: KV_WIN, winVar: KV_WIN, winVal: KV_WIN },
+  tamb: { tsf: function (p) { return !!p.heat; }, vd: function (p) { return !!p.openDoor; } } };
+var KV_REDRAW = { variant: 1, endExhaust: 1, windows: 1, heat: 1, openDoor: 1 };
 function kvVis(p, k) { var m = KV_VIS[KV.mode], f = m && m[k]; return !f || f(p); }
 function kvField(p, f) {
   var id = 'kv-' + f[0].replace('.', '_'), v = f[0] === 'doorsTxt' ? kvDoorsTxt(p.doors) : kvGet(p, f[0]), hid = kvVis(p, f[0]) ? '' : ' hidden';
@@ -125,7 +131,7 @@ function kvForm() {
   KV_F[KV.mode].forEach(function (g, gi) {
     if (gi === 1 && window.kmsClimForm) h += kmsClimForm(KV.mode, p);
     var all = g[1].every(function (f) { return !kvVis(p, f[0]); });
-    h += '<section class="kvgrp"' + (all ? ' hidden' : '') + '><h3 class="nh">' + g[0] + '</h3><div class="trpick stpick">' + g[1].map(function (f) { return kvField(p, f); }).join('') + '</div></section>';
+    h += '<details class="kvgrp" data-g="' + g[0] + '"' + (all ? ' hidden' : '') + (KV.fold && KV.fold[g[0]] ? '' : ' open') + '><summary class="nh">' + g[0] + '</summary><div class="trpick stpick">' + g[1].map(function (f) { return kvField(p, f); }).join('') + '</div></details>';
   });
   if (KV.mode === 'smk') h += kvTypForm();
   if (window.kmsForm) h += kmsForm(KV.mode, p);
@@ -236,7 +242,7 @@ function kvInput(e) {
     else if (t.tagName === 'SELECT' || t.type === 'radio') kvSet(KV.p, k, v === 'true' ? true : v === 'false' ? false : (isFinite(+v) ? +v : v));
     else kvSet(KV.p, k, t.type === 'text' || (k === 'typ.zkl' && v.trim() === '') ? v : smkNum(v));
     if (k.indexOf('typ.') === 0 && KV.p.segMode !== 'table') { KV.p.segs = kvBuildSegs(KV.p.typ); var sg = $('#kv-segs'); if (sg) sg.innerHTML = kvSegs(); }
-    if (KV_REDRAW[k] && KV.mode === 'smk') { var sy = window.scrollY; $('#kv-form').innerHTML = kvForm(); if (window.hintsAttach) hintsAttach(); window.scrollTo(0, sy); var r = document.getElementById(t.id); if (r) r.focus({ preventScroll: true }); }
+    if (KV_REDRAW[k]) { var sy = window.scrollY; $('#kv-form').innerHTML = kvForm(); if (window.hintsAttach) hintsAttach(); window.scrollTo(0, sy); var r = document.getElementById(t.id); if (r) r.focus({ preventScroll: true }); }
     kvCalc();
   } else if (t.classList && t.classList.contains('kvc')) {
     var s = KV.p.segs[+t.dataset.seg], c = t.dataset.c;
@@ -247,6 +253,7 @@ function kvInput(e) {
   }
 }
 document.addEventListener('input', kvInput);
+document.addEventListener('toggle', function (e) { var d = e.target; if (d.classList && d.classList.contains('kvgrp')) { KV.fold = KV.fold || {}; KV.fold[d.dataset.g] = !d.open; } }, true);
 document.addEventListener('change', function (e) { if (e.target.tagName === 'SELECT') kvInput(e); });
 document.addEventListener('click', function (e) {
   var m = e.target.closest && e.target.closest('[data-kvm]');

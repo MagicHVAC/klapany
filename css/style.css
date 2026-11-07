@@ -603,3 +603,11 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .kvL summary.nh::-webkit-details-marker { display: none; }
 .kvL summary.nh::before { content: "▼"; font-size: 10px; transition: transform .15s; }
 .kvL details:not([open]) > summary.nh::before { transform: rotate(-90deg); }
+.kvL summary.nh { cursor: pointer; list-style: none; display: flex; gap: 6px; align-items: center; }
+.kvL summary.nh::-webkit-details-marker { display: none; }
+.kvL summary.nh::before { content: "▼"; font-size: 10px; transition: transform .15s; }
+.kvL details:not([open]) > summary.nh::before { transform: rotate(-90deg); }
+.kvL, .kvL details, .kvL #kv-segs, .kvL .kvsegd > div { min-width: 0; max-width: 100%; }
+.kvL .kvbar, .kvL .kmss, .kvL .dpbtns { flex-wrap: wrap; max-width: 100%; box-sizing: border-box; }
+.kvL .sub { max-width: 100%; }
+#kv-rep { min-width: 0; overflow-x: auto; }
