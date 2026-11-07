@@ -163,7 +163,7 @@ function repSumWord(html) {
 var REP_PB = '<br clear="all" style="page-break-before:always">';
 function repPages(rep, imgs) {
   var pics = (imgs || []).filter(function (x) { return x && x.png; }).map(function (x) {
-    return REP_PB + '<h3 class="rep-h" style="text-align:center">' + x.title + '</h3><p style="text-align:center"><img src="' + x.png + '" width="680" style="width:18cm"></p>' + (x.note ? '<p class="rep-p" style="text-align:center">' + x.note + '</p>' : '');
+    return REP_PB + '<h3 class="rep-h" style="text-align:center;page-break-after:avoid;margin-top:0">' + x.title + '</h3><p style="text-align:center"><img src="' + x.png + '" width="' + (x.w || 680) + '"' + (x.ar ? ' height="' + Math.round((x.w || 680) * x.ar) + '"' : '') + ' style="width:' + ((x.w || 680) / 680 * 18).toFixed(1) + 'cm' + (x.ar ? ';height:' + ((x.w || 680) / 680 * 18 * x.ar).toFixed(1) + 'cm' : '') + '"></p>' + (x.note ? '<p class="rep-p" style="text-align:center">' + x.note + '</p>' : '');
   }).join('');
   return rep.replace('<h3 class="rep-h">1.', pics + REP_PB + '<h3 class="rep-h">1.');
 }

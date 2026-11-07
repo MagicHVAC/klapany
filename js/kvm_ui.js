@@ -172,11 +172,11 @@ function kvRun(mode, p) {
 /* картинки для Word: схема системы (pdvScheme, kvm_scheme.js) и объёмная схема (pdv3d) — по очереди, PNG */
 function kvImgs(mode, p, o, cb) {
   var list = [], out = [];
-  if (window.pdvScheme) { try { var s2 = pdvScheme(mode, p, o); if (s2) list.push({ title: 'Схема системы ' + esc(p.system || ''), svg: s2, note: 'Схема по расчёту: участки, расходы и давления — из таблиц расчёта.' }); } catch (x) {} }
+  if (window.pdvScheme) { try { var s2 = pdvScheme(mode, p, o); if (s2) list.push({ title: 'Схема системы ' + esc(p.system || ''), svg: s2, w: 600, note: 'Схема по расчёту: участки, расходы и давления — из таблиц расчёта.' }); } catch (x) {} }
   if (window.pdv3d) { try { var s3 = pdv3d(mode, p, o); if (s3) list.push({ title: 'Объёмная схема ' + esc(p.system || ''), svg: s3 }); } catch (x) {} }
   var next = function (i) {
     if (i >= list.length || !window.pdv3dPng) { cb(out); return; }
-    pdv3dPng(list[i].svg, function (png) { out.push({ title: list[i].title, png: png, note: list[i].note }); next(i + 1); });
+    pdv3dPng(list[i].svg, function (png) { var vb = /viewBox="[\d.\s-]*?\s([\d.]+)\s([\d.]+)"/.exec(list[i].svg); out.push({ title: list[i].title, png: png, note: list[i].note, w: list[i].w, ar: vb ? +vb[2] / +vb[1] : 0 }); next(i + 1); });
   };
   next(0);
 }
