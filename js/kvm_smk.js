@@ -231,7 +231,7 @@ function smkAdvise(p, o) {
   if (!o || !(o.vmax > 11 || o.Psv > lim)) return null;
   var q = JSON.parse(JSON.stringify(p)), r = o, vt = [10, 9, 8, 7, 6, 5.5, 5, 4.5, 4], manualZ = q.segs.some(function (s) { return isFinite(s.zkl); }), why = [];
   if (o.vmax > 11) why.push('скорость до ' + smkF(o.vmax) + ' м/с > 11 м/с (МР п. 5.1.1)');
-  if (o.Psv > lim) why.push('давление ' + Math.round(o.Psv) + ' Па > ' + lim + ' Па (предел проектировщика)');
+  if (o.Psv > lim) why.push('давление ' + Math.round(o.Psv) + ' Па > ' + lim + ' Па (СП 60.13330.2020 п. 9.8, 9.13)');
   for (var k = 0; k < vt.length && (r.vmax > 11 || r.Psv > lim); k++) {
     var G = Math.max.apply(null, r.rows.map(function (x) { return x.G; })), ro = Math.min.apply(null, r.rows.map(function (x) { return x.ro; }));
     var F = G / (ro * vt[k]), Fp = r.G / (353 / r.Tsm * vt[k]);
@@ -263,7 +263,7 @@ function smkCalc(p, noAdv) {
   smkNet(p, o); smkDpu(p, o);
   if (o.vmax > 11) o.warn.push('Скорость в сети до ' + o.vmax.toFixed(1).replace('.', ',') + ' м/с — больше 11 м/с (МР ВНИИПО п. 5.1.1): увеличь сечения — см. «Как уложиться».');
   var lim = p.Plim > 0 ? p.Plim : 1000;
-  if (o.Psv > lim) o.warn.push('Давление вентилятора ' + Math.round(o.Psv) + ' Па — больше ' + lim + ' Па (предел проектировщика для жилых, общественных и административных зданий): увеличь сечения — см. «Как уложиться».');
+  if (o.Psv > lim && !(p.exempt98 && lim === 1000)) o.warn.push('Давление вентилятора ' + Math.round(o.Psv) + ' Па (приведённое к 20 °C) — больше ' + lim + ' Па: СП 60.13330.2020 п. 9.8 — не более 1000 Па; п. 9.13 — сеть сопротивлением больше 1000 Па без обоснования не допускается, высотные здания — зонировать по высоте. Увеличь сечения — см. «Как уложиться».');
   if (!noAdv) o.adv = smkAdvise(p, o);
   return o;
 }

@@ -33,27 +33,34 @@ function compCalc(p, o) {
     r.gLeak = c.nCl * Fkl * Math.sqrt(Math.max(r.Pcl, 0) / Skl);
     G = o.Gac + r.gLeak;
   }
-  r.Psv = r.dPin + r.mag.P + r.sh.P + r.dPkl + r.dPg;
+  r.PsvW = r.dPin + r.mag.P + r.sh.P + r.dPkl + r.dPg;
+  r.Psv = 1.2 * r.PsvW / ro; /* 1.27.1: приведённое к 1,2 кг/м³ (≈ 20 °C) — для подбора и для сравнения по СП 60 п. 9.8 */
   if (r.net) o.err = o.err.concat(r.net.err);
   r.Lv = 3600 * r.G / ro; r.La = 3600 * o.Gac / ro;
   o.comp = r;
   if (r.sh.v > 15) o.warn.push('Компенсация: скорость в шахте ' + r.sh.v.toFixed(1).replace('.', ',') + ' м/с — проверь сечение и шум.');
+  /* 1.27.1: СП 60.13330.2020 п. 9.8 — давление вентиляторов ДВ и компенсации (приведённое к 20 °C) не больше 1000 Па и отличаются не более чем на 30 % */
+  if (!p.exempt98 && isFinite(o.Psv)) {
+    var hi = Math.max(o.Psv, r.Psv), lo = Math.min(o.Psv, r.Psv); r.dif = lo > 0 ? (hi - lo) / lo * 100 : Infinity;
+    if (r.dif > 30) o.warn.push('Давления вентиляторов дымоудаления ' + Math.round(o.Psv) + ' Па и компенсации ' + Math.round(r.Psv) + ' Па отличаются на ' + Math.round(r.dif) + ' % — больше 30 % (СП 60.13330.2020 п. 9.8). Подбери сечения так, чтобы давления сблизились.');
+    if (r.Psv > 1000) o.warn.push('Давление вентилятора компенсации ' + Math.round(r.Psv) + ' Па — больше 1000 Па (СП 60.13330.2020 п. 9.8, приведённое к 20 °C).');
+  }
   if (r.vg > 6) o.warn.push('Компенсация: скорость в решётке ' + r.vg.toFixed(1).replace('.', ',') + ' м/с — проверь по паспорту решётки (потери и шум).');
 }
 function repComp(p, o) {
   var r = o.comp, c = p.comp, f = function (v, n) { return dpuFmt(v, n === undefined ? 2 : n); };
   var d = function (x, a, b, L, z) { return a + ' × ' + b + ' мм, L = ' + f(L, 1) + ' м, Σζ = ' + f(z, 2) + ': v = ' + f(x.v, 2) + ' м/с, λ = ' + f(x.f, 4) + ', R = ' + f(x.dPf, 3) + ' Па/м'; };
   return '<h3 class="rep-h">Сеть компенсирующей подачи</h3>' +
-    '<p class="rep-p">Расход принят наибольшим: G<sub>a</sub> = G<sub>Ш</sub>/1,0. Потери: трение по Кольбруку и местные сопротивления ζ·ρ·v²/2, ρ при t<sub>н</sub> = ' + f(p.tComp, 0) + ' °C. Разрежение в помещении от дымоудаления в запас не учтено.</p>' +
+    '<p class="rep-p">Расход — по МР (65): G<sub>a</sub> = G<sub>sm</sub>/(1 − n), плюс утечки закрытых клапанов. Потери: трение (' + repLam() + ') и местные сопротивления ζ·ρ·v²/2, ρ при t<sub>н</sub> = ' + f(p.tComp, 0) + ' °C. Разрежение в помещении от дымоудаления в запас не учтено.</p>' +
     repF('Плотность воздуха', 'ρ<sub>a</sub> = 353/(t<sub>н</sub> + 273)', '353 / (' + f(p.tComp, 0) + ' + 273)', f(r.ro, 3) + ' кг/м³') +
     repF('Открытый НЗ клапан на этаже пожара', 'ΔP<sub>кл</sub> = ζ<sub>кл</sub>·ρ<sub>a</sub>·V<sub>кл</sub>²/2, F<sub>кл</sub> = (a − 50)·(b − 50)', 'F<sub>кл</sub> = ' + f(r.Fkl, 4) + ' м²; V<sub>кл</sub> = ' + f(r.vkl, 2) + ' м/с; ' + f(c.vZ, 2) + ' · ' + f(r.ro, 3) + ' · ' + f(r.vkl, 2) + '² / 2', f(r.dPkl, 2) + ' Па') +
     repF('Решётка в помещении', 'ΔP<sub>р</sub> = ζ<sub>р</sub>·ρ<sub>a</sub>·V<sub>р</sub>²/2', 'V<sub>р</sub> = ' + f(r.vg, 2) + ' м/с; ' + f(c.gZ, 2) + ' · ' + f(r.ro, 3) + ' · ' + f(r.vg, 2) + '² / 2', f(r.dPg, 2) + ' Па') +
-    repF('Утечки через закрытые НЗ клапаны', 'ΔG = n·F<sub>кл</sub>·(P/S<sub>кл</sub>)<sup>1/2</sup>, P = ΔP<sub>кл</sub> + ΔP<sub>р</sub>', f(c.nCl, 0) + ' · ' + f(r.Fkl, 4) + ' · (' + f(r.Pcl, 2) + ' / ' + f(p.Skl, 0) + ')<sup>1/2</sup>', f(r.gLeak, 4) + ' кг/с') +
+    repF('Утечки через закрытые НЗ клапаны', 'ΔG = n·F<sub>кл</sub>·(P/S<sub>кл</sub>)<sup>1/2</sup>, P = ΔP<sub>кл</sub> + ΔP<sub>р</sub>', f(c.nCl, 0) + ' · ' + f(r.Fkl, 4) + ' · (' + f(r.Pcl, 2) + ' / ' + f(r.Skl, 0) + ')<sup>1/2</sup>', f(r.gLeak, 4) + ' кг/с') +
     repF('Расход вентилятора', 'G<sub>v</sub> = G<sub>a</sub> + ΔG; L<sub>v</sub> = 3600·G<sub>v</sub>/ρ<sub>a</sub>', f(r.Ga, 3) + ' + ' + f(r.gLeak, 4), f(r.G, 3) + ' кг/с; ' + f(r.Lv, 0) + ' м³/ч') +
     (r.net ? kmsRep(r.net, 'Сеть компенсирующей подачи от воздухозабора до клапана') +
-      repF('Давление вентилятора', 'P<sub>v</sub> = ΔP<sub>сети</sub> + ΔP<sub>кл</sub> + ΔP<sub>р</sub>', f(r.mag.P, 2) + ' + ' + f(r.dPkl, 2) + ' + ' + f(r.dPg, 2), f(r.Psv, 2) + ' Па') :
+      repF('Давление вентилятора', 'P<sub>v</sub> = ΔP<sub>сети</sub> + ΔP<sub>кл</sub> + ΔP<sub>р</sub>', f(r.mag.P, 2) + ' + ' + f(r.dPkl, 2) + ' + ' + f(r.dPg, 2), f(r.PsvW, 2) + ' Па (рабочее)') + repPsv(r, r.ro, 'ρ<sub>a</sub>', 'для подбора; СП 60 п. 9.8 — к 20 °C') :
     repF('Воздухозабор', 'ΔP<sub>вх</sub> = ζ<sub>вх</sub>·P<sub>d маг</sub>', f(c.inZ, 2) + ' · ' + f(r.mag.Pd, 2), f(r.dPin, 2) + ' Па') +
     repF('Магистраль', 'ΔP = R·L + Σζ·P<sub>d</sub>', d(r.mag, c.mA, c.mB, c.mL, c.mZ), f(r.mag.P, 2) + ' Па') +
     repF('Шахта', 'ΔP = R·L + Σζ·P<sub>d</sub>', d(r.sh, c.sA, c.sB, c.sL, c.sZ), f(r.sh.P, 2) + ' Па') +
-    repF('Давление вентилятора', 'P<sub>v</sub> = ΔP<sub>вх</sub> + ΔP<sub>маг</sub> + ΔP<sub>ш</sub> + ΔP<sub>кл</sub> + ΔP<sub>р</sub>', f(r.dPin, 2) + ' + ' + f(r.mag.P, 2) + ' + ' + f(r.sh.P, 2) + ' + ' + f(r.dPkl, 2) + ' + ' + f(r.dPg, 2), f(r.Psv, 2) + ' Па'));
+    repF('Давление вентилятора', 'P<sub>v</sub> = ΔP<sub>вх</sub> + ΔP<sub>маг</sub> + ΔP<sub>ш</sub> + ΔP<sub>кл</sub> + ΔP<sub>р</sub>', f(r.dPin, 2) + ' + ' + f(r.mag.P, 2) + ' + ' + f(r.sh.P, 2) + ' + ' + f(r.dPkl, 2) + ' + ' + f(r.dPg, 2), f(r.PsvW, 2) + ' Па (рабочее)') + repPsv(r, r.ro, 'ρ<sub>a</sub>', 'для подбора; СП 60 п. 9.8 — к 20 °C'));
 }
