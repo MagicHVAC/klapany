@@ -176,11 +176,28 @@ function kmsNote(key) {
   return key === 'netOut' ? 'Участки за вентилятором до выброса. Нет участков — берётся «Сопротивление воздуховодов до выброса» числом (только при выбросе на фасад).' :
     'Участки от воздухозабора до входа в шахту (клетку, канал). Расход — подача вентилятора, плотность — по наружному воздуху зимой.';
 }
+/* 1.23.8: групповая правка участков сети (как в табл. участков дымоудаления): выбор, «задать выбранным», элемент всем, копия набора элементов */
+var KMS_SEL = {};
+function kmsSel(key) { return KMS_SEL[key] || (KMS_SEL[key] = []); }
+function kmsRange(a) { var o = [], st = a[0], pr = a[0]; for (var i = 1; i <= a.length; i++) { if (a[i] === pr + 1) { pr = a[i]; continue; } o.push(st === pr ? String(st) : st + '–' + pr); st = pr = a[i]; } return o.join(', '); }
+function kmsGrpBar(net, key) {
+  var sel = kmsSel(key).filter(function (i) { return i < net.secs.length; }); KMS_SEL[key] = sel;
+  var n = sel.length, dis = n ? '' : ' disabled';
+  return '<div class="kvbar kmsbar"><span class="kvbarn">' + (n ? 'Выбрано: ' + n + ' (' + kmsRange(sel.map(function (i) { return i + 1; })) + ')' : 'Отметь участки галками — один, несколько или все') + '</span>' +
+    '<button type="button" class="eibtn" data-kg="' + key + '|all">Все</button><button type="button" class="eibtn" data-kg="' + key + '|none">Снять</button>' +
+    '<span class="kvbarg"><b>Задать выбранным:</b><select data-kgf="' + key + '">' + [['mat', 'материал'], ['rect', 'форма сечения'], ['a', 'a или D, мм'], ['b', 'b, мм'], ['len', 'длина, м'], ['q', 'доля расхода, %'], ['eps', 'k, мм']].map(function (o) { return '<option value="' + o[0] + '">' + o[1] + '</option>'; }).join('') + '</select>' +
+    '<span class="kmsgv" data-kgv-box="' + key + '"><input data-kgv="' + key + '" type="number" step="any" placeholder="значение"></span><button type="button" class="eibtn" data-kg="' + key + '|set"' + dis + '>Применить</button></span>' +
+    '<span class="kvbarg"><b>Элемент всем:</b><select data-kge="' + key + '">' + kmsOpt([['elb|90', 'Отвод 90°'], ['elb|45', 'Отвод 45°'], ['elb|30', 'Отвод 30°'], ['teeS|', 'Тройник — проход'], ['teeB|', 'Тройник — ответвление'], ['suddE|', 'Внезапное расширение'], ['suddC|', 'Внезапное сужение'], ['node|', 'Узел клапана'], ['fdv|', 'Клапан противопожарный'], ['grille|', 'Решётка'], ['louver|', 'Решётка наружная'], ['umbr|', 'Зонт, оголовок']], 'elb|90') + '</select>' +
+    '<button type="button" class="eibtn" data-kg="' + key + '|add"' + dis + '>+ добавить</button></span>' +
+    '<span class="kvbarg"><b>Набор элементов участка</b><select data-kgc="' + key + '">' + net.secs.map(function (x, j) { return '<option value="' + j + '">№ ' + (j + 1) + ' (' + (x.els || []).length + ' эл.)</option>'; }).join('') + '</select>' +
+    '<button type="button" class="eibtn" data-kg="' + key + '|copy"' + dis + '>→ выбранным</button></span></div>';
+}
 function kmsInner(net, key) {
   var h = '<p class="sub">' + kmsNote(key) + ' ξ — по Идельчику (МР п. 5.1, ссылка [8]) или по паспорту изделия; введённое значение запоминается для этого элемента.</p>';
+  if (window.kmsGrpBar && net.secs.length > 1) h += kmsGrpBar(net, key);
   net.secs.forEach(function (s, si) {
-    var id = key + '|' + si, m = kmsMat(s.mat), epsAuto = isFinite(m[2]) ? m[2] : (KMS_LIB['eps|' + s.mat] || {}).v;
-    h += '<div class="kmss"><div class="kmsh"><b>' + (si + 1) + '.</b>' +
+    var id = key + '|' + si, m = kmsMat(s.mat), epsAuto = isFinite(m[2]) ? m[2] : (KMS_LIB['eps|' + s.mat] || {}).v, on = kmsSel(key).indexOf(si) >= 0;
+    h += '<div class="kmss' + (on ? ' on' : '') + '"><div class="kmsh">' + (net.secs.length > 1 ? '<input type="checkbox" class="ksel" data-ksel="' + key + '|' + si + '"' + (on ? ' checked' : '') + ' aria-label="Выбрать участок ' + (si + 1) + '">' : '') + '<b>' + (si + 1) + '.</b>' +
       '<input class="kmsn" data-kn="' + id + '|nm" type="text" value="' + kmsNum(s.nm) + '" aria-label="Название участка">' +
       '<button type="button" class="eibtn kmsx" data-kdel="' + key + '|sec|' + si + '" title="Удалить участок">×</button></div>' +
       '<div class="trpick stpick">' +
@@ -309,8 +326,36 @@ document.addEventListener('click', function (e) {
     if (a[1] === 'sec') { /* номера «идёт от» у следующих участков сдвигаются; ветвь от удалённого — к его родителю */
       var di = +a[2], dUp = kmsUp(net.secs[di], di);
       net.secs.forEach(function (x, j) { if (j <= di) return; var u = kmsUp(x, j); x.up = u === di + 1 ? dUp : u > di + 1 ? u - 1 : u; });
-      net.secs.splice(di, 1);
+      net.secs.splice(di, 1); KMS_SEL[a[0]] = []; /* номера сдвинулись — выбор сброшен */
     } else net.secs[+a[2]].els.splice(+a[3], 1);
   }
   kmsRedraw(a[0]); kvCalc();
+});
+document.addEventListener('change', function (e) {
+  var t = e.target, d = t.dataset || {};
+  if (d.ksel) { var a = d.ksel.split('|'), L = kmsSel(a[0]), i = +a[1], k = L.indexOf(i); if (t.checked && k < 0) L.push(i); if (!t.checked && k >= 0) L.splice(k, 1); L.sort(function (x, y) { return x - y; }); kmsRedraw(a[0]); return; }
+  if (d.kgf) { /* поле значения под выбранную графу */
+    var box = document.querySelector('[data-kgv-box="' + d.kgf + '"]'), f = t.value;
+    box.innerHTML = f === 'mat' ? '<select data-kgv="' + d.kgf + '">' + kmsOpt(KMS_MAT, 'galv') + '</select>' : f === 'rect' ? '<select data-kgv="' + d.kgf + '">' + kmsOpt([[true, 'прямоугольное'], [false, 'круглое']], true) + '</select>' : '<input data-kgv="' + d.kgf + '" type="number" step="any" placeholder="значение">';
+  }
+});
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('[data-kg]'); if (!b || !KV.p) return;
+  var a = b.dataset.kg.split('|'), key = a[0], net = kmsNetOf(key); if (!net) return;
+  var sel = kmsSel(key), op = a[1];
+  if (op === 'all') { KMS_SEL[key] = net.secs.map(function (x, j) { return j; }); kmsRedraw(key); return; }
+  if (op === 'none') { KMS_SEL[key] = []; kmsRedraw(key); return; }
+  if (!sel.length) return;
+  if (op === 'set') {
+    var f = document.querySelector('[data-kgf="' + key + '"]').value, vi = document.querySelector('[data-kgv="' + key + '"]'), raw = vi ? vi.value : '';
+    if (raw === '' && f !== 'eps') return;
+    sel.forEach(function (i) { var s = net.secs[i]; if (f === 'mat') { s.mat = raw; s.eps = ''; } else if (f === 'rect') s.rect = raw === 'true'; else s[f] = raw === '' ? '' : smkNum(raw); });
+  } else if (op === 'add') {
+    var ev = document.querySelector('[data-kge="' + key + '"]').value.split('|');
+    sel.forEach(function (i) { var el = { t: ev[0], n: 1, xi: '' }; if (ev[1]) el.ang = +ev[1]; if (ev[0] === 'node') el.var = ''; if (!kmsAutoT(el.t)) { var lib = KMS_LIB[kmsElKey(el, net.secs[i])]; if (lib && isFinite(lib.v)) el.xi = lib.v; } net.secs[i].els.push(el); });
+  } else if (op === 'copy') {
+    var src = net.secs[+document.querySelector('[data-kgc="' + key + '"]').value];
+    sel.forEach(function (i) { if (net.secs[i] !== src) net.secs[i].els = JSON.parse(JSON.stringify(src.els || [])); });
+  }
+  kmsRedraw(key); kvCalc();
 });
