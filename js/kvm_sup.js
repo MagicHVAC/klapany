@@ -2,7 +2,7 @@
    Методика: МР ВНИИПО к СП 7.13130.2013, разд. 4 (4.1 лестничные клетки, 4.2 лифтовые шахты), п. 5.2 (вентиляторы).
    Порядок расчёта и допущения повторяют отчёты «КВМ-Дым» 5.2 (сверено на отчётах инженера, 06.11.2026):
    T = t + 273,15; ρ = 353/T; ветер Pw = 0,25(Kww − Kw0)ρa·va²; воздуховоды — Кольбрук, ν воздуха по Сазерленду.
-   Пока не сделаны: подземные части (4.1.4, 4.2.5), тамбур-шлюзы и зоны безопасности с вертикальным каналом. */
+   Пока не сделаны: подземная часть лифтовой шахты (4.2.5), тамбур-шлюзы и зоны безопасности с вертикальным каналом. */
 var SUP_G = 9.81;
 function supRho(t) { return 353 / (t + 273.15); }
 function supNu(t) { var T = t + 273.15, mu = 1.458e-6 * Math.pow(T, 1.5) / (T + 110.4); return mu / supRho(t); }
@@ -49,6 +49,7 @@ function supStair(d) {
   if (p.h1Guess) o.warn.push('Высота 1-го этажа в проекте задана номером из списка — принято ' + p.h1.toFixed(2).replace('.', ',') + ' м. Проверь.');
   var ros = o.ros, dro = ros - o.ror, Pw = o.Pw;
   o.Sd = p.Sd > 0 ? p.Sd : (p.gasProof ? 60000 : 5300) / ros;
+  if (p.part === 'ug') return supStairUG(p, o);
   var elev = function (i) { return i <= 1 ? 0 : p.h1 + (i - 2) * p.hf; };
   var hc = function (i) { return elev(i) + p.hd / 2; };
   o.q = Math.max(p.p - 1, 1); o.GsF = p.Gsm / o.q;
@@ -62,7 +63,7 @@ function supStair(d) {
     /* 4.1.1: не сообщается с 1-м этажом — (23), (24) */
     o.P1 = p.Pplus + Pw - g * (elev(2) + 0.5 * p.hd) * dro;
     o.Gsa = p.outerExit ? Math.sqrt(2 * ros * (p.Pplus + Pw - g * (elev(2) + 0.5 * p.hd) * dro + 0.5 * g * p.hda * (o.roa - ros)) /
-      ((p.nd * p.xid + p.xir + 1) / (p.Fda * p.Fda) + p.xis / (p.Fs * p.Fs))) : 0;
+      ((p.nd * p.xid + p.xir + 1) / (p.Fda * p.Fda) + 60 * (p.zUG > 0 ? p.zUG : 1) / (p.Fs * p.Fs))) : 0;
     start = 2;
   }
   o.Gs0 = Math.max(o.GsF, o.Gsa);
@@ -94,6 +95,44 @@ function supStair(d) {
   o.Lv = 3600 * G / o.roa;
   o.Psv = o.Ps + g * o.hsN * (o.roa - ros) + g * p.h0 * (o.roa - o.ror) + o.duct.P;
   if (dpmax > 150) o.warn.push('Перепад на закрытых дверях до ' + dpmax.toFixed(0).replace('.', ',') + ' Па — больше 150 Па (СП 7 п. 7.16 б): рассечка или распределённая подача.');
+  return o;
+}
+/* ---------- 1.26.0: 4.1.4 лестничная клетка подземной части, МР ВНИИПО (38)–(42) ----------
+   Отметки отрицательные: h-n = −NUG·hUG (пол нижнего подземного), h-i = −i·hUG; отсчёт от пола 1-го этажа.
+   (38) Pr-i = g(h-n − h-i)(ρa − ρr); условие ΔPs-i ≥ 20 Па;
+   (39) Ps-1 = 20 + g(h-n − (h-1 + 0,5hd))(ρs − ρr);
+   (40) Gsa = {2ρs/[(nξd + ξr + 1)/Fda² + 60z/Fs²]·[Pw + Ps-1 − g(h-n − 0,5hda)(ρa − ρs)]}^1/2;
+   ниже — (26)–(28) и (41)/(42): ΔGsd(−i−1) = Fd/S^1/2·[Ps(−i−1) − g(h-n − (h(−i−1) − 0,5hd))(ρs − ρr)]^1/2.
+   Знаки «+0,5hd» в (39) и «−0,5hd» в (41), (42) — как напечатано в МР. Открытая дверь — на верхнем подземном (25), G = max(Gsm/q; Gsa). */
+function supStairUG(p, o) {
+  var g = SUP_G, ros = o.ros, roa = o.roa, ror = o.ror, n = Math.max(1, Math.round(p.NUG || 1)), hu = p.hUG, z = p.zUG > 0 ? p.zUG : 1;
+  var hn = -n * hu, lev = function (i) { return -i * hu; };
+  o.ug = true; o.hn = hn;
+  o.P1 = 20 + g * (hn - (lev(1) + 0.5 * p.hd)) * (ros - ror);
+  var den = (p.nd * p.xid + p.xir + 1) / (p.Fda * p.Fda) + 60 * z / (p.Fs * p.Fs);
+  var br = o.Pw + o.P1 - g * (hn - 0.5 * p.hda) * (roa - ros);
+  if (!(br > 0)) { o.err.push('В формуле (40) под корнем ≤ 0 — проверь температуры, ветер и глубину.'); o.Gsa = 0; } else o.Gsa = Math.sqrt(2 * ros * br / den);
+  o.q = Math.max(p.p - 1, 1); o.GsF = p.Gsm / o.q; o.Gs0 = Math.max(o.GsF, o.Gsa);
+  var P = o.P1, G = o.Gs0, rows = [], dpmax = 20, dpmin = 20;
+  rows.push({ i: -1, h: lev(1) + 0.5 * p.hd, P: P, dPd: 20, dG: 0, G: G, Pr: g * (hn - lev(1)) * (roa - ror) });
+  for (var i = 1; i < n; i++) {
+    var v = G / (ros * p.Fs), dPs = 0.5 * p.xis * ros * v * v;
+    rows[rows.length - 1].v = v; rows[rows.length - 1].dPs = dPs;
+    P += dPs;
+    var dPd = P - g * (hn - (lev(i + 1) - 0.5 * p.hd)) * (ros - ror), gd = p.floorTamb ? 0 : p.Fd / Math.sqrt(o.Sd) * Math.sqrt(Math.max(dPd, 0));
+    G += gd; dpmax = Math.max(dpmax, dPd); dpmin = Math.min(dpmin, dPd);
+    rows.push({ i: -(i + 1), h: lev(i + 1) + 0.5 * p.hd, P: P, dPd: dPd, dG: gd, G: G, Pr: g * (hn - lev(i + 1)) * (roa - ror) });
+  }
+  var vN = G / (ros * p.Fs), dPN = 0.5 * p.xis * ros * vN * vN;
+  rows[rows.length - 1].v = vN; rows[rows.length - 1].dPs = dPN;
+  o.rows = rows; o.Gs = G; o.Ps = P + dPN; o.dpmax = dpmax; o.dpmin = dpmin;
+  o.hsN = (n - 1) * hu;
+  o.duct = supNet(G, roa, o.ta, p, o);
+  o.Lv = 3600 * G / roa;
+  o.Psv = o.Ps + g * o.hsN * (roa - ros) + g * p.h0 * (roa - ror) + o.duct.P;
+  if (dpmin < 20) o.warn.push('Перепад на закрытых дверях ' + dpmin.toFixed(1).replace('.', ',') + ' Па — меньше 20 Па (условие МР п. 4.1.4).');
+  if (dpmax > 150) o.warn.push('Перепад на закрытых дверях до ' + dpmax.toFixed(0).replace('.', ',') + ' Па — больше 150 Па (СП 7 п. 7.16 б).');
+  o.warn.push('Вентилятор: в МР для лестницы — (93), (94), записаны для подачи в верх клетки. Для подземной части принято: Ps — у нижнего подземного этажа (там набирается весь расход), hs = (NUG − 1)·hUG. Сверь с принятой схемой подачи.');
   return o;
 }
 function supBaseFrom(a) {

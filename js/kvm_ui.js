@@ -14,7 +14,7 @@ function kvDefSmk() {
     segs: segs, typ: kvTypDef(), segMode: 'typ', comp: window.compDef ? compDef() : null, Skl: 11000, eps: 0.0001, endExhaust: false, ductRes: 100, vOut: 20, dpuH: 2.3, dpuW: 800, dpuB: 400, dpuType: 2 };
 }
 function kvDefStair() {
-  return { kind: 'stair', name: 'Лестничная клетка Н2', system: 'ПД1', windows: true, outerExit: true, noFloor1: false, floorTamb: false, N: 15, h1: 3.9, hf: 3.15, p: 1,
+  return { kind: 'stair', name: 'Лестничная клетка Н2', system: 'ПД1', part: 'og', NUG: 2, hUG: 3.3, zUG: 1, windows: true, outerExit: true, noFloor1: false, floorTamb: false, N: 15, h1: 3.9, hf: 3.15, p: 1,
     Gsm: 4.76, Fs: 30.3, xis: 60, Fda: 1.8, hda: 2.1, nd: 1, xid: 2.44, xir: 4, Fd: 1.8, hd: 2.1, gasProof: false, Sd: 0, Fw: 3.75, winVar: 1, winVal: 3,
     Pplus: 20, h0: 15, duct: { a: 800, b: 600, rect: false, len: 20, eps: 0.1, xi: 2 }, air: { ta: -13, tr: 18, va: 6.2, kww: 0.8, kw0: -0.6 } };
 }
@@ -42,9 +42,9 @@ var KV_F = {
   ],
   stair: [
     ['Объект', [['name', 'Проект', 't'], ['system', 'Система', 't']]],
-    ['Условия', [['windows', 'Окна', [[true, 'у наружной стены, окна на каждом этаже'], [false, 'без окон (ядро)']]], ['outerExit', 'Наружный выход', [[true, 'обособленный'], [false, 'нет']]],
+    ['Условия', [['part', 'Часть здания', [['og', 'надземная — п. 4.1.1–4.1.3'], ['ug', 'подземная — п. 4.1.4, (38)–(42)']]], ['windows', 'Окна', [[true, 'у наружной стены, окна на каждом этаже'], [false, 'без окон (ядро)']]], ['outerExit', 'Наружный выход', [[true, 'обособленный'], [false, 'нет']]],
       ['noFloor1', 'Связь с 1-м этажом', [[false, 'через одинарную дверь — (33), (34)'], [true, 'нет или через тамбур-шлюз — (23), (24)']]], ['floorTamb', 'Поэтажные выходы', [[false, 'одинарные двери'], [true, 'через тамбур-шлюзы — без утечек']]]]],
-    ['Здание', [['N', 'Надземных этажей'], ['h1', 'Высота 1-го этажа, м'], ['hf', 'Высота вышележащих этажей, м'], ['p', 'Лестничных клеток в коридор']]],
+    ['Здание', [['N', 'Надземных этажей'], ['h1', 'Высота 1-го этажа, м'], ['hf', 'Высота вышележащих этажей, м'], ['p', 'Лестничных клеток в коридор'], ['NUG', 'Подземных этажей'], ['hUG', 'Высота подземных этажей, м'], ['zUG', 'z — сопротивление маршей до выхода', '', 'z = 1 — 2 марша (МР п. 4.1.1)']]],
     ['Воздух', [['air.ta', 'ta — наружный (зима), °C'], ['air.tr', 'tr — в здании, °C'], ['air.va', 'va — ветер, м/с'], ['air.kww', 'Kww — наветренный'], ['air.kw0', 'Kw0 — заветренный'], ['Gsm', 'Gsm — удаляется дыма с этажа, кг/с']]],
     ['Лестничная клетка', [['Fs', 'Fs — проекция маршей и площадок, м²'], ['xis', 'ξs — КМС маршей']]],
     ['Наружный выход', [['Fda', 'Fda — дверь наружного выхода, м²'], ['hda', 'hda — её высота, м'], ['nd', 'n — дверей подряд в выходе'],
@@ -94,13 +94,14 @@ var KV_TYP = [
 /* 1.24.1: компактная форма — поля, ненужные выбранному варианту, скрыты (коридор: двери, qп, коридор; зал: площадь пола, очаг, ψ, η, r);
    переключатели до 4 вариантов — радиокнопками, видны сразу. Смена поля из KV_REDRAW перерисовывает форму. */
 var KV_WIN = function (p) { return !!p.windows; };
+var KV_UG = function (p) { return p.part === 'ug'; }, KV_OG = function (p) { return p.part !== 'ug'; }, KV_WIN_OG = function (p) { return p.part !== 'ug' && !!p.windows; };
 var KV_HALL = function (p) { return +p.variant === 2; }, KV_COR = function (p) { return +p.variant === 0; };
 var KV_VIS = { smk: { living: KV_COR, doorsTxt: KV_COR, qp: KV_COR, cL: KV_COR, cA: KV_COR, cH: KV_COR, dA: KV_COR, dH: KV_COR,
   Ff: KV_HALL, psi: KV_HALL, Fo: KV_HALL, eta: KV_HALL, r: KV_HALL,
   ductRes: function (p) { return !!p.endExhaust; }, vOut: function (p) { return !!p.endExhaust; } },
-  stair: { Fw: KV_WIN, winVar: KV_WIN, winVal: KV_WIN },
+  stair: { Fw: KV_WIN_OG, winVar: KV_WIN_OG, winVal: KV_WIN_OG, windows: KV_OG, outerExit: KV_OG, noFloor1: KV_OG, N: KV_OG, h1: KV_OG, hf: KV_OG, NUG: KV_UG, hUG: KV_UG, zUG: function (p) { return p.part === 'ug' || !!p.noFloor1; } },
   tamb: { tsf: function (p) { return !!p.heat; }, vd: function (p) { return !!p.openDoor; } } };
-var KV_REDRAW = { variant: 1, endExhaust: 1, windows: 1, heat: 1, openDoor: 1 };
+var KV_REDRAW = { part: 1, noFloor1: 1, variant: 1, endExhaust: 1, windows: 1, heat: 1, openDoor: 1 };
 function kvVis(p, k) { var m = KV_VIS[KV.mode], f = m && m[k]; return !f || f(p); }
 function kvField(p, f) {
   var id = 'kv-' + f[0].replace('.', '_'), v = f[0] === 'doorsTxt' ? kvDoorsTxt(p.doors) : kvGet(p, f[0]), hid = kvVis(p, f[0]) ? '' : ' hidden';

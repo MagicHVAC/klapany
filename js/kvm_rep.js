@@ -93,7 +93,36 @@ function repSmk(p, o) {
 /* ---------- подпор: лестница ---------- */
 function repAirRows(a) { return [['Наружный воздух (зима)', 'ta', rf(a.ta, 0), '°C'], ['Воздух в здании', 'tr', rf(a.tr, 0), '°C'], ['Скорость ветра', 'va', rf(a.va, 1), 'м/с'], ['Коэфф. ветрового напора', 'Kww / Kw0', rf(a.kww, 1) + ' / ' + rf(a.kw0, 1), '']]; }
 function repDuct(d, o, p) { if (p && p.net && p.net.secs) return 'по участкам — ' + p.net.secs.length + ' шт., см. расчёт сети'; return (d.rect ? rf(d.a, 0) + ' × ' + rf(d.b, 0) + ' мм' : '⌀ ' + rf(d.a, 0) + ' мм') + ', l = ' + rf(d.len, 1) + ' м, Σξ = ' + rf(d.xi, 1); }
+/* 1.26.0: лестничная клетка подземной части — МР п. 4.1.4, (38)–(42) */
+function repStairUG(p, o) {
+  var n = 0, h = repHead('Расчёт подпора воздуха в лестничную клетку подземной части', p, REP_M);
+  h += repSum([['Подача вентилятора', rf(o.Lv, 0) + ' м³/ч', 'наружный воздух ' + rf(p.air.ta, 0) + ' °C'], ['Давление вентилятора', rf(o.Psv, 0) + ' Па', 'статическое'], ['Перепад на дверях', rf(o.dpmin, 0) + '…' + rf(o.dpmax, 0) + ' Па', o.dpmin < 20 ? 'меньше 20 Па' : o.dpmax > 150 ? 'больше 150 Па' : 'от 20 до 150 Па'], ['Расход в клетке', rf(o.Gs, 2) + ' кг/с', 'у нижнего этажа']]);
+  h += repSec(++n, 'Исходные данные');
+  h += repIn([['Условия', '', ['подземная часть, выход наружу на уровне 1-го этажа (п. 4.1.4)', p.floorTamb ? 'поэтажно — через тамбур-шлюзы' : 'поэтажно — одинарные двери'].join('; '), ''],
+    ['Подземных этажей; высота', 'n; h', Math.round(p.NUG) + '; ' + rf(p.hUG, 2), 'м'], ['Глубина (пол нижнего подземного)', 'h-n', rf(o.hn, 2), 'м']].concat(repAirRows(p.air)).concat([['Удаляется дыма с этажа пожара', 'Gsm', rf(p.Gsm, 2), 'кг/с'],
+    ['Проекция маршей и площадок; КМС клетки; z', 'Fs; ξs; z', rf(p.Fs, 1) + '; ' + rf(p.xis, 0) + '; ' + rf(p.zUG || 1, 2), 'м²'],
+    ['Наружный выход: дверь, высота, дверей, ξd, ξr', '', rf(p.Fda, 2) + ' м², ' + rf(p.hda, 2) + ' м, ' + p.nd + ', ' + rf(p.xid, 2) + ', ' + rf(p.xir, 2), ''], ['Двери на этажах: площадь, высота', 'Fd, hd', rf(p.Fd, 2) + ' м², ' + rf(p.hd, 2) + ' м', ''],
+    ['Воздуховод', '', repDuct(p.duct, null, p), ''], ['Воздухозабор выше места подачи на', 'h0s', rf(p.h0, 1), 'м']]));
+  h += repSec(++n, 'Расчёт');
+  h += repF('Плотности', 'ρ = 353/T; t<sub>s</sub> = (t<sub>a</sub> + t<sub>r</sub>)/2', 'ρ<sub>a</sub> = ' + rf(o.roa, 3) + '; ρ<sub>r</sub> = ' + rf(o.ror, 3) + '; ρ<sub>s</sub> = ' + rf(o.ros, 3), 'кг/м³') +
+    repF('Ветровое давление', 'P<sub>w</sub> = 0,25·(K<sub>ww</sub> − K<sub>w0</sub>)·ρ<sub>a</sub>·v<sub>a</sub>²', '', rf(o.Pw, 2) + ' Па') +
+    repF('Давление в помещениях подземных этажей (38)', 'P<sub>r−i</sub> = g·(h<sub>−n</sub> − h<sub>−i</sub>)·(ρ<sub>a</sub> − ρ<sub>r</sub>)', 'по этажам — в таблице', '') +
+    repF('Давление у двери верхнего подземного этажа (39)', 'P<sub>s−1</sub> = 20 + g·(h<sub>−n</sub> − (h<sub>−1</sub> + 0,5h<sub>d</sub>))·(ρ<sub>s</sub> − ρ<sub>r</sub>)', '', rf(o.P1, 2) + ' Па') +
+    repF('Расход через наружный выход (40)', 'G<sub>sa</sub> = {2ρ<sub>s</sub>/[(nξ<sub>d</sub> + ξ<sub>r</sub> + 1)/F<sub>da</sub>² + 60z/F<sub>s</sub>²]·[P<sub>w</sub> + P<sub>s−1</sub> − g·(h<sub>−n</sub> − 0,5h<sub>da</sub>)·(ρ<sub>a</sub> − ρ<sub>s</sub>)]}<sup>1/2</sup>', '', rf(o.Gsa, 3) + ' кг/с') +
+    repF('Расход в открытой двери этажа пожара (25)', 'G<sub>s−1</sub> = G<sub>sm</sub>/q, q = max(p − 1; 1)', rf(p.Gsm, 2) + ' / ' + o.q, rf(o.GsF, 3) + ' кг/с → принято ' + rf(o.Gs0, 3) + ' кг/с') +
+    repF('Сопротивление закрытых дверей', 'S<sub>d</sub> = ' + (p.gasProof ? '60000' : '5300') + '/ρ<sub>s</sub>', '', rf(o.Sd, 1) + ' м³/кг') +
+    repF('Нижележащие этажи (26)–(28), (' + (p.gasProof ? '42' : '41') + ')', 'ΔG<sub>sd(−i−1)</sub> = F<sub>d</sub>/S<sub>d</sub><sup>1/2</sup>·[P<sub>s(−i−1)</sub> − g·(h<sub>−n</sub> − (h<sub>(−i−1)</sub> − 0,5h<sub>d</sub>))·(ρ<sub>s</sub> − ρ<sub>r</sub>)]<sup>1/2</sup>', 'знаки ±0,5h<sub>d</sub> в (39) и (41) — как в МР', '');
+  h += repT(['Этаж', 'h, м', 'P<sub>r</sub>, Па', 'P<sub>s</sub>, Па', 'ΔP<sub>d</sub>, Па', 'v<sub>s</sub>, м/с', 'ΔP<sub>s</sub>, Па', 'ΔG<sub>sd</sub>, кг/с', 'G<sub>s</sub>, кг/с'], o.rows.map(function (r) {
+    return [r.i + (r.i === -1 ? ' (дверь открыта)' : ''), rf(r.h, 2), rf(r.Pr, 2), rf(r.P, 2), rf(r.dPd, 2), rf(r.v, 3), rf(r.dPs, 2), rf(r.dG, 4), rf(r.G, 3)];
+  }));
+  h += repSec(++n, 'Вентилятор (93), (94)');
+  h += (o.net ? kmsRep(o.net, 'Сеть от воздухозабора до клетки') : repF('Воздуховоды', 'P<sub>вв</sub> = λ·l/D<sub>э</sub>·P<sub>d</sub> + Σξ·P<sub>d</sub>', 'v = ' + rf(o.duct.v, 2) + ' м/с; P<sub>d</sub> = ' + rf(o.duct.Pd, 2) + ' Па; λ = ' + rf(o.duct.f, 4), rf(o.duct.P, 2) + ' Па')) +
+    repF('Подача', 'L<sub>v</sub> = 3600·G<sub>s</sub>/ρ<sub>a</sub>', '3600 · ' + rf(o.Gs, 3) + ' / ' + rf(o.roa, 3), rf(o.Lv, 0) + ' м³/ч') +
+    repF('Статическое давление', 'P<sub>sv</sub> = P<sub>s</sub> + g·h<sub>s</sub>·(ρ<sub>a</sub> − ρ<sub>s</sub>) + g·h<sub>0s</sub>·(ρ<sub>a</sub> − ρ<sub>r</sub>) + P<sub>вв</sub>', rf(o.Ps, 2) + ' + 9,81 · ' + rf(o.hsN, 2) + ' · ' + rf(o.roa - o.ros, 3) + ' + 9,81 · ' + rf(p.h0, 1) + ' · ' + rf(o.roa - o.ror, 3) + ' + ' + rf(o.duct.P, 2), rf(o.Psv, 0) + ' Па');
+  return repSup('<div class="rep">' + h + repNote(o) + '</div>');
+}
 function repStair(p, o) {
+  if (o.ug) return repStairUG(p, o);
   var n = 0, h = repHead('Расчёт подпора воздуха в лестничную клетку', p, REP_M);
   h += repSum([['Подача вентилятора', rf(o.Lv, 0) + ' м³/ч', 'наружный воздух ' + rf(p.air.ta, 0) + ' °C'], ['Давление вентилятора', rf(o.Psv, 0) + ' Па', 'статическое'], ['Перепад на дверях', 'до ' + rf(o.dpmax, 0) + ' Па', o.dpmax > 150 ? 'больше 150 — рассечка' : 'не больше 150 Па'], ['Расход в клетке', rf(o.Gs, 2) + ' кг/с', 'вверху']]);
   h += repSec(++n, 'Исходные данные');
@@ -105,7 +134,7 @@ function repStair(p, o) {
   h += repF('Плотности', 'ρ = 353/T; t<sub>s</sub> = (t<sub>a</sub> + t<sub>r</sub>)/2', 'ρ<sub>a</sub> = ' + rf(o.roa, 3) + '; ρ<sub>r</sub> = ' + rf(o.ror, 3) + '; ρ<sub>s</sub> = ' + rf(o.ros, 3), 'кг/м³') +
     repF('Ветровое давление', 'P<sub>w</sub> = 0,25·(K<sub>ww</sub> − K<sub>w0</sub>)·ρ<sub>a</sub>·v<sub>a</sub>²', '', rf(o.Pw, 2) + ' Па') +
     repF(p.noFloor1 ? 'Давление у двери 2-го этажа (23)' : 'Давление у двери 1-го этажа (33)', p.noFloor1 ? 'P<sub>s</sub> = P<sup>+</sup> + P<sub>w</sub> − g·(h<sub>2</sub> + 0,5h<sub>d</sub>)·(ρ<sub>s</sub> − ρ<sub>r</sub>)' : 'P<sub>s</sub> = P<sup>+</sup> + P<sub>w</sub> − 0,5·g·h<sub>d</sub>·(ρ<sub>s</sub> − ρ<sub>r</sub>)', '', rf(o.P1, 2) + ' Па') +
-    repF('Расход через наружный выход ' + (p.noFloor1 ? '(24)' : '(34)'), 'G<sub>sa</sub> = {2ρ<sub>s</sub>·[…] / [(nξ<sub>d</sub> + ξ<sub>r</sub> + 1)/F<sub>da</sub>²' + (p.noFloor1 ? ' + ξ<sub>s</sub>/F<sub>s</sub>²' : '') + ']}<sup>1/2</sup>', '', rf(o.Gsa, 3) + ' кг/с') +
+    repF('Расход через наружный выход ' + (p.noFloor1 ? '(24)' : '(34)'), 'G<sub>sa</sub> = {2ρ<sub>s</sub>·[…] / [(nξ<sub>d</sub> + ξ<sub>r</sub> + 1)/F<sub>da</sub>²' + (p.noFloor1 ? ' + 60z/F<sub>s</sub>², z = ' + rf(p.zUG || 1, 2) : '') + ']}<sup>1/2</sup>', '', rf(o.Gsa, 3) + ' кг/с') +
     repF('Расход в открытой двери этажа пожара (25)', 'G<sub>s(F)</sub> = G<sub>sm</sub>/q, q = max(p − 1; 1)', rf(p.Gsm, 2) + ' / ' + o.q, rf(o.GsF, 3) + ' кг/с → принято ' + rf(o.Gs0, 3) + ' кг/с') +
     repF('Сопротивление закрытых дверей', 'S<sub>d</sub> = ' + (p.gasProof ? '60000' : '5300') + '/ρ<sub>s</sub>', '', rf(o.Sd, 1) + ' м³/кг');
   h += repT(['Этаж', 'h, м', 'P<sub>s</sub>, Па', 'ΔP<sub>d</sub>, Па', 'v<sub>s</sub>, м/с', 'ΔP<sub>s</sub>, Па', 'ΔG<sub>sd</sub>, кг/с', 'ΔG<sub>sw</sub>, кг/с', 'G<sub>w</sub>, кг/(ч·м²)', 'G<sub>s</sub>, кг/с'], o.rows.slice().reverse().map(function (r) {
