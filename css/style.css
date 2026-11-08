@@ -641,3 +641,8 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .dlsvg .dlshaft { fill: color-mix(in srgb, var(--muted) 14%, transparent); stroke: var(--muted); stroke-width: 1; }
 .dlsvg .dlgr { fill: var(--no); } .dlsvg .dlgr.wrn { fill: var(--nz); } .dlsvg .dlgr.bad { fill: var(--fire); }
 .dlsvg .dllow { stroke: var(--air); stroke-width: 1; stroke-dasharray: 3 3; }
+/* 1.32.1: подвал — подложка (читается поверх огня) и контакт автора */
+.foot { position: relative; z-index: 1; }
+.foot .fin { background: color-mix(in srgb, var(--bg) 80%, transparent); backdrop-filter: blur(6px); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; }
+.foot .fcontact { margin: 8px 0 0; color: var(--text); font-size: 13.5px; }
+.foot .fcontact a { color: var(--air); overflow-wrap: anywhere; }
