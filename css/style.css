@@ -626,3 +626,18 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .kvadv ul { margin: 4px 0 6px; padding-left: 18px; font-size: 13px; } .kvadv .eibtn { margin-top: 8px; width: 100%; }
 .bstep.kvadv { border-color: var(--nz); }
 .kvR .bstep.kvadv li b, .kvR .bstep.kvadv small b, .bstep.kvadv li b, .bstep.kvadv small b { display: inline; font: 700 13px/1.4 var(--body); color: var(--fp); margin: 0; }
+/* 1.28.0: низ дымоприёмного устройства (js/dpu_low.js) */
+.dlans { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--air); border-radius: 12px; padding: 12px 16px; margin: 8px 0 12px; max-width: 80ch; }
+.dlans ol { margin: 6px 0 4px; padding-left: 20px; } .dlans li { margin: 3px 0; } .dlans p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+.dlqh { font-weight: 600; color: var(--text) !important; margin-top: 14px !important; }
+.dlq { margin: 4px 0 6px; padding: 8px 12px; border-left: 3px solid var(--line); color: var(--text); font-size: 14px; max-width: 80ch; }
+.dlnote { font-size: 13px !important; }
+.dlh3 { margin: 18px 0 8px; font-size: 17px; }
+.dlsvg .dlsmoke { fill: color-mix(in srgb, var(--muted) 22%, transparent); }
+.dlsvg .dlwall { stroke: var(--text); stroke-width: 2; }
+.dlsvg .dlbound { stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 6 4; }
+.dlsvg .dldoor { fill: color-mix(in srgb, var(--no) 18%, transparent); stroke: var(--no); stroke-width: 1.2; }
+.dlsvg .dldoorl { stroke: var(--no); stroke-width: 1; stroke-dasharray: 2 4; }
+.dlsvg .dlshaft { fill: color-mix(in srgb, var(--muted) 14%, transparent); stroke: var(--muted); stroke-width: 1; }
+.dlsvg .dlgr { fill: var(--no); } .dlsvg .dlgr.wrn { fill: var(--nz); } .dlsvg .dlgr.bad { fill: var(--fire); }
+.dlsvg .dllow { stroke: var(--air); stroke-width: 1; stroke-dasharray: 3 3; }

@@ -105,7 +105,7 @@ var PAGES = {
   smoke: function () {
     return '<h1>Противодымная вентиляция</h1><p class="lead">Пределы клапанов и воздуховодов, классы вентиляторов, где их ставить и куда выбрасывать дым.</p>' +
       strip(['smoke', 'supply', 'roof', 'facade', 'comp-nz']) +
-      '<h2 id="dpu">Число дымоприёмных устройств</h2>' + dpuBlock() +
+      '<h2 id="dpu">Число дымоприёмных устройств</h2>' + dpuBlock() + dlBlock() +
       '<h2 id="net">Полный расчёт по методике ВНИИПО</h2><p class="sub">Расход дыма, сеть дымоудаления и вентилятор, подпор лестниц, лифтов, тамбур-шлюзов, компенсация — в разделе <a href="#pdv">«Расчёт ПДВ»</a>.</p>' +
       '<h2>Пределы НЗ клапанов</h2><div class="tscroll"><table class="vei"><thead><tr><th>Система</th><th>Где</th><th>Не менее</th><th>СП 7.13130</th></tr></thead><tbody>' +
       VALVE_EI.map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + esc(r[1]) + '</td><td><span class="ei">' + r[2] + '</span></td><td>п. ' + esc(r[3]) + '</td></tr>'; }).join('') +
@@ -278,6 +278,7 @@ function show(name, arg) {
   soShow();
   stairPick();
   dpuCalc();
+  dlCalc();
   if (window.vnCalcAll) vnCalcAll();
   if (window.kvCalc) kvCalc();
   fareaCalc();
