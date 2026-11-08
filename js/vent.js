@@ -147,8 +147,6 @@
     if (b.dataset.t) { cur = b.dataset.t; store.tab = cur; save(); shown = 40; history.replaceState(null, '', '#' + cur); render(); window.scrollTo(0, 0); }
     else if (b.id === 'vmore') { shown += 60; render(); }
     else if (b.id === 'vreset') { store.bt = store.mt = ''; store.tt = false; save(); shown = 40; render(); }
-    else if (b.id === 'newsbtn') $('#newsdlg').showModal();
-    else if (b.id === 'newsclose') $('#newsdlg').close();
     else if (b.dataset.ex) { $('#q').value = b.dataset.ex; shown = 40; render(); }
   });
   document.addEventListener('change', function (e) {
@@ -163,7 +161,6 @@
   });
 
   $('#ver').textContent = 'v' + APP.ver + ' · ' + APP.date + ' · ' + APP.author;
-  $('#news').innerHTML = NEWS.slice(0, 12).map(function (n) { return '<p><b>' + n.v + '</b> ' + n.d + '<br>' + esc(n.t) + '</p>'; }).join('');
   $('#vex').innerHTML = 'Например: ' + ['туалет', 'кухня', 'детсад спальня', 'серверная', 'бассейн', 'irjkf'].map(function (w) { return '<button type="button" data-ex="' + w + '">' + w + '</button>'; }).join('');
   render();
   if ('serviceWorker' in navigator && location.protocol === 'https:') {

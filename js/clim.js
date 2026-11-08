@@ -202,8 +202,6 @@
   $('#cex').innerHTML = 'Например: ' + ['Москва', 'Санкт-Петербург', 'Краснодар', 'Новосибирск', 'Якутск', 'Сочи'].map(function (n) { return '<button type="button" data-city="' + n + '">' + n + '</button>'; }).join('');
   if (first) show(first);
   if (window.APP) $('#ver').textContent = 'v' + APP.ver + ' · ' + APP.date + ' · ' + APP.author;
-  if (window.NEWS) $('#news').innerHTML = NEWS.slice(0, 12).map(function (n) { return '<p><b>' + n.v + '</b> ' + n.d + '<br>' + esc(n.t) + '</p>'; }).join('');
-  document.addEventListener('click', function (e) { if (e.target.id === 'newsbtn') $('#newsdlg').showModal(); else if (e.target.id === 'newsclose') $('#newsdlg').close(); });
   if ('serviceWorker' in navigator && location.protocol === 'https:') {   /* как в vent.js: офлайн и перезагрузка на новую версию */
     var had = !!navigator.serviceWorker.controller, done = false;
     navigator.serviceWorker.addEventListener('controllerchange', function () { if (had && !done) { done = true; location.reload(); } });

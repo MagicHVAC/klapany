@@ -335,7 +335,6 @@ function init() {
     return '<a href="#' + r[0] + '" data-r="' + r[0] + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + ICON[r[0]] + '"/></svg><span>' + r[1] + '</span></a>';
   }).join('');
   $('#ver').textContent = 'v' + APP.ver + ' · ' + APP.date + ' · ' + APP.author;
-  $('#news').innerHTML = NEWS.map(function (n) { return '<p><b>' + n.v + '</b> ' + n.d + '<br>' + esc(n.t) + '</p>'; }).join('');
   document.addEventListener('click', function (e) {
     var b = e.target.closest('button,a');
     if (!b) return;
@@ -351,8 +350,6 @@ function init() {
       b.parentNode.querySelectorAll('.eibtn').forEach(function (x) { x.classList.toggle('on', x === b); });
       var dr = $('#deg-res'); dr.innerHTML = degCards(+b.dataset.deg); dr.classList.remove('pop'); void dr.offsetWidth; dr.classList.add('pop');
     }
-    if (b.id === 'newsbtn') $('#newsdlg').showModal();
-    if (b.id === 'newsclose') $('#newsdlg').close();
     var td = b.closest('.tr td');
     if (td) { $('#tr-r').value = td.dataset.r; $('#tr-c').value = td.dataset.c; trShow(); }
   });
