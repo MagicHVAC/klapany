@@ -165,6 +165,7 @@
     /* город в адресной строке не показываем (инженер 08.11); старые ссылки с #город читаются при старте */
     try { if (location.hash) history.replaceState(null, '', location.pathname + location.search); } catch (x) {}
     if (window.CLIM_MAP) CLIM_MAP.focus(c);
+    if (window.CLIM_WX) CLIM_WX.show(c);   /* 1.36.0: погода сейчас + анимация (clim_wx.js, wx_fx.js) */
     if (scroll) $('#cview').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   /* для карты (clim_map.js) */

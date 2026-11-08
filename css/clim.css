@@ -106,3 +106,10 @@ body.clim .top, body.clim .cwrap, body.clim .foot { position: relative; z-index:
 .cwbadge { margin: 4px 0 8px; padding: 8px 12px; border-radius: 12px; font-size: 13px; border: 1px dashed #ffb35c; color: var(--text); background: color-mix(in srgb, #ffb35c 10%, transparent); }
 .cwbadge.n { border: 1px solid var(--acc); background: color-mix(in srgb, var(--acc) 12%, transparent); }
 .cwsw { margin: 0 0 10px; }
+/* 1.36.0: погода сейчас (js/clim_wx.js) */
+.cwx { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.cwx h3 { margin: 0 0 8px; font: 700 18px var(--display, var(--body)); }
+.cwxbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.cwxbar > span { color: var(--muted); font-size: 13px; }
+.cwxon { border: 1px solid var(--line); background: none; color: var(--text); border-radius: 99px; padding: 5px 12px; font: 600 14px var(--body); cursor: pointer; }
+.cwxon.on { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 22%, transparent); }
