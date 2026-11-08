@@ -1,135 +1,137 @@
 /* 1.36.0 Анимация погоды на всю страницу (инженер 08.11.2026): солнце / ночь, тучи, дождь, снег, гроза, туман, ветер с листьями,
    торнадо — летят листья, палки, люди, коровы. Canvas поверх страницы, клики проходят насквозь (pointer-events: none).
-   WXFX.play(kind, power 0..1), WXFX.stop(). Вкладка скрыта — requestAnimationFrame сам встаёт. */
+   1.36.1 «красиво, как настоящее»: небо — js/wx_sky.js (луна в настоящей фазе, звёзды, объёмные облака, туман);
+   дождь — 3 слоя глубины и брызги; снег — 3 слоя с размытием; молния — ветвистая, со вспышкой неба.
+   WXFX.play(kind, power 0..1, {day, lat}), WXFX.stop(). Вкладка скрыта — requestAnimationFrame сам встаёт. */
 (function () {
-  var cv = null, cx = null, W = 0, H = 0, raf = 0, kind = '', pw = 0.5, P = [], cl = [], t0 = 0, flash = 0, bolt = null;
-  var R = Math.random;
-  function size() { W = cv.width = innerWidth; H = cv.height = innerHeight; }
+  var cv = null, cx = null, W = 0, H = 0, raf = 0, kind = '', pw = 0.5, op = {}, P = [], C = [], S = [], F = [], SPL = [], flash = 0, bolt = null;
+  var R = Math.random, TAU = Math.PI * 2, K = window.WXSKY;
+  function size() { W = cv.width = innerWidth; H = cv.height = innerHeight; if (kind) play(kind, pw, op); }
   function mk() {
     if (cv) return;
     cv = document.createElement('canvas'); cv.id = 'wxfx';
     cv.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:60';
-    document.body.appendChild(cv); cx = cv.getContext('2d'); size();
-    addEventListener('resize', size);
+    document.body.appendChild(cv); cx = cv.getContext('2d'); W = cv.width = innerWidth; H = cv.height = innerHeight;
+    var tm = 0; addEventListener('resize', function () { clearTimeout(tm); tm = setTimeout(size, 200); });
   }
-  function drops(n, snow) {
-    P = []; for (var i = 0; i < n; i++) P.push({ x: R() * W, y: R() * H, v: snow ? 0.6 + R() * 1.2 : 9 + R() * 8, r: snow ? 1.5 + R() * 2.5 : 0, s: R() * 6.28 });
-  }
-  function clouds(n, dark) {
-    cl = []; for (var i = 0; i < n; i++) cl.push({ x: R() * W * 1.2 - W * 0.1, y: R() * H * 0.35, w: 160 + R() * 260, v: 0.15 + R() * 0.35, a: dark ? 0.35 + R() * 0.25 : 0.12 + R() * 0.12, d: dark });
-  }
-  var FLY = ['🍂', '🍃', '🍁', '🌿', '🪵', '🧍', '🐄', '🍂', '🪵', '🐄', '🧍‍♂️', '🍃'];
-  function debris(n, list) {
-    P = []; for (var i = 0; i < n; i++) P.push({ a: R() * 6.28, h: R(), r: 0, e: list[i % list.length], s: 18 + R() * 22, rot: R() * 6.28, vr: (R() - 0.5) * 0.2, x: R() * W, y: R() * H, vx: 3 + R() * 6, vy: (R() - 0.5) * 2 });
-  }
-  function cloudDraw() {
-    cl.forEach(function (c) {
-      c.x += c.v; if (c.x - c.w > W) c.x = -c.w;
-      /* мягкий край: градиент круговой, сплющен масштабом — без резкой нижней кромки */
-      var col = c.d ? '40,46,60' : '235,240,250';
-      cx.save(); cx.translate(c.x, c.y); cx.scale(1, 0.45);
-      var g = cx.createRadialGradient(0, 0, 0, 0, 0, c.w);
-      g.addColorStop(0, 'rgba(' + col + ',' + c.a + ')'); g.addColorStop(0.6, 'rgba(' + col + ',' + c.a * 0.5 + ')'); g.addColorStop(1, 'rgba(' + col + ',0)');
-      cx.fillStyle = g; cx.beginPath(); cx.arc(0, 0, c.w, 0, 6.28); cx.fill(); cx.restore();
-    });
-  }
+  /* ---------- осадки ---------- */
+  function drops(n) { P = []; for (var i = 0; i < n; i++) { var z = R(); P.push({ x: R() * W, y: R() * H, z: z, v: 8 + z * 14, l: 8 + z * 22 }); } }
   function rain(wind) {
-    cx.strokeStyle = 'rgba(170,200,255,.45)'; cx.lineWidth = 1.2; cx.beginPath();
-    P.forEach(function (p) { p.y += p.v; p.x += wind; if (p.y > H) { p.y = -20; p.x = R() * W; } if (p.x > W) p.x = 0; cx.moveTo(p.x, p.y); cx.lineTo(p.x - wind * 1.5, p.y - p.v * 1.6); });
-    cx.stroke();
+    for (var layer = 0; layer < 3; layer++) {
+      cx.strokeStyle = 'rgba(185,205,240,' + [0.18, 0.32, 0.5][layer] + ')'; cx.lineWidth = [0.7, 1, 1.5][layer]; cx.beginPath();
+      P.forEach(function (p) {
+        if ((p.z * 3 | 0) !== layer) return;
+        p.y += p.v; p.x += wind * (0.5 + p.z);
+        if (p.y > H - 4) { if (p.z > 0.55 && SPL.length < 120) SPL.push({ x: p.x, y: H - 3 - R() * 30 * (1 - p.z), r: 1, l: 1 }); p.y = -p.l - R() * 60; p.x = R() * W * 1.1 - W * 0.05; }
+        if (p.x > W + 20) p.x = -20;
+        cx.moveTo(p.x, p.y); cx.lineTo(p.x - wind * (0.5 + p.z) * 1.4, p.y - p.l);
+      });
+      cx.stroke();
+    }
+    cx.strokeStyle = 'rgba(200,220,255,.35)'; cx.lineWidth = 1;   /* брызги */
+    for (var i = SPL.length - 1; i >= 0; i--) { var s = SPL[i]; cx.globalAlpha = s.l; cx.beginPath(); cx.ellipse(s.x, s.y, s.r * 2.2, s.r * 0.6, 0, Math.PI, TAU); cx.stroke(); s.r += 0.5; s.l -= 0.08; if (s.l <= 0) SPL.splice(i, 1); }
+    cx.globalAlpha = 1;
+  }
+  var flake = null;
+  function flakes(n) {
+    if (!flake) { flake = document.createElement('canvas'); flake.width = flake.height = 32; var x = flake.getContext('2d'), g = x.createRadialGradient(16, 16, 0, 16, 16, 16); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(255,255,255,.8)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 32, 32); }
+    P = []; for (var i = 0; i < n; i++) { var z = R(); P.push({ x: R() * W, y: R() * H, z: z, v: 0.4 + z * 1.6, r: 2 + z * z * 9, s: R() * TAU, w: 0.3 + R() * 0.9 }); }
+    P.sort(function (a, b) { return a.z - b.z; });
   }
   function snow(t) {
-    cx.fillStyle = 'rgba(255,255,255,.85)';
-    P.forEach(function (p) { p.y += p.v; p.x += Math.sin(t / 900 + p.s) * 0.6; if (p.y > H) { p.y = -5; p.x = R() * W; } cx.beginPath(); cx.arc(p.x, p.y, p.r, 0, 6.28); cx.fill(); });
+    P.forEach(function (p) {
+      p.y += p.v; p.x += Math.sin(t / 1100 * p.w + p.s) * (0.3 + p.z * 0.9) + pw * p.z;
+      if (p.y > H + 10) { p.y = -10; p.x = R() * W; } if (p.x > W + 10) p.x = -10;
+      cx.globalAlpha = 0.35 + p.z * 0.6; cx.drawImage(flake, p.x - p.r, p.y - p.r, p.r * 2, p.r * 2);
+    });
+    cx.globalAlpha = 1;
   }
-  function sun(t) {
-    var x = W * 0.86, y = H * 0.12, r = Math.min(W, H) * 0.09;
-    for (var i = 0; i < 12; i++) {   /* лучи */
-      var a = i / 12 * 6.28 + t / 9000, l = r * (2.2 + 0.3 * Math.sin(t / 700 + i));
-      cx.strokeStyle = 'rgba(255,210,110,.18)'; cx.lineWidth = 10; cx.beginPath(); cx.moveTo(x + Math.cos(a) * r * 1.2, y + Math.sin(a) * r * 1.2); cx.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); cx.stroke();
-    }
-    var g = cx.createRadialGradient(x, y, 0, x, y, r * 2.4);
-    g.addColorStop(0, 'rgba(255,236,160,.75)'); g.addColorStop(0.35, 'rgba(255,190,90,.25)'); g.addColorStop(1, 'rgba(255,170,60,0)');
-    cx.fillStyle = g; cx.beginPath(); cx.arc(x, y, r * 2.4, 0, 6.28); cx.fill();
-  }
-  function night(t) {
-    if (!P.length) for (var i = 0; i < 140; i++) P.push({ x: R() * W, y: R() * H * 0.7, r: R() * 1.4 + 0.3, s: R() * 6.28 });
-    P.forEach(function (p) { cx.fillStyle = 'rgba(255,255,255,' + (0.35 + 0.35 * Math.sin(t / 600 + p.s)) + ')'; cx.beginPath(); cx.arc(p.x, p.y, p.r, 0, 6.28); cx.fill(); });
-    var x = W * 0.86, y = H * 0.12, r = Math.min(W, H) * 0.05;
-    cx.fillStyle = 'rgba(240,240,255,.8)'; cx.beginPath(); cx.arc(x, y, r, 0, 6.28); cx.fill();
-    cx.fillStyle = 'rgba(10,16,34,.9)'; cx.beginPath(); cx.arc(x + r * 0.45, y - r * 0.2, r * 0.9, 0, 6.28); cx.fill();
-  }
-  function fog(t) {
-    for (var i = 0; i < 5; i++) {
-      var y = H * (0.2 + i * 0.17) + Math.sin(t / 3000 + i) * 20;
-      var g = cx.createLinearGradient(0, y - 80, 0, y + 80);
-      g.addColorStop(0, 'rgba(210,215,225,0)'); g.addColorStop(0.5, 'rgba(210,215,225,' + (0.10 + pw * 0.12) + ')'); g.addColorStop(1, 'rgba(210,215,225,0)');
-      cx.fillStyle = g; cx.fillRect(0, y - 80, W, 160);
-    }
+  /* ---------- молния ---------- */
+  function branch(x, y, len, ang, depth, out) {
+    var pts = [[x, y]];
+    for (var i = 0; i < len; i++) { ang += (R() - 0.5) * 0.9; x += Math.sin(ang) * (14 + R() * 18); y += Math.cos(ang) * (14 + R() * 18); pts.push([x, y]); if (depth < 2 && R() < 0.12) branch(x, y, (len - i) * 0.5 | 0, ang + (R() < 0.5 ? -0.8 : 0.8), depth + 1, out); if (y > H * 0.92) break; }
+    out.push({ p: pts, w: 3 - depth });
   }
   function lightning() {
-    if (!bolt && R() < 0.006 + pw * 0.01) {
-      bolt = { pts: [], life: 12 }; var x = W * (0.15 + R() * 0.7), y = 0;
-      while (y < H * (0.5 + R() * 0.4)) { bolt.pts.push([x, y]); x += (R() - 0.5) * 70; y += 20 + R() * 40; }
-      flash = 1;
+    if (!bolt && R() < 0.004 + pw * 0.008) { var segs = []; branch(W * (0.1 + R() * 0.8), -10, 26 + (R() * 12 | 0), 0, 0, segs); bolt = { s: segs, life: 14, x: segs[segs.length - 1].p[0][0] }; flash = 1; }
+    if (flash > 0) {
+      var g = cx.createRadialGradient(bolt ? bolt.x : W / 2, 0, 0, bolt ? bolt.x : W / 2, 0, Math.max(W, H));
+      g.addColorStop(0, 'rgba(225,232,255,' + flash * 0.45 + ')'); g.addColorStop(1, 'rgba(200,210,255,' + flash * 0.08 + ')');
+      cx.fillStyle = g; cx.fillRect(0, 0, W, H); flash -= 0.07 + R() * 0.05; if (flash < 0.3 && flash > 0.2 && R() < 0.3) flash = 0.8;   /* повторная вспышка */
     }
-    if (flash > 0) { cx.fillStyle = 'rgba(220,230,255,' + flash * 0.35 + ')'; cx.fillRect(0, 0, W, H); flash -= 0.08; }
     if (bolt) {
-      cx.strokeStyle = 'rgba(235,240,255,' + bolt.life / 12 + ')'; cx.lineWidth = 3; cx.shadowColor = '#bcd2ff'; cx.shadowBlur = 18;
-      cx.beginPath(); bolt.pts.forEach(function (p, i) { if (i) cx.lineTo(p[0], p[1]); else cx.moveTo(p[0], p[1]); }); cx.stroke();
-      cx.shadowBlur = 0; if (--bolt.life <= 0) bolt = null;
+      var a = Math.min(1, bolt.life / 8);
+      bolt.s.forEach(function (s) {
+        cx.lineJoin = 'round';
+        cx.strokeStyle = 'rgba(160,185,255,' + a * 0.25 + ')'; cx.lineWidth = s.w * 5; draw(s.p);   /* свечение */
+        cx.strokeStyle = 'rgba(250,252,255,' + a + ')'; cx.lineWidth = s.w * 0.9; draw(s.p);       /* канал */
+      });
+      if (--bolt.life <= 0) bolt = null;
     }
   }
-  function windy() {   /* сильный ветер: листья и палки летят слева направо */
-    cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillStyle = '#fff';
+  function draw(p) { cx.beginPath(); p.forEach(function (q, i) { if (i) cx.lineTo(q[0], q[1]); else cx.moveTo(q[0], q[1]); }); cx.stroke(); }
+  /* ---------- ветер и торнадо ---------- */
+  var FLY = ['🍂', '🍃', '🍁', '🌿', '🪵', '🧍', '🐄', '🍂', '🪵', '🐄', '🧍‍♂️', '🍃'];
+  var EMO = 'px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif';
+  function debris(n, list) { P = []; for (var i = 0; i < n; i++) P.push({ a: R() * TAU, h: R(), e: list[i % list.length], s: 18 + R() * 22, rot: R() * TAU, vr: (R() - 0.5) * 0.2, x: R() * W, y: R() * H, vx: 3 + R() * 6, vy: (R() - 0.5) * 2 }); }
+  function windy() {
+    cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillStyle = '#fff';   /* цветные эмодзи берут прозрачность fillStyle */
     P.forEach(function (p) {
       p.x += p.vx * (0.6 + pw); p.y += p.vy + Math.sin(p.x / 60) * 1.2; p.rot += p.vr;
       if (p.x > W + 40) { p.x = -40; p.y = R() * H; }
-      cx.save(); cx.translate(p.x, p.y); cx.rotate(p.rot); cx.font = Math.round(p.s * 1.3) + 'px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif'; cx.fillText(p.e, 0, 0); cx.restore();
+      cx.save(); cx.translate(p.x, p.y); cx.rotate(p.rot); cx.font = Math.round(p.s * 1.3) + EMO; cx.fillText(p.e, 0, 0); cx.restore();
     });
   }
   function tornado(t) {
     var bx = W * 0.5 + Math.sin(t / 2500) * W * 0.25, top = -20, bot = H * 0.98;
-    cx.fillStyle = 'rgba(30,34,44,.18)'; cx.fillRect(0, 0, W, H);   /* сумрак — под воронкой и мусором */
-    for (var i = 0; i < 70; i++) {   /* воронка: от узкой внизу к широкой вверху */
+    cx.fillStyle = 'rgba(30,34,44,.18)'; cx.fillRect(0, 0, W, H);
+    for (var i = 0; i < 70; i++) {
       var h = i / 70, y = bot - h * (bot - top), rad = 14 + h * h * W * 0.22, a = t / 160 + i * 0.7;
       cx.fillStyle = 'rgba(130,138,150,' + (0.07 + 0.09 * (1 - h)) + ')';
-      cx.beginPath(); cx.ellipse(bx + Math.sin(t / 900 + h * 3) * 30 * h, y, rad, rad * 0.22, 0, 0, 6.28); cx.fill();
+      cx.beginPath(); cx.ellipse(bx + Math.sin(t / 900 + h * 3) * 30 * h, y, rad, rad * 0.22, 0, 0, TAU); cx.fill();
       cx.strokeStyle = 'rgba(190,195,205,.10)'; cx.beginPath(); cx.ellipse(bx, y, rad * (0.8 + 0.2 * Math.sin(a)), rad * 0.2, 0, a, a + 2); cx.stroke();
     }
-    cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillStyle = '#fff';   /* цветные эмодзи берут прозрачность fillStyle — от воронки была 5–10 % */
-    P.forEach(function (p) {   /* мусор по спирали вверх: листья, палки, люди, коровы */
-      p.a += 0.06 + (1 - p.h) * 0.06; p.h += 0.0025 + R() * 0.001; if (p.h > 1.05) { p.h = 0; p.a = R() * 6.28; }
-      var y = bot - p.h * (bot - top), rad = 14 + p.h * p.h * W * 0.22;
-      var x = bx + Math.cos(p.a) * rad, yy = y + Math.sin(p.a) * rad * 0.22, front = Math.sin(p.a) > 0;
+    cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillStyle = '#fff';
+    P.forEach(function (p) {
+      p.a += 0.06 + (1 - p.h) * 0.06; p.h += 0.0025 + R() * 0.001; if (p.h > 1.05) { p.h = 0; p.a = R() * TAU; }
+      var y = bot - p.h * (bot - top), rad = 14 + p.h * p.h * W * 0.22, x = bx + Math.cos(p.a) * rad, yy = y + Math.sin(p.a) * rad * 0.22, front = Math.sin(p.a) > 0;
       p.rot += p.vr * 2;
-      cx.save(); cx.globalAlpha = front ? 1 : 0.6; cx.translate(x, yy); cx.rotate(p.rot); cx.font = Math.round(p.s * (front ? 1.6 : 1.1)) + 'px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif'; cx.fillText(p.e, 0, 0); cx.restore();
+      cx.save(); cx.globalAlpha = front ? 1 : 0.6; cx.translate(x, yy); cx.rotate(p.rot); cx.font = Math.round(p.s * (front ? 1.6 : 1.1)) + EMO; cx.fillText(p.e, 0, 0); cx.restore();
     });
+  }
+  /* ---------- кадр ---------- */
+  function sky(t) {   /* светило: днём солнце, ночью звёзды и луна */
+    var X = W * 0.82, Y = Math.min(H * 0.16, 140), r = Math.max(20, Math.min(W, H) * 0.05);
+    if (op.day) K.sun(cx, X, Y, r, W, H, t);
+    else { K.drawStars(cx, S, W, H, t, 1); K.moon(cx, X, Y, r, op.lat || 50, t); }
   }
   function frame(t) {
     raf = requestAnimationFrame(frame); cx.clearRect(0, 0, W, H);
     switch (kind) {
-      case 'sun': sun(t); cloudDraw(); break;
-      case 'night': night(t); cloudDraw(); break;
-      case 'clouds': cloudDraw(); break;
-      case 'fog': cloudDraw(); fog(t); break;
-      case 'rain': cloudDraw(); rain(1 + pw * 2); break;
-      case 'snow': cloudDraw(); snow(t); break;
-      case 'storm': cloudDraw(); rain(3 + pw * 3); lightning(); break;
-      case 'wind': cloudDraw(); windy(); break;
+      case 'sun': case 'night': sky(t); K.drawClouds(cx, C, W); break;
+      case 'clouds': if (!op.day) K.drawStars(cx, S, W, H, t, 0.4); K.drawClouds(cx, C, W); break;
+      case 'fog': K.drawClouds(cx, C, W); K.drawFog(cx, F, W, pw); break;
+      case 'rain': K.drawClouds(cx, C, W); rain(1 + pw * 2); break;
+      case 'snow': K.drawClouds(cx, C, W); snow(t); break;
+      case 'storm': K.drawClouds(cx, C, W); lightning(); rain(3 + pw * 3); break;
+      case 'wind': K.drawClouds(cx, C, W); windy(); break;
       case 'tornado': tornado(t); break;
     }
   }
-  function play(k, power) {
-    mk(); stop(); kind = k; pw = Math.max(0, Math.min(1, power || 0.5)); P = []; cl = []; bolt = null; flash = 0;
-    if (k === 'sun') clouds(2, false);
-    else if (k === 'night') clouds(2, true);
-    else if (k === 'clouds') clouds(10, false);
-    else if (k === 'fog') clouds(4, false);
-    else if (k === 'rain') { clouds(8, true); drops(Math.round(120 + pw * 380), false); }
-    else if (k === 'snow') { clouds(6, false); drops(Math.round(90 + pw * 260), true); }
-    else if (k === 'storm') { clouds(12, true); drops(Math.round(350 + pw * 300), false); }
-    else if (k === 'wind') { clouds(6, true); debris(30, ['🍂', '🍃', '🍁', '🌿', '🪵']); }
+  function play(k, power, o) {
+    if (!K) return;
+    mk(); if (raf) cancelAnimationFrame(raf);
+    kind = k; pw = Math.max(0, Math.min(1, power === undefined ? 0.5 : power)); op = o || {};
+    if (k === 'sun') op.day = true; if (k === 'night') op.day = false;
+    P = []; C = []; S = []; F = []; SPL = []; bolt = null; flash = 0;
+    var dark = !op.day;
+    if (k === 'sun' || k === 'night') { C = K.clouds(W, H, 3, dark, 0.5); C.forEach(function (c) { c.a *= dark ? 0.35 : 0.8; }); if (!op.day) S = K.stars(W, H, 260); }
+    else if (k === 'clouds') { C = K.clouds(W, H, 14, dark, 0.55); if (!op.day) S = K.stars(W, H, 120); }
+    else if (k === 'fog') { C = K.clouds(W, H, 6, true, 0.3); F = K.fog(W, H); }
+    else if (k === 'rain') { C = K.clouds(W, H, 14, true, 0.35); drops(Math.round(160 + pw * 420)); }
+    else if (k === 'snow') { C = K.clouds(W, H, 10, !op.day, 0.35); flakes(Math.round(110 + pw * 260)); }
+    else if (k === 'storm') { C = K.clouds(W, H, 18, true, 0.45); drops(Math.round(380 + pw * 320)); }
+    else if (k === 'wind') { C = K.clouds(W, H, 8, true, 0.4); C.forEach(function (c) { c.v *= 4; }); debris(30, ['🍂', '🍃', '🍁', '🌿', '🪵']); }
     else if (k === 'tornado') debris(46, FLY);
     cv.style.display = ''; raf = requestAnimationFrame(frame);
   }

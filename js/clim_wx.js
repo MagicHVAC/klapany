@@ -28,8 +28,10 @@
   function anim() {
     if (!window.WXFX) return;
     if (!on) { WXFX.stop(); return; }
-    if (preview) { WXFX.play(preview, 0.8); return; }
-    if (cur && cur.k) WXFX.play(cur.k[0], cur.k[1]); else WXFX.stop();
+    /* 1.36.1: день/ночь — из погоды (is_day), широта — для фазы луны в южном полушарии */
+    var p = cur && window.GEO131 && GEO131.p[cur.c.r + '|' + cur.c.c], o = { day: cur && cur.w ? !!cur.w.is_day : true, lat: p ? p[0] : 50 };
+    if (preview) { WXFX.play(preview, 0.8, o); return; }
+    if (cur && cur.k) WXFX.play(cur.k[0], cur.k[1], o); else WXFX.stop();
   }
   function box(c, w, err) {
     var k = w ? pick(w) : null;
