@@ -33,9 +33,14 @@
       if (!$('#fbm').value.trim()) { note('Напиши сообщение.'); $('#fbm').focus(); return; }
       if ($('#fbhp').value) { dlg.close(); return; }
       b.disabled = true; note('Отправляю…');
-      fetch(FB_URL(), { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ _subject: 'Справочник ОВиК: ' + $('#fbk').value, _template: 'table', 'Что': $('#fbk').value, 'Где': $('#fbw').value,
-          'Сообщение': $('#fbm').value.trim(), 'Как ответить': $('#fbc').value.trim() || 'не нужен', 'Версия': window.APP ? APP.ver : '', 'Страница': location.href }) })
+      /* 1.33.1, инженер: «во входящем видна вся тематика и пометка сайта» — тема: [Справочник ОВиК] что · где — начало сообщения */
+      var msg = $('#fbm').value.trim(), cont = $('#fbc').value.trim(), head = msg.replace(/\s+/g, ' ');
+      if (head.length > 70) head = head.slice(0, 70).replace(/\s\S*$/, '') + '…';
+      var data = { _subject: '[Справочник ОВиК] ' + $('#fbk').value + ' · ' + $('#fbw').value + ' — ' + head, _template: 'table',
+        'Сайт': 'Справочник инженера ОВиК — magichvac.github.io/klapany', 'Что': $('#fbk').value, 'Где': $('#fbw').value, 'Сообщение': msg,
+        'Как ответить': cont || 'не нужен', 'Версия': window.APP ? APP.ver + ' от ' + APP.date : '', 'Страница': location.href };
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cont)) data._replyto = cont;   /* «Ответить» в почте — сразу автору сообщения */
+      fetch(FB_URL(), { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(data) })
         .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
         .then(function (x) {
           b.disabled = false;
