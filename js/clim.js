@@ -122,12 +122,18 @@
       '<p class="csrc">' + esc(SP131.src) + '. Широта — из базы кнопки 7: точная для известных пунктов, иначе по центру региона.</p></article>';
   }
 
-  function show(c) {
+  function show(c, scroll) {
     st.c = c; save();
     $('#cres').innerHTML = ''; $('#cq').value = c.c;
     $('#cview').innerHTML = card(c);
     try { history.replaceState(null, '', '#' + encodeURIComponent(c.c)); } catch (x) {}
+    if (window.CLIM_MAP) CLIM_MAP.focus(c);
+    if (scroll) $('#cview').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+  /* для карты (clim_map.js) */
+  window.CLIM = { show: show, cur: function () { return st.c; },
+    gsopOf: function (c) { return clGsop(c, CL_BT.filter(function (b) { return b[0] === st.bt; })[0] || CL_BT[0], st.tv); } };
+  function gsopChanged() { $('#cl-g').innerHTML = gsop(st.c); if (window.CLIM_MAP) CLIM_MAP.redraw(); }
   function list(q) {
     var r = find(q).slice(0, 40);
     $('#cres').innerHTML = q ? (r.length ? r.map(function (c, i) { return '<button type="button" data-i="' + C.indexOf(c) + '"><b>' + esc(c.c) + '</b><small>' + esc(c.r) + '</small><i class="cold">' + f(c.cold[3], 0) + '°</i></button>'; }).join('') :
@@ -139,14 +145,14 @@
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('button'); if (!b) return;
     if (b.dataset.i) show(C[+b.dataset.i]);
-    else if (b.dataset.tv) { st.tv = +b.dataset.tv; save(); $('#cl-g').innerHTML = gsop(st.c); }
+    else if (b.dataset.tv) { st.tv = +b.dataset.tv; save(); gsopChanged(); }
     else if (b.dataset.city) { var r = find(b.dataset.city); if (r.length) show(r[0]); }
   });
   document.addEventListener('change', function (e) {
-    if (e.target.id === 'cl-bt') { st.bt = e.target.value; save(); $('#cl-g').innerHTML = gsop(st.c); }
+    if (e.target.id === 'cl-bt') { st.bt = e.target.value; save(); gsopChanged(); }
   });
   document.addEventListener('input', function (e) {
-    if (e.target.id === 'cl-tv') { var v = parseFloat(String(e.target.value).replace(',', '.')); if (isFinite(v)) { st.tv = v; save(); var box = $('#cl-g'), pos = e.target.selectionStart; box.innerHTML = gsop(st.c); var ni = $('#cl-tv'); ni.focus(); try { ni.setSelectionRange(pos, pos); } catch (x) {} } }
+    if (e.target.id === 'cl-tv') { var v = parseFloat(String(e.target.value).replace(',', '.')); if (isFinite(v)) { st.tv = v; save(); var box = $('#cl-g'), pos = e.target.selectionStart; gsopChanged(); var ni = $('#cl-tv'); ni.focus(); try { ni.setSelectionRange(pos, pos); } catch (x) {} } }
   });
 
   /* старт: из адреса, из запомненного, иначе Краснодар */

@@ -15,9 +15,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=1.29.0">
-<link rel="stylesheet" href="css/vent.css?v=1.29.0">
-<link rel="stylesheet" href="css/clim.css?v=1.29.0">
+<link rel="stylesheet" href="css/style.css?v=1.30.0">
+<link rel="stylesheet" href="css/vent.css?v=1.30.0">
+<link rel="stylesheet" href="css/clim.css?v=1.30.0">
 </head>
 <body class="clim"><div class="cbg" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 <header class="top"><div class="tin">
@@ -32,14 +32,20 @@
     <p class="vex" id="cex"></p>
     <div class="cres" id="cres"></div>
   </section>
+  <details class="csec cmapw" id="cmapd" open><summary><span>Карта: зима, лето, ветер, ГСОП</span><em>СП 131 · СП 50</em></summary>
+    <div class="cmodes" id="cmodes"><button type="button" data-m="w">Зима</button><button type="button" data-m="s">Лето</button><button type="button" data-m="v">Ветер</button><button type="button" data-m="g">ГСОП</button></div>
+    <div id="cmap" class="cmap" role="region" aria-label="Карта пунктов СП 131"></div><div id="cmleg"></div>
+  </details>
   <main id="cview"></main>
 </div>
 <footer class="foot"><span class="joke" aria-live="polite"></span> <button type="button" id="newsbtn">Что нового</button></footer>
 <dialog id="newsdlg"><h3>Что нового</h3><div id="news"></div><button type="button" id="newsclose" class="eibtn">Закрыть</button></dialog>
-<script src="js/data_norms.js?v=1.29.0"></script>
-<script src="js/data_sp131.js?v=1.29.0"></script>
-<script src="js/clim_calc.js?v=1.29.0"></script>
-<script src="js/clim.js?v=1.29.0"></script>
-<script src="js/jokes.js?v=1.29.0"></script>
+<script src="js/data_norms.js?v=1.30.0"></script>
+<script src="js/data_sp131.js?v=1.30.0"></script>
+<script src="js/clim_calc.js?v=1.30.0"></script>
+<script src="js/clim.js?v=1.30.0"></script>
+<script src="js/data_geo131.js?v=1.30.0"></script>
+<script src="js/clim_map.js?v=1.30.0"></script>
+<script src="js/jokes.js?v=1.30.0"></script>
 </body>
 </html>
