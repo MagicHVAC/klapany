@@ -97,3 +97,8 @@ body.clim .top, body.clim .cwrap, body.clim .foot { position: relative; z-index:
 .cmap .leaflet-bar a { background: #111c38; color: #e9eefc; border-color: #26365e; }
 @media (max-width: 560px) { .cmap { height: 340px; } .cmapw { padding: 2px 10px 10px; border-radius: 14px; } }
 .cmap .leaflet-tile-pane { filter: invert(1) hue-rotate(200deg) brightness(.78) contrast(.92) saturate(.45); }  /* светлую OSM — в ночную гамму страницы */
+/* 1.32.0: ближайший пункт (js/clim_near.js) */
+.cnear { grid-column: 1 / -1; background: color-mix(in srgb, var(--surface) 85%, transparent); border: 1px dashed var(--acc); border-radius: 14px; padding: 10px 14px; }
+.cnear p { margin: 4px 0 8px; }
+.cnear .cres { margin: 6px 0; }
+.cnalt { border: 1px solid var(--line); background: none; color: var(--text); border-radius: 99px; padding: 3px 10px; font: 500 13px var(--body); cursor: pointer; margin: 2px; }

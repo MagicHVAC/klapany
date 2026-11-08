@@ -172,11 +172,14 @@
   function list(q) {
     var r = find(q).slice(0, 40);
     $('#cres').innerHTML = q ? (r.length ? r.map(function (c, i) { return '<button type="button" data-i="' + C.indexOf(c) + '"><b>' + esc(c.c) + '</b><small>' + esc(c.r) + '</small><i class="cold">' + f(c.cold[3], 0) + '°</i></button>'; }).join('') :
-      '<p class="cnote">Не нашёл. В СП 131 — ' + C.length + ' пунктов. По п. 4.1 СП 131 при отсутствии данных допускается принимать ближайший репрезентативный пункт в местности с аналогичными условиями; для прибрежных районов морей и крупных водохранилищ, местности выше 500 м и пунктов дальше 100 км от метеостанции — данные территориального управления Росгидромета (с учётом прил. Б).</p>') : '';
+      (window.CLIM_NEAR ? CLIM_NEAR.offer(q) : '<p class="cnote">Не нашёл.</p>')) : '';
+    /* есть похожие, но точного пункта нет — тоже предложить ближайший */
+    var n = norm(q);
+    if (q && r.length && n.length >= 4 && !r.some(function (c) { return c._n === n; }) && window.CLIM_NEAR) $('#cres').insertAdjacentHTML('beforeend', CLIM_NEAR.offer(q));
   }
 
   $('#cq').addEventListener('input', function (e) { list(e.target.value); });
-  $('#cq').addEventListener('keydown', function (e) { if (e.key === 'Enter') { var r = find(e.target.value); if (r.length) show(r[0]); } });
+  $('#cq').addEventListener('keydown', function (e) { if (e.key === 'Enter') { var r = find(e.target.value); if (r.length) show(r[0]); else { var g = $('#cngo'); if (g) g.click(); } } });
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('button'); if (!b) return;
     if (b.dataset.i) show(C[+b.dataset.i]);

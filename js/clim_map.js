@@ -59,6 +59,7 @@
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>; координаты — <a href="https://www.geonames.org/">GeoNames</a> (CC BY 4.0)' }).addTo(map);
     map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
     map.fitBounds([[41, 19], [77, 191]]);
+    if (pending) { map.setView([pending[0], pending[1] < 0 ? pending[1] + 360 : pending[1]], 6); pending = null; }
     draw();
   }
   document.addEventListener('click', function (e) {
@@ -68,5 +69,19 @@
   });
   var d = $('#cmapd');
   if (d) { d.addEventListener('toggle', function () { if (d.open) { init(); if (map) setTimeout(function () { map.invalidateSize(); }, 50); } }); if (d.open) init(); }
-  window.CLIM_MAP = { redraw: draw, focus: function (c) { var p = GEO131.p[c.r + '|' + c.c]; if (map && p) map.panTo([p[0], p[1] < 0 ? p[1] + 360 : p[1]]); draw(); } };
+  var pin = null, pending = null;
+  function mark(lat, lon, name) {   /* 1.32.0: город не из СП 131 — отметка на карте */
+    if (!map) return;
+    if (pin) pin.remove();
+    pin = L.circleMarker([lat, lon < 0 ? lon + 360 : lon], { radius: 8, weight: 3, color: '#ffffff', fillColor: '#b79bff', fillOpacity: 1, dashArray: '3 3' })
+      .bindTooltip(name + ' — нет в СП 131', { permanent: true, direction: 'right', offset: [8, 0] }).addTo(map);
+    map.setView([lat, lon < 0 ? lon + 360 : lon], 6);
+  }
+  window.CLIM_MAP = { mark: mark, redraw: draw, view: function () { return map ? [map.getZoom(), map.getCenter().lat, map.getCenter().lng] : null; }, focus: function (c) {   /* 1.32.0, инженер: «выбрал город — к нему по карте зум» */
+    var p = GEO131.p[c.r + '|' + c.c];
+    if (!p) return draw();
+    if (!map) { pending = p; return; }            /* карта ещё грузится — приблизить после загрузки */
+    if (pin) { pin.remove(); pin = null; }
+    map.setView([p[0], p[1] < 0 ? p[1] + 360 : p[1]], Math.max(map.getZoom(), 6), { animate: false });   /* сразу, без анимации — надёжно и на слабых телефонах */
+    draw(); } };
 })();
