@@ -648,6 +648,9 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .foot .fcontact a { color: var(--air); overflow-wrap: anywhere; }
 /* 1.33.0: обратная связь (js/feedback.js) */
 .foot .fcontact button { color: var(--air); }
+.foot .fin > p:first-child { margin-top: 0; }
+.foot .fmeta { margin: 6px 0 0; color: var(--muted); font-size: 12.5px; }
+.foot .fmeta a { color: var(--air); }
 .fbdlg { max-width: min(560px, calc(100vw - 32px)); width: 100%; box-sizing: border-box; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
 .fbdlg::backdrop { background: rgba(0, 0, 0, .55); }
 .fbform { display: flex; flex-direction: column; gap: 10px; margin: 0; }
