@@ -557,7 +557,7 @@ h3.sth { margin: 18px 0 8px; font-size: 16px; }
 .rep .rep-x { font-family: Arial, sans-serif; }
 .rep-3d svg { width: 100%; height: auto; display: block; margin: 8px 0; }
 /* 1.23.0: сеть по участкам с КМС, проект «все системы» */
-.kms { display: grid; gap: 10px; margin-bottom: 8px; }
+.kms { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-bottom: 8px; }   /* 1.37.2: колонка не шире экрана (на телефоне распирало до 891 px) */
 .kmss { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--card, transparent); }
 .kmsh { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .kmsh .kmsn { flex: 1; min-width: 0; height: 32px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; font-weight: 600; }

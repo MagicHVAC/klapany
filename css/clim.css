@@ -113,3 +113,6 @@ body.clim .top, body.clim .cwrap, body.clim .foot { position: relative; z-index:
 .cwxbar > span { color: var(--muted); font-size: 13px; }
 .cwxon { border: 1px solid var(--line); background: none; color: var(--text); border-radius: 99px; padding: 5px 12px; font: 600 14px var(--body); cursor: pointer; }
 .cwxon.on { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 22%, transparent); }
+/* 1.37.2: погода сейчас — строка под названием пункта */
+.cwxnow { display: inline-flex; flex-wrap: wrap; gap: 4px 6px; align-items: baseline; margin: 0 0 8px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 99px; background: color-mix(in srgb, var(--acc) 10%, transparent); color: var(--text); font: 500 14px var(--body); cursor: pointer; text-align: left; }
+.cwxnow span { color: var(--muted); font-size: 12px; }

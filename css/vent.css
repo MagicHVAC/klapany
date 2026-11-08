@@ -89,7 +89,7 @@ body.vent { background-image: none; }
 @keyframes vb3 { to { transform: translate(-16vmax, -8vmax) scale(1.1); } }
 @keyframes vb4 { to { transform: translate(12vmax, -6vmax) scale(1.2); } }
 @media (prefers-reduced-motion: reduce) { .vbg i { animation: none; } }
-body.vent .vtabs { background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(10px); border-radius: 14px; padding: 8px; margin-left: -8px; margin-right: -8px; }
+body.vent .vtabs { background: transparent; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-radius: 0; padding: 8px 0; margin-left: 0; margin-right: 0; }   /* 1.37.2: без тёмной полосы и выступов за край (инженер: «несуразно») */
 body.vent .vc { background: color-mix(in srgb, var(--surface) 88%, transparent); }
 
 /* 1.23.7: телефон — уточнения свёрнуты, примеры скрыты */

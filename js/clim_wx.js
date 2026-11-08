@@ -54,6 +54,10 @@
     var art = document.querySelector('#cview .ccard'); if (!art) return;
     var el = art.querySelector('.cwx');
     if (el) el.outerHTML = h; else art.insertAdjacentHTML('beforeend', h);
+    /* 1.37.2 (инженер: «в климатологии погоды нет» — блок внизу длинной карточки): короткая строка под названием пункта */
+    var now = art.querySelector('.cwxnow'), chip = w ? '<button type="button" class="cwxnow" data-wxgo="1">Сейчас: <b>' + f(w.temperature_2m, 1) + ' °C</b>, ' + (CODE[w.weather_code] || '') + ', ветер ' + f(w.wind_speed_10m, 1) + ' м/с <span>↓ погода</span></button>' : '';
+    if (now) { if (chip) now.outerHTML = chip; else now.remove(); }
+    else if (chip) { var hd = art.querySelector('header'); if (hd) hd.insertAdjacentHTML('afterend', chip); }
     anim();
   }
   function show(c) {
@@ -71,6 +75,8 @@
     }).catch(function () { if (window.CLIM && CLIM.cur() === c) box(c, null, 'Погода не загрузилась — нет интернета или сервис недоступен.'); });
   }
   document.addEventListener('click', function (e) {
+    var go = e.target.closest && e.target.closest('[data-wxgo]');
+    if (go) { var s = document.querySelector('#cview .cwx'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     var b = e.target.closest && e.target.closest('.cwx button'); if (!b) return;
     if (b.dataset.wxon) { on = !on; save(); }
     else if (b.dataset.wxk !== undefined) { preview = b.dataset.wxk; if (preview) { on = true; save(); } }
