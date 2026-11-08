@@ -42,6 +42,6 @@
   });
   /* clim.js: нет совпадений — кнопка поиска по карте */
   window.CLIM_NEAR = { offer: function (q) {
-    return '<div class="cnear"><p>«' + esc(q) + '» нет среди ' + SP131.cities.length + ' пунктов СП 131.</p><button type="button" class="eibtn" id="cngo" data-q="' + esc(q) + '">Найти город на карте и подобрать ближайший пункт</button></div>';
+    return '<div class="cnear"><p>«' + esc(q) + '» нет среди ' + SP131.cities.length + ' пунктов (Россия — СП 131, мир — нормы стран и метеостанции NOAA).</p><button type="button" class="eibtn" id="cngo" data-q="' + esc(q) + '">Найти город на карте и подобрать ближайший пункт</button></div>';
   } };
 })();

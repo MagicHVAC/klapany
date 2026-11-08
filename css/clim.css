@@ -102,3 +102,7 @@ body.clim .top, body.clim .cwrap, body.clim .foot { position: relative; z-index:
 .cnear p { margin: 4px 0 8px; }
 .cnear .cres { margin: 6px 0; }
 .cnalt { border: 1px solid var(--line); background: none; color: var(--text); border-radius: 99px; padding: 3px 10px; font: 500 13px var(--body); cursor: pointer; margin: 2px; }
+/* 1.34.0: пункты мира (js/clim_world.js) */
+.cwbadge { margin: 4px 0 8px; padding: 8px 12px; border-radius: 12px; font-size: 13px; border: 1px dashed #ffb35c; color: var(--text); background: color-mix(in srgb, #ffb35c 10%, transparent); }
+.cwbadge.n { border: 1px solid var(--acc); background: color-mix(in srgb, var(--acc) 12%, transparent); }
+.cwsw { margin: 0 0 10px; }

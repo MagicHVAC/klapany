@@ -144,6 +144,7 @@
   }
 
   function card(c) {
+    if (c.w && window.CLIM_W) return CLIM_W.card(c, { f: f, fi: fi, num: num, sec: sec, esc: esc, gsop: gsop });   /* 1.34.0: пункт мира — clim_world.js */
     var lat = latOf(c) ? ' · ' + f(latOf(c)) + '° с. ш.' : '';
     return '<article class="ccard"><header><div><h2>' + esc(c.c) + '</h2><p>' + esc(c.r) + lat + '</p></div>' +
       '<div class="chero"><span class="cold">' + f(c.cold[3], 0) + '°</span><small>зима 0,92</small><span class="warm">' + f(c.warm[1], 0) + '°</span><small>лето 0,95</small></div></header>' +
@@ -184,6 +185,7 @@
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('button'); if (!b) return;
     if (b.dataset.i) show(C[+b.dataset.i]);
+    else if (b.dataset.wsw && window.CLIM_W) { if (!b.classList.contains('on')) { CLIM_W.swap(st.c); show(st.c); } }
     else if (b.dataset.tv) { st.tv = +b.dataset.tv; save(); gsopChanged(); }
     else if (b.dataset.city) { var r = find(b.dataset.city); if (r.length) show(r[0]); }
   });

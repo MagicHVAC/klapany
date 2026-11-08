@@ -6,10 +6,10 @@
   var map = null, layer = null, mode = 'w', loading = false;
   try { mode = localStorage.getItem('klapany-clim-map') || 'w'; } catch (x) {}
   var PAL = {
-    w: { t: 'Зима — пятидневка 0,92, °C', src: 'СП 131 табл. 5.1', st: [[-55, '#3a2f9e'], [-40, '#3f5fe0'], [-30, '#4f93f2'], [-20, '#6fc3ff'], [-10, '#a8e6ff'], [0, '#eefaff']], v: function (c) { return c.cold[3]; }, f: 0 },
+    w: { t: 'Зима — пятидневка 0,92, °C', src: 'СП 131 табл. 5.1', st: [[-55, '#3a2f9e'], [-40, '#3f5fe0'], [-30, '#4f93f2'], [-20, '#6fc3ff'], [-10, '#a8e6ff'], [0, '#eefaff']], v: function (c) { return c.cold[3]; }, f: 0, wsrc: 'мир — нормы стран, иначе расчёт по метеостанциям NOAA (мелкие точки)' },
     s: { t: 'Лето — обеспеченность 0,95, °C', src: 'СП 131 табл. 6.1', st: [[12, '#fff6cf'], [20, '#ffd986'], [25, '#ffb35c'], [29, '#ff8442'], [33, '#e8452c']], v: function (c) { return c.warm[1]; }, f: 0 },
     v: { t: 'Ветер — январь, макс. из средних по румбам, м/с', src: 'СП 131 табл. 5.1', st: [[0, '#2f6f6a'], [3, '#3fd0b0'], [6, '#8ab4ff'], [9, '#b79bff'], [12, '#ff6fb5'], [16, '#ff3b6b']], v: function (c) { return c.cold[17]; }, f: 1 },
-    g: { t: 'ГСОП, °C·сут/год — тип здания и tв из карточки', src: 'СП 50.13330.2024 ф. (5.2)', st: [[1000, '#ffb35c'], [3000, '#ffe08a'], [5000, '#a8e6ff'], [7000, '#6fc3ff'], [9000, '#4f73f0'], [12000, '#3a2f9e']], v: function (c) { var r = window.CLIM && CLIM.gsopOf(c); return r ? r.g : null; }, f: 0 }
+    g: { t: 'ГСОП, °C·сут/год — тип здания и tв из карточки', src: 'СП 50.13330.2024 ф. (5.2)', st: [[1000, '#ffb35c'], [3000, '#ffe08a'], [5000, '#a8e6ff'], [7000, '#6fc3ff'], [9000, '#4f73f0'], [12000, '#3a2f9e']], v: function (c) { var r = window.CLIM && CLIM.gsopOf(c); return r ? r.g : null; }, f: 0, wsrc: 'мир — по отопительному периоду нормы страны или NOAA' }
   };
   function hex(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
   function col(st, v) {
@@ -23,8 +23,10 @@
   function fmt(v, n) { return String(Math.round(v * Math.pow(10, n)) / Math.pow(10, n)).replace('.', ',').replace(/^-/, '−'); }
   function legend(P) {
     var g = 'linear-gradient(90deg,' + P.st.map(function (s, i) { return s[1] + ' ' + Math.round(i / (P.st.length - 1) * 100) + '%'; }).join(',') + ')';
-    return '<div class="cmleg"><b>' + P.t + '</b><span class="cmbar" style="background:' + g + '"></span><span class="cmticks">' + P.st.map(function (s) { return '<i>' + fmt(s[0], 0) + '</i>'; }).join('') + '</span><small>' + P.src + '. Нажми на точку — карточка пункта.</small></div>';
+    return '<div class="cmleg"><b>' + P.t + '</b><span class="cmbar" style="background:' + g + '"></span><span class="cmticks">' + P.st.map(function (s) { return '<i>' + fmt(s[0], 0) + '</i>'; }).join('') + '</span><small>' + P.src + (P.wsrc ? '; ' + P.wsrc : '') + '. Нажми на точку — карточка пункта.</small></div>';
   }
+  /* 1.34.0: пункты мира (c.w) — по настоящей долготе; Россия (СП 131) — Чукотка за 180° продолжением карты */
+  function LON(c, lo) { return !c.w && lo < 0 ? lo + 360 : lo; }
   function draw() {
     if (!map) return;
     var P = PAL[mode], cur = window.CLIM && CLIM.cur();
@@ -33,9 +35,9 @@
     SP131.cities.forEach(function (c) {
       var p = GEO131.p[c.r + '|' + c.c], v = P.v(c);
       if (!p || v === null || v === undefined) return;
-      var lon = p[1] < 0 ? p[1] + 360 : p[1], on = cur === c;   /* Чукотка за 180° — продолжение карты */
-      var m = L.circleMarker([p[0], lon], { radius: on ? 9 : 6, weight: on ? 3 : 1, color: on ? '#ffffff' : 'rgba(10,18,38,.9)', fillColor: col(P.st, v), fillOpacity: .95 });
-      m.bindTooltip('<b>' + c.c + '</b> ' + fmt(v, P.f) + '<br><small>' + c.r + '</small>', { direction: 'top', offset: [0, -6] });
+      var on = cur === c, ws = c.w && c.w.k === 's';   /* станция NOAA — точка мельче */
+      var m = L.circleMarker([p[0], LON(c, p[1])], { radius: on ? 9 : ws ? 4 : 6, weight: on ? 3 : 1, color: on ? '#ffffff' : 'rgba(10,18,38,.9)', fillColor: col(P.st, v), fillOpacity: .95 });
+      m.bindTooltip('<b>' + c.c + '</b> ' + fmt(v, P.f) + '<br><small>' + c.r + (c.w ? ' · ' + (ws ? 'метеостанция NOAA' : 'норма страны') : '') + '</small>', { direction: 'top', offset: [0, -6] });
       m.on('click', function () { if (window.CLIM) CLIM.show(c, true); });
       layer.addLayer(m);
     });
@@ -53,13 +55,13 @@
       s.onerror = function () { loading = false; $('#cmap').innerHTML = '<p class="cnote">Карта не загрузилась — нет интернета или библиотека недоступна. Таблицы и расчёты работают и без неё.</p>'; };
       document.head.appendChild(s); return;
     }
-    map = L.map('cmap', { zoomSnap: 0.5, worldCopyJump: false, attributionControl: true }).setView([62, 100], 2.5);
+    map = L.map('cmap', { zoomSnap: 0.5, worldCopyJump: false, attributionControl: true, preferCanvas: true })   /* 1.34.0: ~9 тыс. точек мира — canvas */.setView([62, 100], 2.5);
     /* подложка OpenStreetMap (без ключа; CARTO с 2026 просит ключ), затемнена фильтром в clim.css */
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 12,
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>; координаты — <a href="https://www.geonames.org/">GeoNames</a> (CC BY 4.0)' }).addTo(map);
     map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
     map.fitBounds([[41, 19], [77, 191]]);
-    if (pending) { map.setView([pending[0], pending[1] < 0 ? pending[1] + 360 : pending[1]], 6); pending = null; }
+    if (pending) { map.setView([pending[0], pending[2] ? pending[1] : pending[1] < 0 ? pending[1] + 360 : pending[1]], 6); pending = null; }
     draw();
   }
   document.addEventListener('click', function (e) {
@@ -80,8 +82,8 @@
   window.CLIM_MAP = { mark: mark, redraw: draw, view: function () { return map ? [map.getZoom(), map.getCenter().lat, map.getCenter().lng] : null; }, focus: function (c) {   /* 1.32.0, инженер: «выбрал город — к нему по карте зум» */
     var p = GEO131.p[c.r + '|' + c.c];
     if (!p) return draw();
-    if (!map) { pending = p; return; }            /* карта ещё грузится — приблизить после загрузки */
+    if (!map) { pending = [p[0], p[1], !!c.w]; return; }            /* карта ещё грузится — приблизить после загрузки */
     if (pin) { pin.remove(); pin = null; }
-    map.setView([p[0], p[1] < 0 ? p[1] + 360 : p[1]], Math.max(map.getZoom(), 6), { animate: false });   /* сразу, без анимации — надёжно и на слабых телефонах */
+    map.setView([p[0], LON(c, p[1])], Math.max(map.getZoom(), 6), { animate: false });   /* сразу, без анимации — надёжно и на слабых телефонах */
     draw(); } };
 })();
