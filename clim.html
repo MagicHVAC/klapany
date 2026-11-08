@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Климатология — Справочник инженера ОВиК</title>
+<meta name="description" content="Строительная климатология по СП 131.13330.2025: холодный и тёплый период, параметры А и Б, температура, осадки, ветер по месяцам; ГСОП, отопительный период и Rтр по СП 50.13330.2024 для любого пункта.">
+<meta name="theme-color" content="#0a1226">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Справочник ОВиК">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=1.29.0">
+<link rel="stylesheet" href="css/vent.css?v=1.29.0">
+<link rel="stylesheet" href="css/clim.css?v=1.29.0">
+</head>
+<body class="clim"><div class="cbg" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+<header class="top"><div class="tin">
+  <a class="brand" href="index.html">Справочник инженера ОВиК<small id="ver"></small></a>
+  <nav class="pages" aria-label="Страницы справочника"><a href="index.html">Пожарная безопасность</a><a href="vent.html">Воздухообмены</a><a href="clim.html" class="on" aria-current="page">Климатология</a></nav>
+</div></header>
+<div class="cwrap">
+  <h1>Климатология</h1>
+  <p class="lead">Все параметры СП 131.13330.2025 по пункту: зима и лето, параметры А и Б, месяцы. ГСОП, отопительный период и требуемое сопротивление теплопередаче по СП 50.13330.2024 — под тип здания и твою tв.</p>
+  <section class="csearch" aria-label="Поиск пункта">
+    <input id="cq" type="search" placeholder="Город или регион: Краснодар, Якутск, Мурманская" aria-label="Поиск пункта СП 131" autocomplete="off">
+    <p class="vex" id="cex"></p>
+    <div class="cres" id="cres"></div>
+  </section>
+  <main id="cview"></main>
+</div>
+<footer class="foot"><span class="joke" aria-live="polite"></span> <button type="button" id="newsbtn">Что нового</button></footer>
+<dialog id="newsdlg"><h3>Что нового</h3><div id="news"></div><button type="button" id="newsclose" class="eibtn">Закрыть</button></dialog>
+<script src="js/data_norms.js?v=1.29.0"></script>
+<script src="js/data_sp131.js?v=1.29.0"></script>
+<script src="js/clim_calc.js?v=1.29.0"></script>
+<script src="js/clim.js?v=1.29.0"></script>
+<script src="js/jokes.js?v=1.29.0"></script>
+</body>
+</html>

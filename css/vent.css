@@ -1,6 +1,8 @@
 /* Страница «Воздухообмены» (vent.html): та же синька, другой оттенок — глубокий сине-зелёный, без огня.
    Переключатель страниц .pages — общий для обеих страниц. */
-.pages { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.pages { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); max-width: 100%; overflow-x: auto; scrollbar-width: none; box-sizing: border-box; }
+.pages::-webkit-scrollbar { display: none; }
+@media (max-width: 480px) { .pages a { padding: 6px 8px; font-size: 12.5px; } }  /* 1.29.0: три вкладки на 360–390 px без прокрутки страницы вбок */
 .pages a { text-decoration: none; color: var(--muted); font: 500 13px var(--body); padding: 6px 11px; border-radius: 9px; white-space: nowrap; }
 .pages a.on { background: var(--air); color: #06141a; font-weight: 600; }
 .pages a:not(.on):hover { color: var(--text); }

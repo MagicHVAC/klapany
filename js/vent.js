@@ -17,7 +17,6 @@
     { id: 'sanitary', t: 'Приборы', list: D.sanitary, fields: simpleFields, card: simpleCard },
     { id: 'hoods', t: 'Местные отсосы', list: D.hoods, fields: simpleFields, card: simpleCard },
     { id: 'heat', t: 'Тепло от людей', list: D.heat.rows, fields: function (r) { return [[r.n, 3], [r.h, 2], ['тепловыделения людей теплопоступления влаговыделения явное полное', 0.5]]; }, card: heatCard },
-    { id: 'climate', t: 'Климат', list: D.climate.rows, fields: function (r) { return [[r.c, 3], [r.r, 2], ['климат наружный воздух', 0.3]]; }, card: null }
   ].filter(function (T) { return T.list.length; }); /* 1.22.2: пустую вкладку (отсосы без нормы) не показывать */
   TABS.forEach(function (T) { T.idx = VS.build(T.list.map(function (r, i) { return { i: i, r: r, f: T.fields(r) }; })); });
   function simpleFields(r) { return [[r.n, 3], [r.kind || '', 2], [r.no, 1], [r.s, 1], [r.u, 0.8], [DIR[r.d] || '', 0.6]]; }
@@ -84,14 +83,6 @@
     h += '<tr><th>Влага, г/ч</th>' + (r.w || []).map(function (x) { return '<td>' + f(x) + '</td>'; }).join('') + '</tr></tbody></table></div>';
     return h + '</article>';
   }
-  function climateTable(rows) {
-    var h = '<div class="vtw"><table class="vt vclim"><thead><tr><th>Пункт</th><th title="Температура наиболее холодной пятидневки обеспеченностью 0,92 — табл. 5.1">t₅, °С<br><small>пятидневка 0,92</small></th>' +
-      '<th title="Параметры А, тёплый период — табл. 6.1">tА, °С<br><small>лето 0,95</small></th><th title="Параметры Б, тёплый период — табл. 6.1">tБ, °С<br><small>лето 0,98</small></th>' +
-      '<th title="Продолжительность и средняя температура периода со среднесуточной t ≤ 8 °С">zот / tот<br><small>≤ 8 °С, сут / °С</small></th><th title="То же, ≤ 10 °С">z / t<br><small>≤ 10 °С</small></th>' +
-      '<th title="Максимальная из средних скоростей ветра по румбам за январь">v, м/с<br><small>январь</small></th><th title="Среднегодовая температура">tгод, °С</th></tr></thead><tbody>';
-    rows.forEach(function (x) { var c = x.it.r; h += '<tr><th>' + hl(c.c, x.used) + '<small>' + esc(c.r) + '</small></th><td class="tc">' + f(c.t5) + '</td><td class="tw">' + f(c.ta) + '</td><td class="tw">' + f(c.tb) + '</td><td>' + f(c.z8) + ' / ' + f(c.t8) + '</td><td>' + f(c.z10) + ' / ' + f(c.t10) + '</td><td>' + f(c.v) + '</td><td>' + f(c.ty) + '</td></tr>'; });
-    return h + '</tbody></table></div>';
-  }
 
   /* ---------- вывод ---------- */
   function tabRes(T, q) {
@@ -101,7 +92,6 @@
       /* 1.23.5: тип здания — строго; нормы «для любых зданий» — только по галке «и общие нормы» */
       rows = rows.filter(function (x) { var r = x.it.r, b = r.b; return (!bt || (b && b.indexOf(bt) >= 0) || ((!b || !b.length) && store.gen)) && (!mt || r.m === mt || (mt === 'krat' && r.m === 'krat_people')) && (!tt || r.t != null); });
     }
-    if (T.id === 'climate' && store.reg) rows = rows.filter(function (x) { return x.it.r.r === store.reg; });
     return { rows: rows, how: r.how };
   }
   function render() {
@@ -120,11 +110,9 @@
       h += '<div class="vtool vcalcin"><span>Прикинуть расход:</span><label>S, м² <input id="vA" inputmode="decimal" value="' + esc(store.A || '') + '"></label><label>h, м <input id="vH" inputmode="decimal" value="' + esc(store.H || '') + '"></label><label>людей <input id="vN" inputmode="numeric" value="' + esc(store.N || '') + '"></label><small>ориентир: кратность × объём, норма × людей; без расчёта вредностей и баланса</small></div>';
     }
     if (T.id === 'heat') h += '<p class="vsrc">' + esc(D.heat.src) + '</p><p class="vno">' + esc(D.heat.note) + '</p>';
-    if (T.id === 'climate') h += '<p class="vsrc">' + esc(D.climate.src) + '. Наведи на заголовок графы — пояснение. По СП 60.13330.2020, п. 5.13: параметры А — вентиляция летом; Б — отопление и вентиляция зимой, кондиционирование.</p>';
     if (!res.rows.length) h += '<p class="vempty">Ничего не нашлось. Попробуй другое слово — поиск понимает синонимы («туалет», «кухня», «детсад»), опечатки и английскую раскладку.</p>';
-    else if (T.id === 'climate') h += climateTable(res.rows.slice(0, shown * 4));
     else h += '<div class="vcards">' + res.rows.slice(0, shown).map(function (x) { return T.card(x.it.r, x.used); }).join('') + '</div>';
-    var lim = T.id === 'climate' ? shown * 4 : shown;
+    var lim = shown;
     if (res.rows.length > lim) h += '<button type="button" id="vmore" class="vmore">Показать ещё (' + (res.rows.length - lim) + ')</button>';
     $('#view').innerHTML = h;
     filt(T);
@@ -132,7 +120,6 @@
   }
 
   /* Фильтры уточнений — рядом со строкой поиска, свои у каждой вкладки */
-  var REG = {}; D.climate.rows.forEach(function (c) { REG[c.r] = 1; });
   var MT = {}; D.rooms.forEach(function (r) { MT[r.m === 'krat_people' ? 'krat' : r.m] = 1; });
   function opt(v, t, sel) { return '<option value="' + esc(v) + '"' + (sel === v ? ' selected' : '') + '>' + esc(t) + '</option>'; }
   function filt(T) {
@@ -143,13 +130,11 @@
       h += '<label class="chk"><input type="checkbox" id="vtt"' + (store.tt ? ' checked' : '') + '> с нормой температуры</label>';
       h += '<label class="chk" title="Нормы, не привязанные к типу здания (СП 60 и др.) — показывать вместе с выбранным типом"><input type="checkbox" id="vgen"' + (store.gen ? ' checked' : '') + '> и общие нормы для любых зданий</label>';
       h += '<label class="chk" title="Искать и по словам того же смысла: «туалет» → уборная, санузел, унитаз"><input type="checkbox" id="vas"' + (store.as ? ' checked' : '') + '> по ассоциациям</label>';
-    } else if (T.id === 'climate') {
-      h += '<label>Регион <select id="vreg">' + opt('', 'все', store.reg || '') + Object.keys(REG).sort().map(function (r) { return opt(r, r, store.reg); }).join('') + '</select></label>';
     }
-    var any = store.bt || store.mt || store.tt || store.reg;
+    var any = store.bt || store.mt || store.tt;
     if (h && any) h += '<button type="button" id="vreset" class="vreset">Сбросить уточнения</button>';
     /* 1.23.7: на телефоне уточнения свёрнуты в «Уточнить» (раскрытие запоминается) — список не уезжает за экран */
-    var nAct = [store.bt, store.mt, store.tt, store.gen, store.as, store.reg].filter(Boolean).length;
+    var nAct = [store.bt, store.mt, store.tt, store.gen, store.as].filter(Boolean).length;
     if (h) h = '<details class="vfd"' + (innerWidth > 640 || store.fo ? ' open' : '') + '><summary>Уточнить' + (nAct ? ' · ' + nAct : '') + '</summary><div class="vfin">' + h + '</div></details>';
     $('#vfilt').innerHTML = h; $('#vfilt').hidden = !h;
     var dd = $('#vfilt details'); if (dd) dd.addEventListener('toggle', function () { if (innerWidth <= 640) { store.fo = dd.open; save(); } });
@@ -161,14 +146,14 @@
     var b = e.target.closest('button'); if (!b) return;
     if (b.dataset.t) { cur = b.dataset.t; store.tab = cur; save(); shown = 40; history.replaceState(null, '', '#' + cur); render(); window.scrollTo(0, 0); }
     else if (b.id === 'vmore') { shown += 60; render(); }
-    else if (b.id === 'vreset') { store.bt = store.mt = store.reg = ''; store.tt = false; save(); shown = 40; render(); }
+    else if (b.id === 'vreset') { store.bt = store.mt = ''; store.tt = false; save(); shown = 40; render(); }
     else if (b.id === 'newsbtn') $('#newsdlg').showModal();
     else if (b.id === 'newsclose') $('#newsdlg').close();
     else if (b.dataset.ex) { $('#q').value = b.dataset.ex; shown = 40; render(); }
   });
   document.addEventListener('change', function (e) {
     var id = e.target.id;
-    if (id === 'vbt') store.bt = e.target.value; else if (id === 'vmt') store.mt = e.target.value; else if (id === 'vtt') store.tt = e.target.checked; else if (id === 'vgen') store.gen = e.target.checked; else if (id === 'vas') store.as = e.target.checked; else if (id === 'vreg') store.reg = e.target.value; else return;
+    if (id === 'vbt') store.bt = e.target.value; else if (id === 'vmt') store.mt = e.target.value; else if (id === 'vtt') store.tt = e.target.checked; else if (id === 'vgen') store.gen = e.target.checked; else if (id === 'vas') store.as = e.target.checked; else return;
     save(); shown = 40; render();
   });
   document.addEventListener('input', function (e) {
@@ -179,7 +164,7 @@
 
   $('#ver').textContent = 'v' + APP.ver + ' · ' + APP.date + ' · ' + APP.author;
   $('#news').innerHTML = NEWS.slice(0, 12).map(function (n) { return '<p><b>' + n.v + '</b> ' + n.d + '<br>' + esc(n.t) + '</p>'; }).join('');
-  $('#vex').innerHTML = 'Например: ' + ['туалет', 'кухня', 'детсад спальня', 'серверная', 'бассейн', 'Краснодар', 'irjkf'].map(function (w) { return '<button type="button" data-ex="' + w + '">' + w + '</button>'; }).join('');
+  $('#vex').innerHTML = 'Например: ' + ['туалет', 'кухня', 'детсад спальня', 'серверная', 'бассейн', 'irjkf'].map(function (w) { return '<button type="button" data-ex="' + w + '">' + w + '</button>'; }).join('');
   render();
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     var had = !!navigator.serviceWorker.controller, done = false;
