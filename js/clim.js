@@ -161,7 +161,8 @@
     st.c = c; save();
     $('#cres').innerHTML = ''; $('#cq').value = c.c;
     $('#cview').innerHTML = card(c);
-    try { history.replaceState(null, '', '#' + encodeURIComponent(c.c)); } catch (x) {}
+    /* город в адресной строке не показываем (инженер 08.11); старые ссылки с #город читаются при старте */
+    try { if (location.hash) history.replaceState(null, '', location.pathname + location.search); } catch (x) {}
     if (window.CLIM_MAP) CLIM_MAP.focus(c);
     if (scroll) $('#cview').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
