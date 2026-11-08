@@ -3,6 +3,24 @@ var ROUTES = [
   ['home', 'Главная'], ['how', 'Как работает'], ['no', 'НО'], ['nz', 'НЗ и ДД'], ['rooms', 'Помещения'], ['prod', 'Производство'],
   ['fire', 'Огнезащита'], ['smoke', 'Противодым'], ['pdv', 'Расчёт ПДВ'], ['load', 'Пожарная нагрузка'], ['build', 'Здание'], ['cat', 'Категории'], ['evac', 'Эвакуация'], ['alarm', 'Сигнализация'], ['aupt', 'АУПТ'], ['auto', 'Автоматика'], ['norms', 'Нормы'], ['dbn', 'ДБН']
 ];
+/* 1.34.0: главная — плитки задач; меню — группы (открыта та, где текущий раздел) */
+var TASKS = [
+  { to: '#no', i: 'no', t: 'Подобрать клапан НО', d: 'Общеобменная вентиляция: этаж, стена, транзит, шахта' },
+  { to: '#nz', i: 'nz', t: 'Клапаны НЗ и ДД', d: 'Дымоудаление и подпор: где ставить и какой предел' },
+  { to: '#rooms', i: 'rooms', t: 'Клапан по помещению', d: 'Таблица: помещение → клапан и пункт СП' },
+  { to: '#pdv', i: 'pdv', t: 'Расчёт ПДВ', d: 'Дымоудаление, подпор, компенсация по МР ВНИИПО' },
+  { to: '#smoke', i: 'smoke', t: 'Противодымная вентиляция', d: 'Пределы клапанов и воздуховодов, вентиляторы' },
+  { to: '#fire', i: 'fire', t: 'Огнезащита воздуховодов', d: 'Предел огнестойкости EI и способы' },
+  { to: '#cat', i: 'cat', t: 'Категории помещений', d: 'От категории — преграды, клапаны, тамбур-шлюзы' },
+  { to: 'vent.html', i: 'M4 8h11a3 3 0 1 0-3-3M4 12h15a3 3 0 1 1-3 3M4 16h8', t: 'Воздухообмены', d: 'Расходы и кратности по нормам' },
+  { to: 'clim.html', i: 'M12 3v11a3 3 0 1 0 0 0M9 7h0M15 5l-2 2M5 21h14', t: 'Климатология', d: 'СП 131: параметры, ГСОП, карта' }
+];
+var NAV_GROUPS = [
+  ['Клапаны', ['how', 'no', 'nz', 'rooms', 'prod']],
+  ['Противодым', ['smoke', 'pdv', 'load']],
+  ['Пожарная безопасность', ['fire', 'build', 'cat', 'evac', 'alarm', 'aupt', 'auto']],
+  ['Нормы', ['norms', 'dbn']]
+];
 var ICON = {
   dbn: 'M4 5h16v14H4zM4 12h16M9 5v14',
   pdv: 'M4 20V9l4-3 4 3v11M12 13h8v7M15 13V8h2v5M6 12h2M6 16h2',
@@ -42,7 +60,10 @@ function groups(list, gs) {
     return l.length ? '<h2 id="g-' + g[0] + '">' + g[1] + '</h2><div class="cards">' + l.map(card).join('') + '</div>' : '';
   }).join('');
 }
-function strip(ids) { return '<div class="strip">' + ids.map(figure).join('') + '</div>'; }
+/* 1.34.0: схемы и справочные списки свёрнуты — сначала ответ (отзыв пользователя) */
+function strip(ids) { return '<details class="more figs"><summary>Схемы (' + ids.length + ')</summary><div class="strip">' + ids.map(figure).join('') + '</div></details>'; }
+function sec(title, html, id) { return '<details class="more"' + (id ? ' id="' + id + '"' : '') + '><summary>' + title + '</summary><div class="dbody">' + html + '</div></details>'; }
+function openUp(el) { for (var d = el && el.closest('details'); d; d = d.parentElement && d.parentElement.closest('details')) d.open = true; }
 function mini(list) {
   return '<div class="minis">' + list.map(function (e) {
     return '<div class="mini"><h4>' + esc(e.t) + '</h4><p>' + esc(e.d) + '</p>' + refs(e.r) + '</div>';
@@ -51,31 +72,32 @@ function mini(list) {
 
 var PAGES = {
   home: function () {
-    return '<section class="hero"><div class="htext"><p class="eyebrow">Вентиляция и пожарная безопасность</p><h1>Какой клапан поставить и на каком основании</h1>' +
-      '<p class="lead">' + CASES_NO.length + ' случаев НО, ' + CASES_NZ.length + ' случаев НЗ, категории производства и огнезащита. Каждая запись ведёт на пункт нормы.</p>' +
+    /* 1.34.0 — упрощено по отзыву пользователя: сначала «что нужно», без большой схемы; справочные блоки свёрнуты */
+    return '<h1>Что нужно?</h1><p class="lead">Выбери задачу или начни вводить в поиске вверху.</p>' +
+      '<div class="tasks">' + TASKS.map(function (k) {
+        return '<a class="task" href="' + k.to + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + (ICON[k.i] || k.i) + '"/></svg><b>' + esc(k.t) + '</b><span>' + esc(k.d) + '</span></a>';
+      }).join('') + '</div>' +
+      '<h2>Частые случаи</h2><div class="picks">' + PICK.map(function (p) { return '<a class="pick" href="#' + p.to + '">' + esc(p.t) + '</a>'; }).join('') + '</div>' +
       '<div class="legend"><span>' + tag('NO') + ' открыт, при пожаре закрывается</span><span>' + tag('NZ') + ' закрыт, при пожаре открывается</span><span>' + tag('DD') + ' закрывается при пожаре, открывается после</span></div>' +
-      '<a class="cta" href="#how">Как устроен и работает каждый клапан →</a></div>' +
-      figure('hero') + '</section>' +
-      '<h2>Что проектируешь</h2><div class="picks">' + PICK.map(function (p) { return '<a class="pick" href="#' + p.to + '">' + esc(p.t) + '</a>'; }).join('') + '</div>' +
-      '<h2>Предел клапана по п. 6.22</h2>' + eiBlock() +
-      '<h2>Где нужна осторожность</h2><p class="sub">Расхождения норм и пробелы проверки.</p>' + issues();
+      '<details class="more"><summary>Предел клапана по п. 6.22</summary><div class="dbody">' + eiBlock() + '</div></details>' +
+      '<details class="more"><summary>Где нужна осторожность — расхождения норм</summary><div class="dbody">' + issues() + '</div></details>';
   },
   how: function () {
     return '<h1>Как работает клапан</h1><p class="lead">Разрез каждого типа: привод, команда от пожарной сигнализации и заслонка. Нажми фазу под схемой или включи «Авто» вверху — клапан пройдёт работу, пожар и время после пожара.</p>' +
       '<h2>Положение в каждой фазе</h2>' + howTimeline() +
       '<div class="hows">' + HOW.map(howCard).join('') + '</div>' +
-      '<h2>Как читать</h2>' + mini(HOW_READ);
+      sec('Как читать', mini(HOW_READ));
   },
   no: function () {
     return '<h1>Нормально открытые</h1><p class="lead">Стоят в общеобменных системах и закрываются при пожаре, чтобы дым не ушёл по воздуховодам.</p>' +
       strip(['floor', 'wall', 'transit', 'shaft', 'intake', 'attic', 'five', 'group']) + groups(CASES_NO, NO_GROUPS) +
-      '<h2>Где НО не ставят</h2>' + mini(NO_EXCEPT) + '<h2>Предел клапана</h2>' + eiBlock();
+      sec('Где НО не ставят', mini(NO_EXCEPT)) + sec('Предел клапана', eiBlock());
   },
   nz: function () {
     return '<h1>Нормально закрытые и двойного действия</h1><p class="lead">НЗ работают в противодымных системах и открываются при пожаре. Клапан двойного действия закрывается при пожаре и открывается после него.</p>' +
       strip(['smoke', 'supply', 'gas', 'comp-nz', 'sput']) + groups(CASES_NZ, NZ_GROUPS) +
       '<h2 id="g-dd">Двойного действия</h2><div class="cards">' + CASES_DD.map(card).join('') + '</div>' +
-      '<h2>Запреты и особые условия</h2>' + mini(NZ_BAN);
+      sec('Запреты и особые условия', mini(NZ_BAN));
   },
   prod: function () {
     var marks = { yes: ['Нужен', 'm-yes'], cond: ['С условием', 'm-cond'], no: ['Нет прямого требования', 'm-no'], ban: ['Не допускается', 'm-ban'] };
@@ -87,7 +109,7 @@ var PAGES = {
           return '<td><span class="mk ' + marks[v][1] + '" title="' + marks[v][0] + '">' + { yes: 'Да', cond: 'Усл.', no: '—', ban: 'Нет' }[v] + '</span></td>';
         }).join('') + '</tr>';
       }).join('') + '</tbody></table></div>' +
-      strip(['wall', 'merge', 'lock', 'group']) + '<h2>Особые условия</h2>' + mini(PROD_NOTES) +
+      strip(['wall', 'merge', 'lock', 'group']) + sec('Особые условия', mini(PROD_NOTES)) +
       '<h2>Все случаи для производства</h2><div class="cards">' +
       ['no-wall', 'no-suck', 'no-5m', 'no-group', 'no-floor', 'no-mer-v', 'no-mer-v4', 'no-mer-add', 'no-mer-a', 'no-lock', 'no-heat', 'no-flow'].map(function (id) {
         return card(CASES_NO.filter(function (c) { return c.id === id; })[0]).replace('id="' + id + '"', '');
@@ -97,10 +119,10 @@ var PAGES = {
     return '<h1>Огнезащита воздуховодов</h1><p class="lead">Нормы задают предел огнестойкости EI. Огнезащитное покрытие один из способов его получить, наряду с шахтой и заводской конструкцией.</p>' +
       strip(['option', 'gap', 'comp', 'room']) + '<h2>Когда предел нормируется</h2><div class="cards">' + CASES_FIRE.map(function (c) { c.t = 'FP'; return card(c); }).join('') + '</div>' +
       '<h2 id="tr">Транзит: что обслуживаем и через что идём</h2>' + trBlock() +
-      '<h2>Когда можно без предела</h2>' + mini(FIRE_FREE) + '<h2>Требования к исполнению</h2>' + mini(FIRE_RULES) +
+      sec('Когда можно без предела', mini(FIRE_FREE)) + sec('Требования к исполнению', mini(FIRE_RULES)) +
       '<h2 id="apply">Как применять огнезащиту</h2><p class="sub">Предел даёт испытанная система, а не отдельный материал.</p>' + mini(FIRE_APPLY) +
-      '<h2 id="classes">Классы материалов и герметичности</h2>' + mini(FIRE_CLASS) +
-      '<h2>Прокладка и венткамеры</h2>' + mini(LAY_RULES);
+      sec('Классы материалов и герметичности', mini(FIRE_CLASS), 'classes') +
+      sec('Прокладка и венткамеры', mini(LAY_RULES));
   },
   smoke: function () {
     return '<h1>Противодымная вентиляция</h1><p class="lead">Пределы клапанов и воздуховодов, классы вентиляторов, где их ставить и куда выбрасывать дым.</p>' +
@@ -110,23 +132,23 @@ var PAGES = {
       '<h2>Пределы НЗ клапанов</h2><div class="tscroll"><table class="vei"><thead><tr><th>Система</th><th>Где</th><th>Не менее</th><th>СП 7.13130</th></tr></thead><tbody>' +
       VALVE_EI.map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + esc(r[1]) + '</td><td><span class="ei">' + r[2] + '</span></td><td>п. ' + esc(r[3]) + '</td></tr>'; }).join('') +
       '</tbody></table></div>' + mini(VALVE_EI_NOTE) +
-      '<h2>Оборудование</h2>' + mini(SMOKE_EQUIP) + '<h2>Выброс дыма и забор воздуха</h2>' + mini(SMOKE_OUT);
+      sec('Оборудование', mini(SMOKE_EQUIP)) + sec('Выброс дыма и забор воздуха', mini(SMOKE_OUT));
   },
   build: function () {
     return '<h1>Огнестойкость здания</h1><p class="lead">Степени огнестойкости, противопожарные преграды и их заполнения, огнезащита конструкций. Сначала выбери преграду — справочник покажет предел, двери и тамбур-шлюз.</p>' +
       '<h2>Подбор по преграде</h2>' + barBlock() +
-      '<h2>Как читать предел</h2>' + mini(LIMIT_READ) +
+      sec('Как читать предел', mini(LIMIT_READ)) +
       '<h2 id="comp">Площадь этажа в пожарном отсеке</h2><p class="sub">Выбери тип здания. Значения — наибольшая площадь этажа, м².</p>' + compBlock() +
-      '<h2 id="types">Требования по типам зданий</h2>' + mini(TYPE_RULES) +
+      sec('Требования по типам зданий', mini(TYPE_RULES), 'types') +
       '<h2 id="dist">Противопожарные расстояния</h2>' + distBlock() +
       '<h2 id="deg">Степени огнестойкости</h2>' + degBlock() + stairsBlock() +
       '<h2>Заполнение проёмов по типам</h2><div class="tscroll"><table class="vei"><thead><tr><th>Элемент</th><th>1-й тип</th><th>2-й тип</th><th>3-й тип</th></tr></thead><tbody>' +
       FILL.map(function (r) { return '<tr><td>' + esc(r[0]) + '</td>' + r[1].map(function (v) { return '<td><span class="ei">' + v + '</span></td>'; }).join('') + '</tr>'; }).join('') +
       '</tbody></table></div><p class="tnote">Двери шахт лифтов — 2-й тип, EI 30, в зданиях до 28 м — E 30. Занавесы — 1-й тип, EI 60.</p>' + refs([['fz123', 'табл. 24']]) +
-      '<h2>Правила для преград</h2>' + mini(BAR_RULES) +
+      sec('Правила для преград', mini(BAR_RULES)) +
       '<h2 id="sfp">Огнезащита строительных конструкций</h2><p class="sub">Для несущих конструкций и преград. Воздуховоды — в разделе «Огнезащита».</p>' + mini(STRUCT_FP) +
-      '<h2>Конструкции, пустоты, потолки</h2>' + mini(STRUCT_RULES) +
-      '<h2>Выделение помещений</h2>' + mini(ROOM_RULES);
+      sec('Конструкции, пустоты, потолки', mini(STRUCT_RULES)) +
+      sec('Выделение помещений', mini(ROOM_RULES));
   },
   cat: function () {
     return '<h1>Категории помещений и зданий</h1><p class="lead">От категории зависят преграды, площадь отсека, клапаны, тамбур-шлюзы и вентиляция. Помещение проверяют от А к Д, здание — по доле площадей.</p>' +
@@ -135,7 +157,7 @@ var PAGES = {
       CAT_G.map(function (r) { return '<tr><td>' + r[0] + '</td><td><span class="ei">' + r[1] + '</span></td><td>' + esc(r[2]) + '</td></tr>'; }).join('') + '</tbody></table></div>' +
       roomCalcBlock() + '<p class="tnote">Калькулятор не определяет А и Б: для них нужен расчёт давления взрыва по приложению А. Предельное расстояние берётся по ближайшему меньшему qкр таблицы Б.2 — в запас.</p>' +
       '<h2 id="bcalc">Категория здания</h2>' + bldCalcBlock() +
-      '<h2>Правила</h2>' + mini(CAT_RULES);
+      sec('Правила', mini(CAT_RULES));
   },
   evac: function () {
     return '<h1>Эвакуация</h1><p class="lead">Выходы, размеры путей, лестницы. Для ОВиК важно: что можно прокладывать в коридорах и лестничных клетках и какие лестницы требуют подпора.</p>' +
@@ -143,16 +165,16 @@ var PAGES = {
       '<h2>Размеры: не меньше</h2><div class="tscroll"><table class="vei"><thead><tr><th>Что</th><th>Норма</th><th>Отступления</th><th>СП 1.13130</th></tr></thead><tbody>' +
       EVAC_DIM.map(function (r) { return '<tr><td>' + r[0] + '</td><td><span class="ei">' + r[1] + '</span></td><td>' + esc(r[2]) + '</td><td>п. ' + r[3] + '</td></tr>'; }).join('') + '</tbody></table></div>' +
       '<p class="tnote">Отклонение геометрии допускается не больше 5 % (п. 4.1.5).</p>' +
-      '<h2>Число выходов</h2>' + mini(EVAC_EXITS) +
-      '<h2>Лестницы и инженерные сети</h2>' + mini(EVAC_STAIR_RULES) +
+      sec('Число выходов', mini(EVAC_EXITS)) +
+      sec('Лестницы и инженерные сети', mini(EVAC_STAIR_RULES)) +
       '<h2 id="evprod">Длина пути в производственных помещениях</h2>' + tableOf(EVAC_PROD);
   },
   alarm: function () {
     return '<h1>Сигнализация и оповещение</h1><p class="lead">Что пожарная автоматика делает с вентиляцией и клапанами, и какой способ оповещения нужен зданию. СП 3.13130 действует в новой редакции 2026 года.</p>' +
-      '<h2>Автоматика и вентиляция</h2>' + mini(ALARM_VENT) +
+      sec('Автоматика и вентиляция', mini(ALARM_VENT)) +
       '<h2 id="soue">Способ оповещения</h2><div class="trpick"><label for="so">Здание</label><select id="so">' + SOUE.map(function (r, i) { return '<option value="' + i + '">' + r[0] + '</option>'; }).join('') + '</select><div class="barres" id="so-res"></div></div>' +
       '<p class="tnote">¹ Звуковой можно заменить речевым по заданию на проектирование. Площадь — суммарная по зданию, порог для звукового можно превысить до 5 %.</p>' + refs([['sp3', 'прил. Б, табл. Б.1']]) +
-      '<h2>Требования к оповещению</h2>' + mini(SOUE_RULES);
+      sec('Требования к оповещению', mini(SOUE_RULES));
   },
   auto: function () {
     return '<h1>Управление клапанами</h1><p class="lead">Кто даёт команду, что отключается и что контролируется.</p>' + strip(['hero', 'intake', 'gas']) + mini(AUTO);
@@ -248,6 +270,7 @@ function openCard(id) {
   if (!el) return;
   var d = el.querySelector('details');
   if (d) { d.open = true; fillSlot(d); }
+  openUp(el);
   el.classList.add('flash');
   el.scrollIntoView({ block: 'start', behavior: 'smooth' });
 }
@@ -270,6 +293,8 @@ function show(name, arg) {
   ROOT.innerHTML = PAGES[name](arg);
   reveal();
   document.querySelectorAll('.nav a').forEach(function (a) { a.classList.toggle('on', a.dataset.r === name); });
+  if (!(window.matchMedia && matchMedia('(max-width: 860px)').matches)) document.querySelectorAll('.nav .ngrp').forEach(function (g) { if (g.querySelector('a.on')) g.open = true; });
+  document.querySelectorAll('.nav .ngrp').forEach(function (g) { g.classList.toggle('has', !!g.querySelector('a.on')); });
   trShow();
   barShow();
   distShow();
@@ -295,7 +320,8 @@ function route() {
 }
 
 /* Плавное появление блоков при прокрутке */
-var IO = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) {
+/* 1.34.0: проявление карточек при прокрутке выключено (отзыв: «много анимаций») — всё видно сразу */
+var IO = false && 'IntersectionObserver' in window ? new IntersectionObserver(function (es) {
   es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); IO.unobserve(e.target); } });
 }, { rootMargin: '0px 0px -8% 0px' }) : null;
 function reveal() {
@@ -331,16 +357,24 @@ function setAuto(on) {
 function init() {
   ROOT = $('#view');
   ALL = CASES_NO.map(function (c) { c.t = 'NO'; return c; }).concat(CASES_NZ.map(function (c) { c.t = 'NZ'; return c; }), CASES_DD.map(function (c) { c.t = 'DD'; return c; }), CASES_FIRE.map(function (c) { c.t = 'FP'; return c; }));
-  $('.nav').innerHTML = ROUTES.map(function (r) {
-    return '<a href="#' + r[0] + '" data-r="' + r[0] + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + ICON[r[0]] + '"/></svg><span>' + r[1] + '</span></a>';
+  var NAME = {}; ROUTES.forEach(function (r) { NAME[r[0]] = r[1]; });
+  var navA = function (id) { return '<a href="#' + id + '" data-r="' + id + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + ICON[id] + '"/></svg><span>' + NAME[id] + '</span></a>'; };
+  $('.nav').innerHTML = navA('home') + NAV_GROUPS.map(function (g) {
+    return '<details class="ngrp"><summary>' + g[0] + '</summary><div class="nlist">' + g[1].map(navA).join('') + '</div></details>';
   }).join('');
+  /* телефон: группа — всплывающий список над нижней панелью; открыта одна, после выбора закрывается */
+  var narrow = window.matchMedia ? matchMedia('(max-width: 860px)') : { matches: false };
+  document.querySelectorAll('.nav .ngrp').forEach(function (g) {
+    g.addEventListener('toggle', function () { if (g.open && narrow.matches) document.querySelectorAll('.nav .ngrp').forEach(function (x) { if (x !== g) x.open = false; }); });
+  });
+  document.addEventListener('click', function (e) { if (narrow.matches && !e.target.closest('.nav summary')) document.querySelectorAll('.nav .ngrp[open]').forEach(function (x) { x.open = false; }); });
   $('#ver').textContent = 'v' + APP.ver + ' · ' + APP.date + ' · ' + APP.author;
   document.addEventListener('click', function (e) {
     var b = e.target.closest('button,a');
     if (!b) return;
     if (b.dataset.m) { setAuto(false); STEP = CYCLE.indexOf(b.dataset.m); setMode(b.dataset.m); }
     if (b.id === 'm-auto') setAuto(!AUTOPLAY);
-    if (b.dataset.jump) { var t = document.getElementById(b.dataset.jump); if (t) t.scrollIntoView({ behavior: 'smooth' }); }
+    if (b.dataset.jump) { var t = document.getElementById(b.dataset.jump); openUp(t); if (t) t.scrollIntoView({ behavior: 'smooth' }); }
     if (b.dataset.ei !== undefined) {
       var e0 = EI_TABLE[b.dataset.ei], box = b.closest('.eibox');
       box.querySelectorAll('.eibtn').forEach(function (x) { x.classList.toggle('on', x === b); });
@@ -362,7 +396,7 @@ function init() {
   window.addEventListener('hashchange', function () { $('#q').value = ''; route(); });
   var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   setMode('n');
-  setAuto(!calm);
+  setAuto(false);   /* 1.34.0: смена режимов каждые 6 с отвлекала (отзыв) — «Авто» только по кнопке */
   route();
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     /* новая версия встала — один раз перезагрузить страницу, чтобы не висела старая */

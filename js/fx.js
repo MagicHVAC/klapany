@@ -1,10 +1,8 @@
-/* Фон на весь экран: «противопожарная преграда держит огонь» + звук костра.
+/* Фон на весь экран: «противопожарная преграда держит огонь» + звук горящих дров (синтез, по умолч. выкл).
    Пламя — мягкие светящиеся частицы (готовые спрайты, рисуются drawImage — дёшево и плавно).
    Пламя поднимается к преграде на 1/3 высоты и растекается под ней; искры о преграду гаснут голубыми брызгами.
    Режимы шапки: Работа — тлеет; Пожар — сильный огонь до преграды; После — угли и дым уходит через ДД.
-   Переходы плавные (интенсивность догоняет цель ~3 с). Пауза на скрытой вкладке; «уменьшить движение» — статичный кадр.
-   Звук: Web Audio — запись камина snd/fireplace.mp3 (1.27.6) + синтез (гул + шипение + треск) в «Пожаре»; без записи — прежний синтез.
-   Громкость по режиму; вкл/выкл кнопкой, выбор запоминается. */
+   Переходы плавные (интенсивность догоняет цель ~3 с). Пауза на скрытой вкладке; «уменьшить движение» — статичный кадр. */
 (function () {
   var cv = document.createElement('canvas'), cx = cv.getContext('2d');
   if (!cx) return;
@@ -135,71 +133,71 @@
     requestAnimationFrame(loop);
   }
 
-  /* ---- Звук костра (синтез, без файлов) */
+  /* ---- Звук: горящие дрова (синтез, без файлов). 1.34.0, инженер 08.11: запись камина убрана —
+     в ней голоса людей; нужно «просто горящие дрова». По умолчанию выключен.
+     Слои: 1) дыхание пламени — бурый шум 150–700 Гц, громкость мерцает случайно (не ровный гул, иначе «ветер»);
+     2) потрескивание — пачки коротких сухих щелчков 2–7 кГц с неровным шагом (ровный темп = «попкорн»);
+     3) редкий хлопок полена — щелчок + глухой удар 90–220 Гц. Режим: Работа — спокойно, Пожар — сильнее, После — угли. */
   var SND = (function () {
-    var ac = null, master, rum, hiss, rec, recOk = false, on = false, nextCrack = 0, noise;
+    var ac = null, master, bed, noise, on = false, nextBurst = 0, nextPop = 0, nextFlick = 0;
     function build() {
       var AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return false;
       ac = new AC();
-      var len = ac.sampleRate * 3, buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0), last = 0;
-      for (var i = 0; i < len; i++) { var w = Math.random() * 2 - 1; last = (last + .02 * w) / 1.02; d[i] = last * 3.5; } /* бурый шум */
+      var len = ac.sampleRate * 4, bb = ac.createBuffer(1, len, ac.sampleRate), bd = bb.getChannelData(0), last = 0;
+      for (var i = 0; i < len; i++) { var w = Math.random() * 2 - 1; last = (last + .02 * w) / 1.02; bd[i] = last * 3.5; }
       var wb = ac.createBuffer(1, len, ac.sampleRate), wd = wb.getChannelData(0);
       for (var j = 0; j < len; j++) wd[j] = Math.random() * 2 - 1;
       noise = wb;
-      master = ac.createGain(); master.gain.value = 0; master.connect(ac.destination);
-      var s1 = ac.createBufferSource(); s1.buffer = buf; s1.loop = true;
-      var lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 380;
-      rum = ac.createGain(); rum.gain.value = .5; s1.connect(lp); lp.connect(rum); rum.connect(master); s1.start();
-      var s2 = ac.createBufferSource(); s2.buffer = wb; s2.loop = true;
-      var hp = ac.createBiquadFilter(); hp.type = 'bandpass'; hp.frequency.value = 3500; hp.Q.value = .6;
-      hiss = ac.createGain(); hiss.gain.value = .02; s2.connect(hp); hp.connect(hiss); hiss.connect(master); s2.start();
-      /* 1.27.6, инженер 08.11: синтез в «Работе» звучал как попкорн — живая запись камина (петля 45 с).
-         Источник: «Valley Forge Yule Log», National Park Service, Wikimedia Commons — общественное достояние. */
-      rec = ac.createGain(); rec.gain.value = 0; rec.connect(master);
-      fetch('snd/fireplace.mp3?v=1.27.6').then(function (r) { if (!r.ok) throw 0; return r.arrayBuffer(); })
-        .then(function (b) { return new Promise(function (ok, no) { ac.decodeAudioData(b, ok, no); }); })
-        .then(function (buf) { var s = ac.createBufferSource(); s.buffer = buf; s.loop = true; s.connect(rec); s.start(); recOk = true; })
-        .catch(function () { recOk = false; });
+      master = ac.createGain(); master.gain.value = 0;
+      var comp = ac.createDynamicsCompressor(); comp.threshold.value = -18; comp.ratio.value = 4;
+      master.connect(comp); comp.connect(ac.destination);
+      var s1 = ac.createBufferSource(); s1.buffer = bb; s1.loop = true;
+      var hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 150;
+      var lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 700;
+      bed = ac.createGain(); bed.gain.value = 0;
+      s1.connect(hp); hp.connect(lp); lp.connect(bed); bed.connect(master); s1.start();
       return true;
     }
-    /* lo — глухой хлопок полена (низкая полоса, дольше), иначе — щелчок */
-    function crack(power, lo) {
-      if (!on || !ac || ac.state !== 'running') return;
-      var t = ac.currentTime + Math.random() * .02, src = ac.createBufferSource(), bp = ac.createBiquadFilter(), g = ac.createGain();
-      src.buffer = noise; bp.type = 'bandpass'; bp.frequency.value = lo ? 180 + Math.random() * 420 : 900 + Math.random() * 3500; bp.Q.value = lo ? .8 + Math.random() * 1.5 : 1.5 + Math.random() * 4;
-      var a = (.15 + Math.random() * .6) * power * (lo ? 1.6 : 1), dur = lo ? .04 + Math.random() * .1 : .01 + Math.random() * .05;
-      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(a, t + .002); g.gain.exponentialRampToValueAtTime(.0005, t + dur);
-      src.connect(bp); bp.connect(g); g.connect(master);
-      src.start(t, Math.random() * 2, dur + .02);
+    /* сухой щелчок: шум 1–8 мс, полоса выше 2 кГц, быстрый спад */
+    function tick(t, a) {
+      var src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), d = .001 + Math.random() * .007;
+      src.buffer = noise; f.type = 'highpass'; f.frequency.value = 1800 + Math.random() * 5000;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(a, t + .0005); g.gain.exponentialRampToValueAtTime(.0003, t + d);
+      src.connect(f); f.connect(g); g.connect(master); src.start(t, Math.random() * 3, d + .01);
     }
+    /* хлопок полена: громкий щелчок + глухой удар */
+    function pop(t, a) {
+      tick(t, a);
+      var src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), d = .05 + Math.random() * .08;
+      src.buffer = noise; f.type = 'bandpass'; f.frequency.value = 90 + Math.random() * 130; f.Q.value = 1.2;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(a * 1.8, t + .003); g.gain.exponentialRampToValueAtTime(.0003, t + d);
+      src.connect(f); f.connect(g); g.connect(master); src.start(t, Math.random() * 3, d + .02);
+      if (Math.random() < .5) for (var k = 1 + (Math.random() * 4 | 0); k > 0; k--) tick(t + .01 + Math.random() * .12, a * (.15 + Math.random() * .3));
+    }
+    /* пачка потрескивания: 2–14 щелчков с неровным шагом 4–60 мс */
+    function burst(t, a) {
+      var n = 2 + (Math.random() * 12 | 0), tt = t;
+      for (var i = 0; i < n; i++) { tick(tt, a * (.3 + Math.random() * .7)); tt += .004 + Math.random() * Math.random() * .06; }
+    }
+    function crack(p) { if (on && ac && ac.state === 'running') tick(ac.currentTime + .01, .15 + .3 * p); }
     function level(I, m) {
-      if (!on || !ac) return;
-      var now = ac.currentTime;
-      if (recOk) {
-        /* запись камина — основа во всех режимах; в «Пожаре» к ней добавляется гул и треск синтеза, в «После» — тише */
-        rec.gain.setTargetAtTime(m === 'n' ? 1 : m === 'a' ? .5 : 1.2, now, .6);
-        if (m === 'n') { master.gain.setTargetAtTime(.6, now, .4); rum.gain.setTargetAtTime(0, now, .3); hiss.gain.setTargetAtTime(0, now, .3); return; }
-        master.gain.setTargetAtTime(m === 'a' ? .4 : .5, now, .4);
-        rum.gain.setTargetAtTime(m === 'a' ? 0 : .3 * I, now, .5); hiss.gain.setTargetAtTime(m === 'a' ? 0 : .03 * I, now, .5);
-        if (m === 'f' && now > nextCrack) { crack(.25 + I * .4); nextCrack = now + .15 + Math.random() * .6; }
-        return;
+      if (!on || !ac || ac.state !== 'running') return;
+      var now = ac.currentTime, k = m === 'f' ? 1 : m === 'a' ? .3 : .55;
+      master.gain.setTargetAtTime(m === 'a' ? .35 : .55, now, .5);
+      if (now > nextFlick) { bed.gain.setTargetAtTime((m === 'a' ? .05 : .1 + .2 * I) * (.5 + Math.random()), now, .12); nextFlick = now + .08 + Math.random() * .25; }
+      if (now > nextBurst) {
+        burst(now + .02, (.12 + .25 * Math.random()) * (.6 + .6 * k));
+        nextBurst = now + (.15 + Math.random() * Math.random() * 1.6) / (.4 + k);
       }
-      if (m === 'n') {
-        /* инженер 07.11: «Работа» — просто костёр, без ветра, громкость средняя: фоновые гул и шипение выключены, только треск и хлопки поленьев */
-        master.gain.setTargetAtTime(.45, now, .4); rum.gain.setTargetAtTime(0, now, .3); hiss.gain.setTargetAtTime(0, now, .3);
-        if (now > nextCrack) { var r = Math.random(); crack(.55 + Math.random() * .3); if (r < .25) crack(.35); if (r > .9) crack(.7, true); nextCrack = now + .06 + Math.random() * .38 + (Math.random() < .12 ? .6 : 0); }
-        return;
+      if (now > nextPop) {
+        if (m !== 'a' || Math.random() < .3) pop(now + .03, .35 + .35 * Math.random() * k);
+        nextPop = now + (1.5 + Math.random() * 5) / (.5 + k);
       }
-      var vol = (m === 'a' ? .18 : .25 + .55 * I) * .4;   /* инженер 06.11: тише */
-      master.gain.setTargetAtTime(vol, now, .4);
-      rum.gain.setTargetAtTime(.35 + .5 * I, now, .5);
-      hiss.gain.setTargetAtTime(.01 + .05 * I, now, .5);
-      if (now > nextCrack) { crack(.4 + I * .8); if (Math.random() < .3) crack(.3); nextCrack = now + (.04 + Math.random() * (.5 - .38 * I)) * (m === 'a' ? 3 : 1); }
     }
     var btn = document.createElement('button');
     function set(v) {
-      on = v; try { localStorage.setItem('klapany-snd', v ? '1' : '0'); } catch (x) {}
+      on = v; try { localStorage.setItem('klapany-snd2', v ? '1' : '0'); } catch (x) {}
       if (v) { if (!ac && !build()) { on = false; return; } ac.resume(); }
       else if (ac) { master.gain.setTargetAtTime(0, ac.currentTime, .15); setTimeout(function () { if (!on && ac) ac.suspend(); }, 600); }
       btn.classList.toggle('on', on); btn.setAttribute('aria-pressed', on);
@@ -209,14 +207,14 @@
     btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="w" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg><span>Звук</span>';
     var tin = document.querySelector('.top .tin'); if (tin) tin.appendChild(btn);
     btn.addEventListener('click', function () { set(!on); });
-    /* выбор запомнен: включим по первому касанию страницы (браузер не даёт звук без жеста) */
-    var want = false; try { want = localStorage.getItem('klapany-snd') === '1'; } catch (x) {}
+    /* новый ключ klapany-snd2: у всех по умолчанию выключено (старое «вкл» от записи с голосами не переносим) */
+    var want = false; try { want = localStorage.getItem('klapany-snd2') === '1'; } catch (x) {}
     if (want) {
       var first = function (e) { if (e.target.closest && e.target.closest('#snd')) return; set(true); removeEventListener('pointerdown', first, true); };
       addEventListener('pointerdown', first, true);
     }
     document.addEventListener('visibilitychange', function () { if (!ac || !on) return; if (document.hidden) ac.suspend(); else ac.resume(); });
-    return { crack: function (p) { if ((!recOk || mode() === 'f') && Math.random() < .35) crack(p); }, level: level };
+    return { crack: function (p) { if (Math.random() < .35) crack(p); }, level: level };
   })();
 
   size();
