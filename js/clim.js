@@ -8,9 +8,9 @@
   function fi(v) { return f(v, 0); }
   var C = SP131.cities, M = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
   var MN = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-  var st = { c: null, bt: 'res', tv: 20 };
-  try { var sv = JSON.parse(localStorage.getItem('klapany-clim') || '{}'); if (sv.bt) st.bt = sv.bt; if (isFinite(sv.tv)) st.tv = sv.tv; st.cn = sv.cn; } catch (x) {}
-  function save() { try { localStorage.setItem('klapany-clim', JSON.stringify({ bt: st.bt, tv: st.tv, cn: st.c ? st.c.r + '|' + st.c.c : '' })); } catch (x) {} }
+  var st = { c: null, bt: 'res', tv: 20, rhoId: '1.0', rho: 0.5 };   /* ρ по умолчанию — фасадная краска «Серый» 0,5 (табл. Е.1, п. 5) */
+  try { var sv = JSON.parse(localStorage.getItem('klapany-clim') || '{}'); if (sv.bt) st.bt = sv.bt; if (isFinite(sv.tv)) st.tv = sv.tv; st.cn = sv.cn; if (sv.rhoId && isFinite(sv.rho)) { st.rhoId = sv.rhoId; st.rho = sv.rho; } } catch (x) {}
+  function save() { try { localStorage.setItem('klapany-clim', JSON.stringify({ bt: st.bt, tv: st.tv, rhoId: st.rhoId, rho: st.rho, cn: st.c ? st.c.r + '|' + st.c.c : '' })); } catch (x) {} }
 
   /* поиск: регистр, ё/е, английская раскладка */
   var EN = 'qwertyuiop[]asdfghjkl;\'zxcvbnm,.`', RU = 'йцукенгшщзхъфывапролджэячсмитьбюё';
@@ -44,7 +44,7 @@
       num('Ветер дек–фев, преобл.', esc(v[16] || '—'), '') + num('Ветер январь, макс. из средних по румбам', f(v[17]), 'м/с', 'wind') + num('Ветер за период ≤ 8 °C', f(v[18]), 'м/с', 'wind') + '</div>';
   }
   function warm(c) {
-    var w = c.warm, a8 = SP131.amp8[c.c + ' (' + c.r + ')'];
+    var w = c.warm, a8 = clAmp8(c);
     return '<div class="cnums">' +
       num('Обеспеченность 0,95', f(w[1], 0), '°C', 'warm big', 'Параметры А тёплого периода (табл. 16.1)') + num('Обеспеченность 0,98', f(w[2], 0), '°C', 'warm', 'Параметры Б тёплого периода') +
       num('Средняя максимальная тёплого месяца', f(w[3]), '°C', 'warm') + num('Абсолютный максимум', f(w[4], 0), '°C', 'warm') + num('Амплитуда тёплого месяца', f(w[5]), '°C') +
@@ -110,8 +110,41 @@
     return h + '<p class="cnote">При tв ' + f(st.tv) + ' °C: ' + other + '.</p>';
   }
 
+  /* 1.31.0 широта: координаты GeoNames (точнее), иначе база кн. 7 */
+  function latOf(c) { var p = window.GEO131 && GEO131.p[c.r + '|' + c.c]; return p ? p[0] : c.lat; }
+  /* солнечная радиация — СП 131 табл. 13.1, 13.2 (безоблачное небо), высота солнца — табл. 15.1 */
+  function sun(c) {
+    var L = latOf(c); if (!L) return '<p class="cnote">Нет широты пункта.</p>';
+    var ori = [['Горизонтальная', SP131.radH], ['С', SP131.radV['С']], ['СВ / СЗ', SP131.radV['СВ/СЗ']], ['В / З', SP131.radV['В/З']], ['ЮВ / ЮЗ', SP131.radV['ЮВ/ЮЗ']], ['Ю', SP131.radV['Ю']]];
+    var hk = Object.keys(SP131.sunh).map(Number).sort(function (a, b) { return a - b; });
+    var sh = M.map(function (m, i) { return clLin(hk, hk.map(function (k) { return SP131.sunh[k][i]; }), Math.max(hk[0], Math.min(hk[hk.length - 1], L))); });
+    var out = L < 40 || L > 68 ? '<p class="cnote">Широта ' + f(L) + '° вне таблиц (40–68°) — взяты значения крайней широты.</p>' : '';
+    return out + '<div class="tscroll"><table class="ct cmon"><thead><tr><th>МДж/м² за месяц</th>' + M.map(function (m) { return '<th>' + m + '</th>'; }).join('') + '<th>Год</th></tr></thead><tbody>' +
+      ori.map(function (o) { var v = o[1].map(function (row) { return clRad(row, L); }), s = v.reduce(function (a, b) { return a + (b || 0); }, 0); return '<tr><th>' + o[0] + '</th>' + v.map(function (x) { return '<td>' + (x === null || x === undefined ? '—' : fi(x)) + '</td>'; }).join('') + '<td>' + fi(s) + '</td></tr>'; }).join('') +
+      '<tr><th>Высота солнца, ° (табл. 15.1)</th>' + sh.map(function (x) { return '<td>' + f(x) + '</td>'; }).join('') + '<td></td></tr></tbody></table></div>' +
+      '<p class="cnote">Суммарная (прямая и рассеянная) радиация <b>при безоблачном небе</b> на широте ' + f(L) + '° — линейно между широтами таблиц. Для теплопоступлений за отопительный период в энергопаспорте (СП 50 прил. Б.6 → СП 345.1325800.2017, ф. 10.2–10.6) нужна радиация <b>при действительных условиях облачности</b> по месяцам и альбедо — «по климатологическим справочным данным»; в СП 131 их нет, поэтому справочник этот расчёт не делает.</p>';
+  }
+  /* лето — СП 50.13330.2024 разд. 6 */
+  function summer(c) {
+    var rho = isFinite(st.rho) ? st.rho : 0.5, L = latOf(c), r = clSummer(c, rho, L);
+    var opts = CL_E1.map(function (g, gi) { return '<optgroup label="' + esc(g[0]) + '">' + g[1].map(function (x, xi) { var id = gi + '.' + xi; return '<option value="' + id + '" data-r="' + x[1] + '"' + (st.rhoId === id ? ' selected' : '') + '>' + esc(x[0]) + ' — ' + f(x[1]) + '</option>'; }).join('') + '</optgroup>'; }).join('');
+    var h = '<div class="cnums">' + num('t июля (табл. 7.1)', f(r.tn), '°C', 'warm') +
+      num('Требования разд. 6', r.need ? 'действуют' : 'нет', '', r.need ? 'warm' : '', 'п. 6.1, 6.8: в районах со среднемесячной t июля 21 °C и выше') +
+      (r.need ? num('Aτтр — нормируемая амплитуда', f(r.atr, 2), '°C', 'acc', 'ф. (6.1): 2,5 − 0,1·(tн − 21)') : '') +
+      num('Atн — макс. амплитуда июля', f(r.atn), '°C', '', r.atnSrc) +
+      num('v июля → αн', f(r.v) + ' → ' + f(r.an), 'Вт/(м²·°C)', 'wind', 'ф. (6.9): αн = 1,16·(5 + 10·√v); v — мин. из средних по румбам за июль (табл. 6.1) ' + f(r.vRaw) + ' м/с, не менее 1') + '</div>';
+    if (r.wMax === null) return h + '<p class="cnote">Табл. Е.2 СП 50 дана для 36–56° с. ш.; широта пункта ' + f(L) + '° — Imax и Icp по СП 50 не определены.</p>';
+    h += '<div class="cform"><label>Наружная поверхность, ρ (табл. Е.1)<select id="cl-rho">' + opts + '</select></label></div>' +
+      '<div class="tscroll"><table class="ct"><thead><tr><th>Поверхность (табл. Е.2)</th><th>Imax, Вт/м²</th><th>Icp, Вт/м²</th><th>Aрасч, °C — ф. (6.3)</th></tr></thead><tbody>' +
+      '<tr><td>Стены — как западная</td><td>' + fi(r.wMax) + '</td><td>' + fi(r.wCp) + '</td><td><b>' + f(r.aWall, 2) + '</b></td></tr>' +
+      '<tr><td>Покрытия — как горизонтальная</td><td>' + fi(r.hMax) + '</td><td>' + fi(r.hCp) + '</td><td><b>' + f(r.aRoof, 2) + '</b></td></tr></tbody></table></div>' +
+      '<p class="cform-f">Aрасч = 0,5·' + f(r.atn) + ' + ' + f(rho) + '·(Imax − Icp) / ' + f(r.an) + '. Дальше — затухание ν конструкции (п. 6.4) и проверка Aτв = Aрасч/ν ≤ Aτтр (ф. 6.2).</p>';
+    if (r.need) h += '<p class="cnote">Окна, светопрозрачные фасады, фонари (п. 6.8, табл. 9): солнцезащита с коэффициентом теплопропускания βсз не более <b>0,2</b> — жилые, медицинские, ДОО, дома ребёнка, интернаты; не более <b>0,4</b> — производственные с заданным микроклиматом.</p>';
+    return h + '<p class="cnote">Imax, Icp — по широте ' + f(L) + '°, линейно между строками табл. Е.2 (допущение справочника).</p>';
+  }
+
   function card(c) {
-    var lat = c.lat ? ' · ' + f(c.lat) + '° с. ш.' : '';
+    var lat = latOf(c) ? ' · ' + f(latOf(c)) + '° с. ш.' : '';
     return '<article class="ccard"><header><div><h2>' + esc(c.c) + '</h2><p>' + esc(c.r) + lat + '</p></div>' +
       '<div class="chero"><span class="cold">' + f(c.cold[3], 0) + '°</span><small>зима 0,92</small><span class="warm">' + f(c.warm[1], 0) + '°</span><small>лето 0,95</small></div></header>' +
       sec('c-gsop', 'ГСОП, отопительный период, Rтр', 'СП 50.13330.2024 п. 5.2, табл. 3', '<div id="cl-g">' + gsop(c) + '</div>', true) +
@@ -119,6 +152,8 @@
       sec('c-warm', 'Тёплый период', 'СП 131 табл. 6.1, 8.1', warm(c), true) +
       sec('c-ab', 'Параметры А и Б для ОВиК', 'СП 131 табл. 16.1, 16.2', ab(c), false) +
       sec('c-mon', 'По месяцам: температура, амплитуда, осадки, пар, ветер', 'СП 131 табл. 7.1, 9.1–12.1', months(c), false) +
+      sec('c-sum', 'Лето: теплоустойчивость и солнцезащита', 'СП 50.13330.2024 разд. 6, табл. Е.1, Е.2, 9', '<div id="cl-s">' + summer(c) + '</div>', false) +
+      sec('c-sun', 'Солнечная радиация и высота солнца', 'СП 131 табл. 13.1, 13.2, 15.1', sun(c), false) +
       '<p class="csrc">' + esc(SP131.src) + '. Широта — из базы кнопки 7: точная для известных пунктов, иначе по центру региона.</p></article>';
   }
 
@@ -150,6 +185,7 @@
   });
   document.addEventListener('change', function (e) {
     if (e.target.id === 'cl-bt') { st.bt = e.target.value; save(); gsopChanged(); }
+    else if (e.target.id === 'cl-rho') { var o = e.target.selectedOptions[0]; if (!o) return; st.rhoId = o.value; st.rho = +o.dataset.r; save(); $('#cl-s').innerHTML = summer(st.c); }
   });
   document.addEventListener('input', function (e) {
     if (e.target.id === 'cl-tv') { var v = parseFloat(String(e.target.value).replace(',', '.')); if (isFinite(v)) { st.tv = v; save(); var box = $('#cl-g'), pos = e.target.selectionStart; gsopChanged(); var ni = $('#cl-tv'); ni.focus(); try { ni.setSelectionRange(pos, pos); } catch (x) {} } }
