@@ -45,6 +45,21 @@ function dlBlock() {
     dlF('dl-act', 'Низ ДПУ по проекту, м — пусто: только подбор', '', 'проверю, можно ли так') +
     '</div><div class="dpbtns"><button type="button" class="eibtn" id="dl-ex">Пример: коридор 2,5 м, клапан на стене шахты, обычная дверь</button></div>' +
     '<div class="barres stres" id="dl-res"></div><div class="stanim" id="dl-svg"></div><div id="dl-fit"></div>' +
+    '<h3 class="dlh3" id="dl-flow">Расход, скорость, сопротивление, подбор размера</h3>' +
+    '<p class="sub">Расход дыма — из твоего расчёта по п. 7.4 СП 7 (МР ВНИИПО). Проверю скорость в клапане (МР п. 5.1.1: не больше 11 м/с, лучше 9–11), расход через 1 ДПУ по прил. Е и потери на входе; предложу размеры.</p>' +
+    '<div class="trpick stpick">' +
+    '<div class="stf"><label for="dl-gm">Расход задаю</label><select id="dl-gm"><option value="l">объёмом при Tsm, м³/ч</option><option value="g">массой Gsm, кг/с</option></select></div>' +
+    dlF('dl-g', 'Расход дыма на зону — из расчёта', '6000', 'пример, замени своим') +
+    dlF('dl-ts', 'Tsm — средняя температура дымового слоя, °C', '300', 'только из расчёта, п. 7.4') +
+    dlF('dl-tr', 'Tr — воздух до пожара, °C', '20') +
+    dlF('dl-n', 'Число ДПУ на этот расход, шт.', '1') +
+    '<div class="stf" id="dl-wdw" hidden><label for="dl-wd">От оси ДПУ до стены, м — для γ</label><input id="dl-wd" type="number" step="any" value="1.5" inputmode="decimal"><small class="dhint">≥ 2D — γ = 1, иначе 0,5 (прил. Е)</small></div>' +
+    '<div class="stf"><label for="dl-node">Вход в шахту, ξ</label><select id="dl-node">' + KMS_NODE.map(function (x) { return '<option value="' + x[0] + '">' + x[1] + ' — ' + String(x[2]).replace('.', ',') + '</option>'; }).join('') +
+    '<option value="own">свой ξ — из паспорта изделия</option></select><small class="dhint">таблица КМС инженера (06.11.2026)</small></div>' +
+    '<div class="stf" id="dl-xiw" hidden><label for="dl-xi">ξ по паспорту</label><input id="dl-xi" type="number" step="any" value="" inputmode="decimal"><small class="dhint">к скорости в сечении a×b</small></div>' +
+    dlF('dl-kf', 'Доля живого сечения клапана, решётки', '1', 'из паспорта; нет данных — 1') +
+    dlF('dl-ar', 'Соотношение сторон не более 1 :', '4', 'граница размеров изделий') +
+    '</div><div class="barres stres" id="dl-fres"></div><div id="dl-sug"></div>' +
     '<details class="issue dpf"><summary>Формулировки норм и писем — дословно</summary><div>' +
     DL_Q.map(function (q) { return '<p class="dlqh">' + esc(q[2]) + '</p><blockquote class="dlq">' + esc(q[3]) + '</blockquote>' + refs([[q[0], q[1]]]); }).join('') +
     '<p class="dlnote">Многоточие — сокращение без изменения смысла. Формула МР п. 3.2.1 и условие прил. Е в первоисточнике — картинками; сверены по изображениям.</p></div></details>' +
@@ -98,6 +113,72 @@ function dlCalc() {
   box.innerHTML = h;
   $('#dl-svg').innerHTML = dlSvg(r);
   $('#dl-fit').innerHTML = dlFit(r);
+  $('#dl-wdw').hidden = r.or !== 'h';
+  $('#dl-xiw').hidden = $('#dl-node').value !== 'own';
+  var q = dlFlow(r);
+  $('#dl-fres').innerHTML = q.html; $('#dl-sug').innerHTML = q.sug;
+}
+
+/* 1.28.2, инженер 08.11: расход по расчёту → скорость, Vmax по прил. Е, потери на входе, подбор размера (стороны ≤ 1:4).
+   ρ = 353/T — допущение справочника (как в dpu.js). Vmax = 4,16·γ·d^2,5·((Tsm − Tr)/Tr)^0,5, м³/с — СП 7 прил. Е, формула Е.1.
+   Скорость — МР ВНИИПО п. 5.1.1: не более 11 м/с, предпочтительно 9–11 (сверено по тексту 08.11.2026), в проходном (живом) сечении.
+   ξ входа — таблица КМС инженера (KMS_NODE, kvm_kms.js) или паспорт; отнесён к скорости в сечении a×b — допущение, как в сети по участкам. */
+function dlGeo(r, a, b, round) {   /* для размера a×b: D, низ, d, γ, влезает ли */
+  var D = round ? a : 2 * a * b / (a + b), hv = r.or === 'v' ? (round ? a : b) : 0;
+  /* без отметки по проекту: в стенке — верх под потолком (п. 7.8 «под потолком коридора»; больше d — больше Vmax), в днище — наименьшая допустимая */
+  var low = isFinite(r.act) ? r.act : r.or === 'v' ? r.H - hv : Math.max(r.door, r.y + 2 * D), d = low - r.y;
+  var g = r.or === 'h' && r.wd >= 2 * D ? 1 : 0.5;
+  return { D: D, low: low, d: d, gamma: g, ok: d >= 2 * D - 1e-9 && low + hv <= r.H + 1e-9 && low >= r.door - 1e-9, A: round ? Math.PI * a * a / 4 : a * b };
+}
+function dlFlow(r) {
+  var f = dlFmt, gm = $('#dl-gm').value, G0 = dlNum('dl-g'), ts = dlNum('dl-ts'), tr = dlNum('dl-tr'), n = Math.max(1, Math.round(dlNum('dl-n')) || 1),
+    kf = dlNum('dl-kf'), ar = dlNum('dl-ar'), node = $('#dl-node').value, xi;
+  r.wd = dlNum('dl-wd');
+  if (r.err.length || !isFinite(r.y)) return { html: '<p class="dlnote">Сначала исправь исходные данные выше.</p>', sug: '' };
+  if (!(G0 > 0)) return { html: '<p class="dlnote">Введи расход дыма из расчёта — посчитаю скорость, сопротивление и предложу размеры.</p>', sug: '' };
+  var c = function (k, v, s, cls) { return '<div class="bstep' + (cls ? ' ' + cls : '') + '"><span>' + k + '</span><b>' + v + '</b>' + (s ? '<small>' + s + '</small>' : '') + '</div>'; };
+  if (!(ts > tr)) return { html: c('Проверь данные', 'Ошибка', 'Tsm должна быть выше Tr — иначе формула Е.1 не работает.', 'warn'), sug: '' };
+  if (!(kf > 0 && kf <= 1)) kf = 1;
+  if (!(ar >= 1)) ar = 4;
+  if (node === 'own') xi = dlNum('dl-xi'); else KMS_NODE.forEach(function (x) { if (x[0] === node) xi = x[2]; });
+  var Ts = ts + 273.15, Tr = tr + 273.15, ro = 353 / Ts, Vs = gm === 'g' ? G0 / ro : G0 / 3600, G = Vs * ro, V1 = Vs / n, k = Math.sqrt((Ts - Tr) / Tr);
+  var h = c('Расход на 1 ДПУ', f(V1 * 3600, 0) + ' м³/ч', f(V1, 3) + ' м³/с при Tsm; всего ' + f(Vs * 3600, 0) + ' м³/ч = ' + f(G, 2) + ' кг/с, ρ = 353/Tsm = ' + f(ro, 3) + ' кг/м³ (допущение справочника)');
+  var a = r.a, b = r.b, geo = dlGeo(r, a, b, r.round);
+  if (geo.A > 0) {
+    var v = V1 / geo.A, vz = v / kf, dp = isFinite(xi) ? xi * ro * v * v / 2 : NaN, Vmax = 4.16 * geo.gamma * Math.pow(Math.max(geo.d, 0), 2.5) * k;
+    h += c('Скорость в живом сечении', f(vz, 1) + ' м/с', (vz > 11 ? 'больше 11 — увеличь сечение (МР ВНИИПО п. 5.1.1)' : vz >= 9 ? 'в диапазоне 9–11 (МР п. 5.1.1)' : 'меньше 9 — можно меньше сечение (МР п. 5.1.1: лучше 9–11)') +
+      '; в сечении ' + (r.round ? 'Ø' + f(a * 1000, 0) : f(a * 1000, 0) + '×' + f(b * 1000, 0)) + ' — ' + f(v, 1) + ' м/с', vz > 11 ? 'warn' : '');
+    h += c('Потери на входе', isFinite(dp) ? f(dp, 0) + ' Па' : '—', isFinite(dp) ? 'ξ·ρ·v²/2 = ' + f(xi, 2) + ' × ' + f(ro, 3) + ' × ' + f(v, 1) + '² / 2' : 'введи ξ из паспорта');
+    var okV = V1 <= Vmax + 1e-9, nNeed = Vmax > 0 ? Math.ceil(Vs / Vmax - 1e-9) : NaN;
+    h += c('Vmax через 1 ДПУ (прил. Е)', f(Vmax * 3600, 0) + ' м³/ч', '4,16 × γ ' + f(geo.gamma, 1) + ' × d ' + f(geo.d) + '^2,5 × √((Tsm − Tr)/Tr); ' + (okV ? 'расход на 1 ДПУ не больше — выполнено' : 'на 1 ДПУ больше Vmax — нужно ДПУ не меньше ' + nNeed + ' шт.'), okV ? '' : 'warn');
+  }
+  return { html: h, sug: dlSuggest(r, V1, Vs, kf, ar, k, xi, ro) };
+}
+/* Подбор: прямоугольные a×b от 200 до 2000 мм шаг 50, стороны ≤ 1:ar; условия — влезает (d ≥ 2D, низ ≥ дверь, верх ≤ H),
+   скорость в живом сечении ≤ 11, расход на 1 ДПУ ≤ Vmax. Если ни один не проходит — увеличиваю число ДПУ до 12. */
+function dlSuggest(r, V1, Vs, kf, ar, k, xi, ro) {
+  var f = dlFmt, best = [], nUse = 0;
+  for (var n = Math.max(1, Math.round(Vs / V1)); n <= 12 && !best.length; n++) {
+    var q = Vs / n;
+    for (var a = 200; a <= 2000; a += 50) for (var b = 200; b <= 2000; b += 50) {
+      if (Math.max(a, b) / Math.min(a, b) > ar + 1e-9) continue;
+      var g = dlGeo(r, a / 1000, b / 1000, false); if (!g.ok) continue;
+      var vz = q / g.A / kf, Vmax = 4.16 * g.gamma * Math.pow(g.d, 2.5) * k;
+      if (vz > 11 || q > Vmax) continue;
+      best.push({ a: a, b: b, g: g, vz: vz, v: q / g.A, Vmax: Vmax, pref: vz >= 9 });
+    }
+    if (best.length) nUse = n;
+  }
+  if (!best.length) return '<p class="dlnote">Подходящего размера нет даже при 12 ДПУ: не хватает высоты между дверью, слоем и потолком. Подними потолок, опусти границу слоя (толщина 0,6 H в коридоре) или поставь ДПУ горизонтально в днище воздуховода.</p>';
+  best.sort(function (x, y) { return (y.pref - x.pref) || (x.g.A - y.g.A) || (Math.max(x.a, x.b) / Math.min(x.a, x.b) - Math.max(y.a, y.b) / Math.min(y.a, y.b)); });
+  var rows = best.slice(0, 8).map(function (s) {
+    var dp = isFinite(xi) ? xi * ro * s.v * s.v / 2 : NaN;
+    return '<tr><td>' + s.a + '×' + s.b + '</td><td>' + f(s.vz, 1) + '</td><td>' + (isFinite(dp) ? f(dp, 0) : '—') + '</td><td>' + f(s.g.low) + '</td><td>' + f(s.g.d) + ' ≥ ' + f(2 * s.g.D) + '</td><td>' + f(s.Vmax * 3600, 0) + '</td></tr>';
+  }).join('');
+  return '<h3 class="dlh3">Предлагаемые размеры — ' + nUse + ' ДПУ, по ' + f(Vs / nUse * 3600, 0) + ' м³/ч</h3>' +
+    '<p class="sub">Ширина × высота, мм (высота — по вертикали для ДПУ в стенке; верх — под потолком, если низ по проекту не задан). Сначала — со скоростью 9–11 м/с, затем — меньшие по площади. Стороны не более 1:' + f(ar, 1) + '.</p>' +
+    '<div class="tscroll"><table class="vei"><thead><tr><th>a×b, мм</th><th>v живое, м/с</th><th>Потери, Па</th><th>Низ, м</th><th>d ≥ 2D, м</th><th>Vmax, м³/ч</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+    '<p class="dlnote">Размер — из ряда с шагом 50 мм; есть ли такой у изготовителя — проверь по каталогу. Соотношение сторон 1:4 — граница размеров изделий, не норма.</p>';
 }
 
 /* Какой клапан влезет на стене шахты между верхом двери и потолком: по высоте проёма b шаг 50 мм — наибольшая ширина a
