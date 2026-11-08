@@ -3,7 +3,8 @@
    Пламя поднимается к преграде на 1/3 высоты и растекается под ней; искры о преграду гаснут голубыми брызгами.
    Режимы шапки: Работа — тлеет; Пожар — сильный огонь до преграды; После — угли и дым уходит через ДД.
    Переходы плавные (интенсивность догоняет цель ~3 с). Пауза на скрытой вкладке; «уменьшить движение» — статичный кадр.
-   Звук: Web Audio, синтез (гул + шипение + треск), громкость по режиму; вкл/выкл кнопкой, выбор запоминается. */
+   Звук: Web Audio — запись камина snd/fireplace.mp3 (1.27.6) + синтез (гул + шипение + треск) в «Пожаре»; без записи — прежний синтез.
+   Громкость по режиму; вкл/выкл кнопкой, выбор запоминается. */
 (function () {
   var cv = document.createElement('canvas'), cx = cv.getContext('2d');
   if (!cx) return;
@@ -30,8 +31,16 @@
 
   function size() {
     DPR = Math.min(window.devicePixelRatio || 1, 1.5);
-    W = document.documentElement.clientWidth || innerWidth; H = innerHeight; BY = Math.round(H * .34);
+    W = document.documentElement.clientWidth || innerWidth; H = innerHeight;
     cv.width = W * DPR; cv.height = H * DPR; cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    place();
+  }
+  /* 1.27.6, инженер 08.11: преграда — сразу под пунктом «Главная» бокового меню (больше места пламени в «Пожаре»).
+     Меню липкое — пересчёт при прокрутке; на телефоне меню внизу — тогда прежние 34 % высоты. */
+  function place() {
+    var a = document.querySelector('.nav a'), y = 0;
+    if (a && getComputedStyle(a.parentNode).position !== 'fixed') { var r = a.getBoundingClientRect(); if (r.height) y = Math.round(r.bottom + 12); }
+    BY = y > 40 && y < H * .6 ? y : Math.round(H * .34);
   }
   function flame() {
     var big = 30 + Math.random() * 60;
@@ -128,7 +137,7 @@
 
   /* ---- Звук костра (синтез, без файлов) */
   var SND = (function () {
-    var ac = null, master, rum, hiss, on = false, nextCrack = 0, noise;
+    var ac = null, master, rum, hiss, rec, recOk = false, on = false, nextCrack = 0, noise;
     function build() {
       var AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return false;
@@ -145,6 +154,13 @@
       var s2 = ac.createBufferSource(); s2.buffer = wb; s2.loop = true;
       var hp = ac.createBiquadFilter(); hp.type = 'bandpass'; hp.frequency.value = 3500; hp.Q.value = .6;
       hiss = ac.createGain(); hiss.gain.value = .02; s2.connect(hp); hp.connect(hiss); hiss.connect(master); s2.start();
+      /* 1.27.6, инженер 08.11: синтез в «Работе» звучал как попкорн — живая запись камина (петля 45 с).
+         Источник: «Valley Forge Yule Log», National Park Service, Wikimedia Commons — общественное достояние. */
+      rec = ac.createGain(); rec.gain.value = 0; rec.connect(master);
+      fetch('snd/fireplace.mp3?v=1.27.6').then(function (r) { if (!r.ok) throw 0; return r.arrayBuffer(); })
+        .then(function (b) { return new Promise(function (ok, no) { ac.decodeAudioData(b, ok, no); }); })
+        .then(function (buf) { var s = ac.createBufferSource(); s.buffer = buf; s.loop = true; s.connect(rec); s.start(); recOk = true; })
+        .catch(function () { recOk = false; });
       return true;
     }
     /* lo — глухой хлопок полена (низкая полоса, дольше), иначе — щелчок */
@@ -160,6 +176,15 @@
     function level(I, m) {
       if (!on || !ac) return;
       var now = ac.currentTime;
+      if (recOk) {
+        /* запись камина — основа во всех режимах; в «Пожаре» к ней добавляется гул и треск синтеза, в «После» — тише */
+        rec.gain.setTargetAtTime(m === 'n' ? 1 : m === 'a' ? .5 : 1.2, now, .6);
+        if (m === 'n') { master.gain.setTargetAtTime(.6, now, .4); rum.gain.setTargetAtTime(0, now, .3); hiss.gain.setTargetAtTime(0, now, .3); return; }
+        master.gain.setTargetAtTime(m === 'a' ? .4 : .5, now, .4);
+        rum.gain.setTargetAtTime(m === 'a' ? 0 : .3 * I, now, .5); hiss.gain.setTargetAtTime(m === 'a' ? 0 : .03 * I, now, .5);
+        if (m === 'f' && now > nextCrack) { crack(.25 + I * .4); nextCrack = now + .15 + Math.random() * .6; }
+        return;
+      }
       if (m === 'n') {
         /* инженер 07.11: «Работа» — просто костёр, без ветра, громкость средняя: фоновые гул и шипение выключены, только треск и хлопки поленьев */
         master.gain.setTargetAtTime(.45, now, .4); rum.gain.setTargetAtTime(0, now, .3); hiss.gain.setTargetAtTime(0, now, .3);
@@ -191,11 +216,13 @@
       addEventListener('pointerdown', first, true);
     }
     document.addEventListener('visibilitychange', function () { if (!ac || !on) return; if (document.hidden) ac.suspend(); else ac.resume(); });
-    return { crack: function (p) { if (Math.random() < .35) crack(p); }, level: level };
+    return { crack: function (p) { if ((!recOk || mode() === 'f') && Math.random() < .35) crack(p); }, level: level };
   })();
 
   size();
   addEventListener('resize', size);
+  addEventListener('scroll', place, { passive: true });
+  setTimeout(place, 600);   /* меню строит app.js — после него пересчитать */
   addEventListener('pointermove', function (e) { mx = e.clientX; my = e.clientY; }, { passive: true });
   document.addEventListener('pointerleave', function () { mx = my = -1e4; });
   document.addEventListener('visibilitychange', function () { run = !document.hidden && !calm; if (run) { t0 = 0; requestAnimationFrame(loop); } });
