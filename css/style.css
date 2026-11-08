@@ -204,7 +204,10 @@ html[data-mode="a"] .flame.on-a { opacity: .35; }
 html[data-mode="n"] .dflow.on-n, html[data-mode="f"] .dflow.on-f, html[data-mode="a"] .dflow.on-a { opacity: .45; }
 .pt { opacity: 0; transition: opacity .5s; }
 .pt-air circle { fill: var(--air); }
-.pt-smoke circle { fill: color-mix(in srgb, var(--fire) 55%, var(--muted)); }
+/* 1.37.1: струйка воздуха — светлая голова, хвост тает; клуб дыма — мягкий, тёплого серого */
+.pt-air .st line { stroke: var(--air); stroke-width: 2; stroke-linecap: round; opacity: .35; }
+.pt-air .st circle { fill: color-mix(in srgb, var(--air) 70%, #fff); filter: drop-shadow(0 0 2px var(--air)); }
+.pt-smoke circle { fill: color-mix(in srgb, var(--fire) 35%, #6b6f78); filter: blur(1.6px); }
 html[data-mode="n"] .pt.on-n, html[data-mode="f"] .pt.on-f, html[data-mode="a"] .pt.on-a { opacity: 1; }
 .ring { fill: none; stroke: var(--air); stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: center; }
 .vNO .ring { stroke: var(--no); } .vNZ .ring { stroke: var(--nz); } .vDD .ring { stroke: var(--dd); }

@@ -9,11 +9,17 @@ function dpath(p) { return 'M' + p.map(function (q) { return q.join(' '); }).joi
 function particles(d, k, f) {
   var L = plen(d.p), smoke = k === 'smoke', sp = smoke ? 55 : 75, gap = smoke ? 46 : 38;
   var n = Math.max(2, Math.round(L / gap)), dur = (L / sp).toFixed(2), o = ['<g class="pt pt-' + k + ' ' + modeCls(f) + '">'];
+  /* 1.37.1 «живое»: воздух — струйки с хвостом по направлению потока (rotate=auto), в 3 ряда по сечению, скорость чуть разная;
+     дым — клубы растут и тают по ходу. Ряды — сдвигом группы на ±4 (по диагонали — годится и для вертикальных участков). */
+  var P = dpath(d.p), LANE = [-4, 0, 4];
+  if (!smoke) n = Math.round(n * 1.6);
   for (var i = 0; i < n; i++) {
-    var b = (-dur * i / n).toFixed(2);
+    var ln = LANE[i % 3], dd = (dur * (0.85 + ((i * 7) % 5) * 0.07)).toFixed(2), b = (-dd * i / n).toFixed(2);
     o.push(smoke
-      ? '<circle r="' + (4 + (i % 3)) + '"><animateMotion dur="' + dur + 's" begin="' + b + 's" repeatCount="indefinite" path="' + dpath(d.p) + '"/><animate attributeName="opacity" values=".2;.85;.5" dur="' + dur + 's" begin="' + b + 's" repeatCount="indefinite"/></circle>'
-      : '<circle r="2.6"><animateMotion dur="' + dur + 's" begin="' + b + 's" repeatCount="indefinite" path="' + dpath(d.p) + '"/></circle>');
+      ? '<g transform="translate(' + ln * 0.6 + ' ' + ln + ')"><circle r="3" class="pf"><animateMotion dur="' + dur + 's" begin="' + b + 's" repeatCount="indefinite" path="' + P + '"/>' +
+        '<animate attributeName="r" values="2.5;6;10" dur="' + dur + 's" begin="' + b + 's" repeatCount="indefinite"/><animate attributeName="opacity" values="0;.7;.45;0" dur="' + dur + 's" begin="' + b + 's" repeatCount="indefinite"/></circle></g>'
+      : '<g transform="translate(' + ln * 0.6 + ' ' + ln + ')"><g class="st"><animateMotion dur="' + dd + 's" begin="' + b + 's" repeatCount="indefinite" rotate="auto" path="' + P + '"/>' +
+        '<line x1="-11" y1="0" x2="-1" y2="0"/><circle r="1.7"/></g></g>');
   }
   return o.join('') + '</g>';
 }
