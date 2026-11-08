@@ -10,7 +10,8 @@
   function mk() {
     if (cv) return;
     cv = document.createElement('canvas'); cv.id = 'wxfx';
-    cv.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:60';
+    /* 1.36.2 (инженер: «облака за таблицей»): небо — слой 0, над фоном .cbg и под содержимым (z 1); торнадо и ветер — поверх (z 60) */
+    cv.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:0';
     document.body.appendChild(cv); cx = cv.getContext('2d'); W = cv.width = innerWidth; H = cv.height = innerHeight;
     var tm = 0; addEventListener('resize', function () { clearTimeout(tm); tm = setTimeout(size, 200); });
   }
@@ -133,6 +134,7 @@
     else if (k === 'storm') { C = K.clouds(W, H, 18, true, 0.45); drops(Math.round(380 + pw * 320)); }
     else if (k === 'wind') { C = K.clouds(W, H, 8, true, 0.4); C.forEach(function (c) { c.v *= 4; }); debris(30, ['🍂', '🍃', '🍁', '🌿', '🪵']); }
     else if (k === 'tornado') debris(46, FLY);
+    cv.style.zIndex = k === 'tornado' || k === 'wind' ? '60' : '0';
     cv.style.display = ''; raf = requestAnimationFrame(frame);
   }
   function stop() { if (raf) cancelAnimationFrame(raf); raf = 0; if (cx) cx.clearRect(0, 0, W, H); if (cv) cv.style.display = 'none'; kind = ''; }
